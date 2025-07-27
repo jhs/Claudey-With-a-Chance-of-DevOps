@@ -36,6 +36,13 @@ CWCD implements a **policy-driven DevOps** model where organizational standards 
 - Operational standards (backup/restore, disaster recovery, monitoring)
 - Compliance requirements and approved patterns
 - Historical decisions and their rationale
+- Data architecture (dev/prod/staging, bronze/silver/gold data patterns)
+- Backend/frontend language/stack specifications
+- ADR (Architecture Decision Record) templates and standards
+
+**Knowledge Tagging System**: Apache Answer uses a dual classification:
+- **Policy-tagged** knowledge must be obeyed completely - all applicable policies are mandatory
+- **Advisory** knowledge provides guidance with community endorsements (thumbs up/down for real-world success/failure)
 
 **Knowledge Evolution**: Apache Answer captures decisions and outcomes as the system operates, building institutional DevOps memory.
 
@@ -46,11 +53,18 @@ CWCD implements a **policy-driven DevOps** model where organizational standards 
 ## Development Context
 
 This project is in the conceptual/planning phase with minimal implementation. Key components under consideration:
-- Container support (Docker)
-- Apache Answer integration as policy engine
+- Container support (Docker) - runs in container, can run/pull containers
+- Apache Answer integration as policy engine with Policy/Advisory knowledge tagging
 - Atomic Agents and Magentic-UI for specialized DevOps personas
-- RAGFlow for knowledge aggregation
+- RAGFlow for knowledge aggregation via MCP integration
 - Infrastructure as Code enforcement (Terraform)
+- Git submodules architecture - minimal monorepo with CLAUDE.md interfacing with team repos
+- Claude Code SDK integration with custom system prompts and permission management
+- zen-mcp-server for planning support in plan permissions mode
+- Product Owner (PO) role designation for users (though actual users likely developers)
+- Boot-time configuration discussions for tech stack preferences
+- Integration considerations: GitHub, Jira, Confluence (currently out of scope)
+- Public registry/KB for community-driven DevOps constitutions
 
 ## Current State
 
@@ -62,3 +76,22 @@ No build tools, dependencies, or implementation code present yet.
 - **Policy-First**: Organizational policies in Apache Answer override general DevOps advice
 - **Institutional Memory**: Capture and evolve organizational DevOps knowledge over time
 - **Progressive Adoption**: Support both greenfield projects (full enforcement) and brownfield projects (guided compliance)
+- **Claude Code Integration**: Use CC SDK for session management, custom prompts, and permissions
+- **MCP Ecosystem**: Leverage MCP servers for specialized capabilities (zen-mcp-server, etc.)
+- **Community Knowledge**: Enable sharing/forking of policy datasets across teams and organizations
+
+## Implementation Architecture
+
+**Monorepo Structure**: CWCD operates from a minimal monorepo containing CLAUDE.md and uses git submodules to interface with team repositories, Docker registries, and other external systems.
+
+**Claude Code SDK Integration**: 
+- Custom system prompts for policy enforcement
+- Permission management integration with MCP
+- Session management for maintaining context across operations
+- Hooks integration for event-driven policy checks
+
+**Experimental Policy Workflow**:
+1. Export all policies as Markdown to CLAUDE.md with article IDs
+2. Use Claude to explore codebase and update policy understanding
+3. Maintain article ID consistency with tombstoning for obsolete policies
+4. Structure updates for PO approval before syncing back to knowledge base
