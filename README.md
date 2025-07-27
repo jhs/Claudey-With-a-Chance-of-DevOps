@@ -43,7 +43,7 @@ TODO:
 - Unknown whether RAGFlow adds value (e.g. as a MCP resource to DEERFlow to aggregate/integrate Apache Answers?)
 - See if Atomic Agents are worth the risk. In general figure out the Agent platform.
 - Think through the UX better. If CC is so awesome, why make a web UI instead of CLI? Why make something complex that glues together random other projects and probably requires Docker rather than a simple `npm install`? For now, the hypothesis is:
-  - The Web UI, especially Magentic if it delivers on the human oversight and approval stuff, reflects the higher stakes and more complex work involved in DevOps.
+  - The Web UI and copilot UX reflects the higher stakes and more complex work involved in DevOps.
   - Gluing seems to have paid good dividends to RAGFlow. So that is an inspiration. Also to some extent, CC is "just" an npm package because they put in the hard work to make `claude` batteries-included (web search, file edit, etc.) whereas my priority is run the experiment and get fast feedback.
 
 Thoughts
@@ -55,8 +55,8 @@ Thoughts
 - For now the user will be called the Product Owner (PO) to evoke that Agile role however actual users are more likely to be developers, etc.
 - Docker - runs in a container? Can run containers? Can pull containers?
 - Maybe CWCD operates out of a main "minimal monorepo" with a CLAUDE.md and it uses git submodules to actually interface with e.g. a team's GH repos, docker repos, etc.
-- Possibly Atomic Agents as the persona, depends how easily it works with Magentic-UI and how useful both Magentic-UI and Atomic Agents are
-- Update: Magentic-UI is not easily usable as an API. Probably keep it simple with [CopilotKit](https://github.com/CopilotKit/CopilotKit)
+- Possibly Atomic Agents as the persona, depends how useful Atomic Agents are
+- UI is [CopilotKit](https://github.com/CopilotKit/CopilotKit)
 - Maybe after the DEERFlow research, it outputs into an AA story but not posted yet. Then work from that story, possibly make updates/edits. Then save it as a success/failure story to the KB.
 - Perhaps with open source (agent?) building a "family tree of KBs" (e.g. "the AWS one", "the Azure one"), this creates knowldege "nucleation sites" or "well-traveled paths" where CWCD has lots of successes in an area and so more people feel comfortable using it for only that responsibility.
 - Is it helpful to steal the Base + LoRA language or architecture regarding the family tree of KBs, where the base might be "use Linode" then the LoRA is another article about how to build a to do app on Linux, so the output is a to do app on Linode? I think the answer is no.
@@ -90,7 +90,7 @@ Thoughts
 Claude Code SDK
 - There is a CLI, TypeScript, and Python SDK. It seems there is parity but not confirmed.
 - [Custom system prompts](https://docs.anthropic.com/en/docs/claude-code/sdk#custom-system-prompts)
-- [Custom permission prompt](https://docs.anthropic.com/en/docs/claude-code/sdk#custom-permission-prompt-tool) maybe pipe back into Magentic?
+- [Custom permission prompt](https://docs.anthropic.com/en/docs/claude-code/sdk#custom-permission-prompt-tool) to pipe back into CopilotKit
 - Feels like session management will be big
 
 Debugging
