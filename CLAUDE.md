@@ -8,10 +8,14 @@ Claudey With a Chance of DevOps (CWCD) is a DevOps assistant powered by Claude C
 
 ## Project Structure
 
-This is a minimal repository containing:
+The repository now contains:
 - `README.md` - Project description and whiteboard ideas
 - `LICENSE` - Apache License 2.0
-- Basic git repository structure
+- `ui/` - Next.js application with CopilotKit integration
+  - Next.js 15.4.4 with React 19.1.0
+  - TypeScript and Tailwind CSS
+  - CopilotKit sidebar UI for AI-powered DevOps assistance
+  - OpenAI adapter for runtime integration
 
 ## Architecture: Policy-Driven DevOps
 
@@ -68,7 +72,16 @@ This project is in the conceptual/planning phase with minimal implementation. Ke
 
 ## Current State
 
-No build tools, dependencies, or implementation code present yet.
+Initial implementation includes:
+- Next.js web application (`/ui`) with CopilotKit integration
+- Development environment setup with TypeScript and Tailwind CSS
+- CopilotSidebar component configured for DevOps assistance
+- OpenAI runtime adapter for AI capabilities
+
+Development commands:
+- `npm run dev` - Start development server with turbopack
+- `npm run build` - Build production application
+- `npm run lint` - Run Next.js linting
 
 ## Key Design Principles
 
@@ -82,7 +95,7 @@ No build tools, dependencies, or implementation code present yet.
 
 ## Implementation Architecture
 
-**Monorepo Structure**: CWCD operates from a minimal monorepo containing CLAUDE.md and uses git submodules to interface with team repositories, Docker registries, and other external systems.
+**Monorepo Structure**: CWCD operates from a minimal monorepo containing CLAUDE.md and a Next.js UI application. Uses git submodules to interface with team repositories, Docker registries, and other external systems.
 
 **Claude Code SDK Integration**: 
 - Custom system prompts for policy enforcement
