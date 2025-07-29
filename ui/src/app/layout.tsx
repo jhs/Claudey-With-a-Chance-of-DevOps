@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CopilotKit } from "@copilotkit/react-core";
+import { CopilotSidebar } from "@copilotkit/react-ui";
+
+import "@copilotkit/react-ui/styles.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +32,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <CopilotKit runtimeUrl="/api/copilotkit">
-          {children}
+          <CopilotSidebar
+            defaultOpen={true}
+            instructions={"You are assisting the user as best as you can. Answer in the best way possible given the data you have."}
+            labels={{
+              title: "Claudey With a Chance of DevOps",
+              initial: "Let's talk DevOps, MLOps, DataOps!",
+            }}
+          >
+            {children}
+          </CopilotSidebar>
         </CopilotKit>
       </body>
     </html>
