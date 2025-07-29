@@ -64,6 +64,7 @@ Thoughts
 - Maybe after the DEERFlow research, it outputs into an AA story but not posted yet. Then work from that story, possibly make updates/edits. Then save it as a success/failure story to the KB.
 - Perhaps with open source (agent?) building a "family tree of KBs" (e.g. "the AWS one", "the Azure one"), this creates knowldege "nucleation sites" or "well-traveled paths" where CWCD has lots of successes in an area and so more people feel comfortable using it for only that responsibility.
 - Is it helpful to steal the Base + LoRA language or architecture regarding the family tree of KBs, where the base might be "use Linode" then the LoRA is another article about how to build a to do app on Linux, so the output is a to do app on Linode? I think the answer is no.
+- Maybe T-shaped 3-panes so auth is in a window above or below it all rather than in thd chat?
 - During boot or discover or init phase, either have a few basic archetypes ready (e.g. starving artist low-stakes anything-cheap vs. high-value work with mandatory DR and dev/prod/staging, etc.)
 - Maybe an ingestion step like claude does, just read-only learning the ropes, the environment, the context
 - Maybe part of using or forking is seeding/pruning the knowledge base with opinions and mandatory requirements. Default KB seed might be mandatory site policy:
