@@ -4,6 +4,10 @@ Claudey With a Chance of DevOps ("CWCD") is a DevOps assistant powered by Claude
 
 At this moment it is also vaporware.
 
+## Architecture Overview
+
+![CWCD Architecture Diagram](doc/diagram-export-7-29-2025-12_01_36-AM.png)
+
 ## Is CWCD "Vibes DevOps"?
 
 Yes, Claudey With a Chance of DevOps is vibes DevOps.
