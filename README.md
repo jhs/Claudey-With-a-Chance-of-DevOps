@@ -44,7 +44,6 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
 
 ## TODO
 
-1. Full browser in the UI
 1. Confirm whether CC can deliver
 1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
 1. Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
