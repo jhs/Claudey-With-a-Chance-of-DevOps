@@ -1,0 +1,18 @@
+FROM vital987/chrome-novnc:latest
+# ENV REFRESHED_AT 2025-07-30
+
+# Install HAProxy
+# RUN apt-get update && apt-get install -y haproxy && rm -rf /var/lib/apt/lists/*
+RUN apk update && apk add --no-cache haproxy
+
+# RUN chown -R 1000 /var/log
+# USER 1000
+
+# COPY .config/autostart/Firefox.desktop /headless/.config/autostart/Firefox.desktop
+COPY config/supervisor/5-chromium.conf /config/supervisor/
+COPY config/supervisor/7-haproxy.conf /config/supervisor/
+COPY config/haproxy.cfg /config/
+
+ENV PORT=6901
+ENV VNC_RESOLUTION=1024x768
+EXPOSE 9222

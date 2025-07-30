@@ -1,0 +1,3 @@
+playwright
+browser-use
+python-dotenv

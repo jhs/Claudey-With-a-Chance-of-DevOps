@@ -1,0 +1,24 @@
+services:
+  vnc-desktop:
+    build:
+      context: .
+      dockerfile: Dockerfile.vnc
+    ports:
+      - "6901:6901"
+      - "9222:9222"
+    expose:
+      - "9222"
+    environment:
+      - VNC_PASS=password
+    volumes:
+      - /dev/shm:/dev/shm
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    depends_on:
+      - vnc-desktop
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    # command: ["bash", "-c", "while true; do echo hello; sleep 10; done"]
