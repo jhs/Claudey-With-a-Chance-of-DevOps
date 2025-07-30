@@ -40,17 +40,20 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
 
 # Whiteboard
 
-TODO:
-- Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
-- Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
-- See if Apache Answer is right vs. a couple DB tables. If the way CC sees this information is a bunch of ADRs committed, why bother with a big KB vs. a bag of JSON? The original theory was the community accumulates a global knowledge base about what works well *for CWCD*, because only a CMS/KB could scale to the huge scope of vibes devops (all objectives, all languages, all platforms, all security contexts, all risk appetites), while being Free and flexible and open sourcey.
-- Unknown whether RAGFlow adds value (e.g. as a MCP resource to DEERFlow to aggregate/integrate Apache Answers?)
-- See if Atomic Agents are worth the risk. In general figure out the Agent platform.
-- Think through the UX better. If CC is so awesome, why make a web UI instead of CLI? Why make something complex that glues together random other projects and probably requires Docker rather than a simple `npm install`? For now, the hypothesis is:
+## TODO
+
+1. Full browser in the UI
+1. Confirm whether CC can deliver
+1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
+1. Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
+1. See if Apache Answer is right vs. a couple DB tables. If the way CC sees this information is a bunch of ADRs committed, why bother with a big KB vs. a bag of JSON? The original theory was the community accumulates a global knowledge base about what works well *for CWCD*, because only a CMS/KB could scale to the huge scope of vibes devops (all objectives, all languages, all platforms, all security contexts, all risk appetites), while being Free and flexible and open sourcey.
+1. Unknown whether RAGFlow adds value (e.g. as a MCP resource to DEERFlow to aggregate/integrate Apache Answers?)
+1. See if Atomic Agents are worth the risk. In general figure out the Agent platform.
+1. Think through the UX better. If CC is so awesome, why make a web UI instead of CLI? Why make something complex that glues together random other projects and probably requires Docker rather than a simple `npm install`? For now, the hypothesis is:
   - The Web UI and copilot UX reflects the higher stakes and more complex work involved in DevOps.
   - Gluing seems to have paid good dividends to RAGFlow. So that is an inspiration. Also to some extent, CC is "just" an npm package because they put in the hard work to make `claude` batteries-included (web search, file edit, etc.) whereas my priority is run the experiment and get fast feedback.
 
-Thoughts
+## Thoughts
 
 - Eject
 - Maybe seed a workbook or something to eject vibes.diy
