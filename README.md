@@ -108,6 +108,7 @@ Planning process
 ## TODO
 
 1. Confirm whether CC can deliver
+1. Look into The Open Hands SecurityAnalyzer, its security layer
 1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
 1. Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
 1. Voice input
@@ -200,10 +201,14 @@ Testing
 - Ruby DSL to build prompts--very intuitive, concise, clear expression that evaluates to a string
 - Easy "hello world" to run in major cloud. Then it can bootstrap, e.g. set up secrets vault, backups
 - P2P platform to sell GPU time to each other
-- Use Atomic Agents to build somthing inspired/cloned of OTP supervision tree
+- Use Atomic Agents to build something inspired/cloned of OTP supervision tree
+- A bot that clones an open source Git repo (e.g. GH, GL), generate CLAUDE.md and submit a PR. Perhaps random lottery
 - Video games
   - e.g. find an engine, e.g. 2d platformer, Godot, web, iOS, NES
-  - "Fork" a video game, make an NPC "AI" such as [FluidHTN](https://github.com/ptrefall/fluid-hierarchical-task-network) or something LLM or NVIDIA. E.g. Mike Tyson's Punch Out but "patched" with Lua, etc. script to use AI to generate new random patterns for Bald Bull every time you play.
+  - Web based NES Emulator, but you request in natural language and it implements it in the hardware or as Game Genie, etc.
+  - AI NPC such as [FluidHTN](https://github.com/ptrefall/fluid-hierarchical-task-network) or something LLM or NVIDIA. E.g. an open source game but "patched" with Lua, etc. script:
+    - Custom trash talk from the LLM.
+    - To use AI to generate new random patterns for Bald Bull every time you play.
 
 ## Experiments
 
