@@ -94,6 +94,17 @@ Possible MCP "must haves"
 - context7
 - firecrawl
 
+Planning process
+1. Phase 1: Interactive mode - Q&A where the user answers every question, ascertains scope, current status, constraints, budget, etc.
+2. Phase 2: Independent mode - Continue building the tree top-down.
+   - Possibly augment "hard-coded" milestones (e.g. "QA", "UAT", "Budget")
+   - Have to expand/unpack all the nodes until you reach a level of detail sufficient to drive CC
+
+## Alternative Project Names
+
+- CTFaux
+- Free CTO
+
 ## TODO
 
 1. Confirm whether CC can deliver
@@ -115,7 +126,7 @@ Possible MCP "must haves"
 - Log all "architecturally significant" work, changes, accomplishments, etc. which affect the structure, non-functional characteristics, dependencies, interfaces, or construction techniques, to the Apache Answer KB. Or maybe a KB article has an **ADR** tag to indicate it's an ADR. 
 - For now the user will be called the Product Owner (PO) to evoke that Agile role however actual users are more likely to be developers, etc.
 - Docker - runs in a container? Can run containers? Can pull containers?
-- During "boot" step or initial step, use a scoring framework to guide everything. e.g. risk appetite, budget
+- During "boot" step or initial step, use a Day-1 framework to build a score to guide everything. e.g. risk appetite, budget
 - Build 3 keep 1
 - Maybe CWCD operates out of a main "minimal monorepo" with a CLAUDE.md and it uses git submodules to actually interface with e.g. a team's GH repos, docker repos, etc.
 - Possibly Atomic Agents as the persona, depends how useful Atomic Agents are
