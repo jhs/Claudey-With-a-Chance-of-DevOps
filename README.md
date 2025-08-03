@@ -57,6 +57,26 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
 
 # Whiteboard
 
+The Plan to Launch my Product
+
+- **Develop**
+  - **Must have dev/staging/prod terraform**
+    - **Choose a platform provider**
+  - Core product **following the requirements**
+  - **Code review**
+    - Double-check Confirm correct tech stack
+    - ?
+- **Deploy**
+  - Push to dev
+  - ?
+- **Confirmation**
+  - **Correct operation of the app**
+    - **Simulate all major personas**
+    - ?
+  - **Confirm all NFRs**
+  - **Fetch 
+- Final Report - tell the human nothing but that which has been confirmed
+
 ## Controlling Claude Code
 
 - CLAUDE.md, possibly one per subdirectory
@@ -95,15 +115,30 @@ Possible MCP "must haves"
 - firecrawl
 
 Planning process
+
 1. Phase 1: Interactive mode - Q&A where the user answers every question, ascertains scope, current status, constraints, budget, etc.
-2. Phase 2: Independent mode - Continue building the tree top-down.
+1. Phase 2: Independent High-level prep
+  - Complete enough of the plan to finish the high-level solution architecture and cost estimate
+  - Proposal sent to human:
+    - **Business Impact** - what does it accomplish, how it suits requirements and why that satisfies the goals
+    - **High-level solution architecture** (e.g. platforms/serviced used, tech stack)
+    - **Estimated recurring cost**
+1. Phase 3: Independent mode - Continue building the tree top-down.
    - Possibly augment "hard-coded" milestones (e.g. "QA", "UAT", "Budget")
    - Have to expand/unpack all the nodes until you reach a level of detail sufficient to drive CC
+
+Interactive mode questions:
+- Broad operational context (business circumstances, user personas)
+- Scope
+  - Immediate short-term to ship today
+  - Longer term vision to set direction
+- Constraints (e.g. data homing, prefer specific infrastructure vendor)
+- Budget
 
 ## Alternative Project Names
 
 - CTFaux
-- Free CTO
+- Free Startup CTO
 
 ## TODO
 
