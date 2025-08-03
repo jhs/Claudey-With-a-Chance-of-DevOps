@@ -195,13 +195,15 @@ Testing
 - Build out a cloud platform to run ComfyUI pipelines to help development. Specifically if I stream while I work on this project and yell at clouds about semicolons. Then overnight, ingest the streams, ingest the transcript, ingest the GitHub activity, etc. and output something useful like text (how to configure automatic semicolon removal in the IDE or CICD) if not a PR. Perhaps use Florence2
 - Watch live YT feed and alert for audio or video issues
 - Pet Peeves Project
-- Video game (e.g. find an engine, e.g. 2d platformer, Godot, web, iOS, NES)
 - Build a scaling testing framework for [dnsd](https://github.com/iriscouch/dnsd)
 - iOS?
 - Ruby DSL to build prompts--very intuitive, concise, clear expression that evaluates to a string
 - Easy "hello world" to run in major cloud. Then it can bootstrap, e.g. set up secrets vault, backups
 - P2P platform to sell GPU time to each other
 - Use Atomic Agents to build somthing inspired/cloned of OTP supervision tree
+- Video games
+  - e.g. find an engine, e.g. 2d platformer, Godot, web, iOS, NES
+  - "Fork" a video game, make an NPC "AI" such as [FluidHTN](https://github.com/ptrefall/fluid-hierarchical-task-network) or something LLM or NVIDIA. E.g. Mike Tyson's Punch Out but "patched" with Lua, etc. script to use AI to generate new random patterns for Bald Bull every time you play.
 
 ## Experiments
 
