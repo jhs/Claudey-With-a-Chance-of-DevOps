@@ -129,6 +129,7 @@ Planning process
 - Docker - runs in a container? Can run containers? Can pull containers?
 - During "boot" step or initial step, use a Day-1 framework to build a score to guide everything. e.g. risk appetite, budget
 - Build 3 keep 1
+- Instead of managing a data model, use the filesystem and ask claude code to expand, maybe use ReST
 - Maybe CWCD operates out of a main "minimal monorepo" with a CLAUDE.md and it uses git submodules to actually interface with e.g. a team's GH repos, docker repos, etc.
 - Possibly Atomic Agents as the persona, depends how useful Atomic Agents are
 - UI is [CopilotKit](https://github.com/CopilotKit/CopilotKit)
