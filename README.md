@@ -40,14 +40,67 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
 - Share/fork policy datasets across teams or organizations
 - Build community-driven "DevOps constitutions" for different contexts (startup, enterprise, regulated industries)
 
+### Influences
+
+- Key phases: Explore, Plan, Build, Confirm
+- Can real-time systems teach us about running, coordinating, succeeding with agents? E.g. voting for 2/3 consensus?
+- Can Erlang/OTP supervision trees teach us about agents.
+  - Actor model, immutable message passing
+  - Stateless, Crash-only design, restart mentality
+  - Fail fast
+- Trees
+  - Document Tree
+  - CouchDB reduce: can confirmation/correctness/validation be bottom-up reduction up a tree?
+  - Plan tree - root node is human request, unpacks to details, to build, to validate, to report back
+    - HTN plan?
+    - GOAP?
+
 # Whiteboard
+
+## Controlling Claude Code
+
+- CLAUDE.md, possibly one per subdirectory
+  - Reference other files, possibly with "@"[?], e.g. CHANGELOG.md, PLAN.md
+- Populate .claude/.../settings.json, maybe on the fly
+- Sub agents
+  - Could be dynamically generated, JIT, Matrix
+- Sweet spot right now is command-line tools (e.g. `gh`) more effective than MCP
+- LLM window is 200,000 tokens
+- TDD may be non-negotiable
+- Can tell it to scan Git history
+- ADRs and PRDs referenced from CLAUDE.md
+- 5h session window?
+- CC + Playwright MCP works great e.g. running product & take SS so CC can check correctness
+- Parallelizing CC
+  - Work trees
+  - Subtasks (sub-agents)
+- Check for API or hook access:
+  - Use the "Escape" functionality via API?
+  - Change the model like `/model`?
+  - Compaction as a start of a new conversation
+  - IDE stuff, e.g. referencing files (line numbers?)
+  - dangerously skip? Is there a whitelist that could accomplish the same?
+  - Context forking
+  - Plan mode
+  - All / commands, e.g. /review, /pre-commit
+- Hooks
+- Clear the context per conversation
+- "think hard" instruction (also "think harder", "think hardest") pays dividends
+- Prompting
+  - Specify both the *what* and the *how*, e.g. Make a XYZ app with React Tailwind. Make compoents re-usable. Use c-r-a. Ensure npm run build works
+- Must review code
+
+Possible MCP "must haves"
+- context7
+- firecrawl
 
 ## TODO
 
 1. Confirm whether CC can deliver
 1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
 1. Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
-1. See if Apache Answer is right vs. a couple DB tables. If the way CC sees this information is a bunch of ADRs committed, why bother with a big KB vs. a bag of JSON? The original theory was the community accumulates a global knowledge base about what works well *for CWCD*, because only a CMS/KB could scale to the huge scope of vibes devops (all objectives, all languages, all platforms, all security contexts, all risk appetites), while being Free and flexible and open sourcey.
+1. Voice input
+1. See if Apache Answer is right vs. a couple DB tables. If the way CC sees this information is a bunch of ADRs and PRDs committed, why bother with a big KB vs. a bag of JSON? The original theory was the community accumulates a global knowledge base about what works well *for CWCD*, because only a CMS/KB could scale to the huge scope of vibes devops (all objectives, all languages, all platforms, all security contexts, all risk appetites), while being Free and flexible and open sourcey.
 1. Unknown whether RAGFlow adds value (e.g. as a MCP resource to DEERFlow to aggregate/integrate Apache Answers?)
 1. See if Atomic Agents are worth the risk. In general figure out the Agent platform.
 1. Think through the UX better. If CC is so awesome, why make a web UI instead of CLI? Why make something complex that glues together random other projects and probably requires Docker rather than a simple `npm install`? For now, the hypothesis is:
@@ -62,15 +115,22 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
 - Log all "architecturally significant" work, changes, accomplishments, etc. which affect the structure, non-functional characteristics, dependencies, interfaces, or construction techniques, to the Apache Answer KB. Or maybe a KB article has an **ADR** tag to indicate it's an ADR. 
 - For now the user will be called the Product Owner (PO) to evoke that Agile role however actual users are more likely to be developers, etc.
 - Docker - runs in a container? Can run containers? Can pull containers?
+- During "boot" step or initial step, use a scoring framework to guide everything. e.g. risk appetite, budget
+- Build 3 keep 1
 - Maybe CWCD operates out of a main "minimal monorepo" with a CLAUDE.md and it uses git submodules to actually interface with e.g. a team's GH repos, docker repos, etc.
 - Possibly Atomic Agents as the persona, depends how useful Atomic Agents are
 - UI is [CopilotKit](https://github.com/CopilotKit/CopilotKit)
 - Maybe after the DEERFlow research, it outputs into an AA story but not posted yet. Then work from that story, possibly make updates/edits. Then save it as a success/failure story to the KB.
 - Perhaps with open source (agent?) building a "family tree of KBs" (e.g. "the AWS one", "the Azure one"), this creates knowldege "nucleation sites" or "well-traveled paths" where CWCD has lots of successes in an area and so more people feel comfortable using it for only that responsibility.
 - Is it helpful to steal the Base + LoRA language or architecture regarding the family tree of KBs, where the base might be "use Linode" then the LoRA is another article about how to build a to do app on Linux, so the output is a to do app on Linode? I think the answer is no.
+- CC <-> Browser Use bridge, or it could even connect into the :9222 CDP
+- CC web UIs, e.g. [claude-code-webui](https://github.com/sugyan/claude-code-webui) or [Claude Code UI](https://github.com/siteboon/claudecodeui/blob/main/public/screenshots/desktop-main.png)
+- CC directly inserting, executing JS in Do Pane browser
+- Guardrails, maybe a monitor looking for data leaks, exfiltration, maybe an OTP supervisor
 - Maybe T-shaped 3-panes so auth is in a window above or below it all rather than in thd chat?
 - During boot or discover or init phase, either have a few basic archetypes ready (e.g. starving artist low-stakes anything-cheap vs. high-value work with mandatory DR and dev/prod/staging, etc.)
 - Maybe an ingestion step like claude does, just read-only learning the ropes, the environment, the context
+- Must have very clear Definition of Done
 - Maybe part of using or forking is seeding/pruning the knowledge base with opinions and mandatory requirements. Default KB seed might be mandatory site policy:
   - Must have DR. All DR must be tested regularly. (IMO if agents will be involved in ops, the risk of a trusted user error is going up too.)
   - Must have backup and restore. All backups must be tested regularly.
@@ -80,7 +140,7 @@ Apache Answer captures decisions, rationale, and outcomes as the system operates
   - CICD
   - Bronze/Silver/gold data
   - Backend is language/stack A, front-end is language/stack B.
-  - Must use IaC, e.g. terraform
+  - Must use IaC, e.g. terraform. Might be non-negotiable
   - Testing
   - Primary programming language, primary tech stack, etc.
 - Maybe during "boot" ask the user if they want to discuss any tech opinions or use the defaults. If they discuss then it updates the KB accordingly, e.g. Docker shop, SoftLayer shop
@@ -116,10 +176,21 @@ Experiment to use CC to help on policy:
 Testing
 - Maybe a suite of challenges + KBs and some "hand-written" tests to confirm, like query the GraphQL API, check for an email sent, etc.
 - Some policies are easier to check, e.g. a blank AWS environment as a Terraform target
-- Dogfood
-  - A public registry/KB that people's CWCD can use
-  - If it's hard to run (anything harder than npm install), maybe have a web site where you chat with a running demo of the tool, and you tell it you want to run CWCD but you are on Windows and it helps you run it in Google cloud or something
-  - Build out a cloud platform to run ComfyUI pipelines to help development. Specifically if I stream while I work on this project and yell at clouds about semicolons. Then overnight, ingest the streams, ingest the transcript, ingest the GitHub activity, etc. and output something useful like text (how to configure automatic semicolon removal in the IDE or CICD) if not a PR.
+
+## Dogfood
+
+- A public registry/KB that people's CWCD can use
+- If it's hard to run (anything harder than npm install), maybe have a web site where you chat with a running demo of the tool, and you tell it you want to run CWCD but you are on Windows and it helps you run it in Google cloud or something
+- Build out a cloud platform to run ComfyUI pipelines to help development. Specifically if I stream while I work on this project and yell at clouds about semicolons. Then overnight, ingest the streams, ingest the transcript, ingest the GitHub activity, etc. and output something useful like text (how to configure automatic semicolon removal in the IDE or CICD) if not a PR. Perhaps use Florence2
+- Watch live YT feed and alert for audio or video issues
+- Pet Peeves Project
+- Video game (e.g. find an engine, e.g. 2d platformer, Godot, web, iOS, NES)
+- Build a scaling testing framework for [dnsd](https://github.com/iriscouch/dnsd)
+- iOS?
+- Ruby DSL to build prompts--very intuitive, concise, clear expression that evaluates to a string
+- Easy "hello world" to run in major cloud. Then it can bootstrap, e.g. set up secrets vault, backups
+- P2P platform to sell GPU time to each other
+- Use Atomic Agents to build somthing inspired/cloned of OTP supervision tree
 
 ## Experiments
 
