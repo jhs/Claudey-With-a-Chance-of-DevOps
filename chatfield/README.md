@@ -1,0 +1,381 @@
+# Chatfield 🌾
+
+Conversational data gathering powered by LLMs. Transform rigid forms into natural conversations that actually help users express their needs.
+
+```python
+from chatfield import gather, must, reject, hint
+
+@gather
+class TechHelp:
+    """Your technical challenges"""
+    
+    @hint("Be specific - 'computer is slow' vs 'Excel takes 5 minutes to open'")
+    @must("specific problem you're facing")
+    problem: "What's not working?"
+
+    tried: "What you've already tried"
+    
+    @hint("This helps me explain things at the right level for you")
+    experience: "Your comfort level with technology"
+```
+
+## Why Chatfield?
+
+Traditional forms frustrate non-technical users. They don't know what "deployment environment" means or how to specify "system requirements." Chatfield lets you create intelligent, conversational interfaces that:
+
+- **Adapt to the user's level** - No intimidating technical jargon
+- **Validate naturally** - Guide users to provide useful information
+- **Feel human** - Like talking to a helpful expert, not filling out a form
+
+## Installation
+
+```bash
+pip install chatfield
+```
+
+## Quick Start
+
+### Simplest Example
+
+Help someone fix their computer issue:
+
+```python
+from chatfield import gather
+
+@gather
+class ComputerHelp:
+    """What's wrong with your computer"""
+    
+    problem: "What's happening with your computer?"
+    when_started: "When did this start?"
+    tried_solutions: "What have you tried so far?"
+
+# Start the conversation
+help_session = ComputerHelp.gather()
+
+# Access the collected data
+print(help_session.problem)
+print(help_session.when_started)
+```
+
+### Adding Validation
+
+Ensure you get useful information:
+
+```python
+from chatfield import gather, must, reject, hint
+
+@gather
+class WebsiteHelp:
+    """Help creating your first website"""
+    
+    @hint("examples: blog, online store, portfolio, company info site")
+    @must("specific purpose or goal clear enough to protoype by a web developer")
+    @reject("data reglation environment e.g. HIPAA, SOC2")
+    purpose: "What will your website do?"
+    
+    @hint("main sections like Home, About, Services, Contact")
+    @must("main sections identified")
+    scope: "What pages do you need?"
+
+    @must("at least 1")
+    @must("no more than 10")
+    pages: "Approximate page count"
+    
+    @hint("Shopping cart? Contact forms? Photo galleries? Calendars?")
+    technical_needs: "Any special features?"  # Optional field
+```
+
+### Personalizing the Conversation
+
+Adapt tone and approach to your users:
+
+```python
+from chatfield import gather, must, user, agent, hint
+
+@gather
+@user("Small business owner, not technical")
+@user("Probably frustrated with tech complexity")
+#@agent("Friendly neighborhood tech expert")
+@agent("Grouchy big-city tech expert")
+@agent("Use analogies to explain technical concepts")
+class BusinessWebsite:
+    """Let's build your business an online presence"""
+    
+    @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
+    @must("specific business type")
+    @must("main customer action")
+    business: "Tell me about your business"
+    
+    @hint("The words they use, not what you think sounds professional")
+    @must("actual customer words, not marketing speak")
+    customers: "How do customers describe what you do?"
+    
+    @hint("Facebook page? Google listing? Old website? Nothing is fine too!")
+    @reject("social media links only")
+    online_presence: "What online presence do you have now?"
+```
+
+## Intermediate Examples
+
+### Multi-Context Guidance
+
+```python
+@gather
+@user("Non-technical person setting up home office")
+@user("Budget conscious, needs practical advice")
+@user("Overwhelmed by options")
+@agent("Patient teacher, not a salesperson")
+@agent("Suggest specific products when appropriate")
+@agent("Always explain the 'why' behind recommendations")
+class HomeOfficeSetup:
+    """
+    Setting up a functional home office
+    
+    We'll figure out exactly what equipment and setup you need to be 
+    productive at home, without overspending on things you don't need.
+    Focus is on practical solutions that real people use, not perfect
+    magazine-worthy setups.
+    """
+    
+    @hint("Video calls? Writing? Design? Coding? Be specific about daily tasks")
+    @must("specific work tasks")
+    @must("hours per day")
+    work_type: "What kind of work will you be doing?"
+    
+    @hint("Spare bedroom? Kitchen table? Corner of living room? Mention windows")
+    @must("actual room or area")
+    @must("mention lighting situation")
+    space: "Where will you be working?"
+    
+    @hint("Include everything: desk, chair, computer, accessories. $500? $2000?")
+    @must("specific dollar amount or range")
+    @reject("no budget" or "whatever it takes")
+    budget: "What's your total budget?"
+    
+    @hint("Computer? Monitor? Desk? Chair? Even if it's just a laptop")
+    current_equipment: "What equipment do you already have?"
+```
+
+## Advanced Usage
+
+### Dynamic Gatherers from User Data
+
+```python
+def create_tech_helper(user_profile):
+    """Create a personalized gatherer based on user profile"""
+    
+    tech_level = user_profile.get('tech_level', 'beginner')
+    industry = user_profile.get('industry', 'general')
+    
+    @gather
+    @user(f"{tech_level} user in {industry}")
+    @user(f"Primary concern: {user_profile.get('pain_point')}")
+    @agent(f"Adjust explanations for {tech_level} level")
+    @agent("Provide industry-specific examples")
+    class PersonalizedHelper:
+        f"""
+        Solving your {industry} technology challenges
+        
+        Based on your profile, we'll focus on practical solutions that make
+        sense for your {tech_level} technical background and {industry} needs.
+        """
+        
+        @must(f"relevant to {industry}")
+        challenge: "What technical challenge are you facing?"
+        
+        @must("realistic timeline")
+        timeline: "When do you need this solved?"
+        
+        resources: "What resources do you have available?"
+    
+    return PersonalizedHelper
+
+# Use it
+user = load_user_profile()
+Helper = create_tech_helper(user)
+session = Helper.gather()
+```
+
+### Presets for Common Scenarios
+
+```python
+from chatfield import patient_teacher, quick_diagnosis, friendly_expert, hint
+
+# Patient teacher for complex topics
+@patient_teacher
+class DatabaseExplained:
+    """Understanding databases for your business"""
+    
+    @hint("Customer list? Inventory? Sales records? What info matters most?")
+    @must("specific business need")
+    need: "What information do you need to track?"
+    
+    @hint("Spreadsheets? Paper? Sticky notes? Your current system")
+    @must("current method mentioned")
+    current: "How do you track this now?"
+
+# Quick diagnosis for urgent issues  
+@quick_diagnosis
+class EmailNotWorking:
+    """Let's get your email working again"""
+    
+    @hint("Error messages? Can't send? Can't receive? Wrong password?")
+    @must("specific error or symptom")
+    issue: "What exactly is happening?"
+    
+    @hint("Gmail? Outlook? Yahoo? Company email?")
+    @must("email provider")
+    provider: "Who's your email provider?"
+
+# Friendly expert for ongoing help
+@friendly_expert  
+class DigitalTransformation:
+    """Modernizing your business processes"""
+    
+    @hint("Invoice generation? Inventory tracking? Customer communication?")
+    @must("specific process or workflow")
+    process: "Which process should we tackle first?"
+```
+
+### Validation Rules as Context
+
+```python
+@gather
+@user("Non-technical founder needing a website")
+@agent("Guide away from over-engineering")
+class WebsiteRequirements:
+    """
+    Planning a website that actually gets built
+    
+    We'll focus on what you need to launch, not every possible feature.
+    A simple site that exists beats a perfect site that doesn't.
+    """
+    
+    @hint("Sell products? Generate leads? Share information? Book appointments?")
+    @must("specific business goal implementable by a developer")
+    @must("how website helps achieve it")
+    @reject("vague or unclear")
+    purpose: "What should your website accomplish?"
+    
+    @hint("What do they say when they call? How do they find you now?")
+    @must("actual phrases customers use")
+    @reject("marketing buzzwords")
+    @reject("we do everything")
+    customer_message: "What do customers need to know?"
+    
+    @must("specific number or range")
+    @hint("$500 for DIY? $5,000 for professional? Include ongoing costs")
+    @hint("The most cheap is about $500 USD")
+    @reject("as cheap as possible")
+    @reject("money is no object")
+    build_budget: "Website budget for initial build"
+    
+    @must("specific number or range per a specific time frame (e.g. X USD per month)")
+    @hint("$500 for DIY? $5,000 for professional? Include ongoing costs")
+    @hint("As cheap as possible is at least $100 per month")
+    @must("specific number or range for a specific time duration")
+    @reject("as cheap as possible")
+    @reject("money is no object")
+    maintenance_budget: "Website budget for long-term maintenance"
+    
+    # These fields are optional because they have no @must decorator.
+    @hint("Links to sites you like the look or feel of")
+    examples: "Websites you like"
+    
+    @hint("Launch date? Important deadline? Or just 'soon'?")
+    timeline: "When do you need this?"
+```
+
+## Best Practices
+
+### 1. Write docstrings that set context
+
+Describe the data. Do not write the prompt or Agent script.
+
+```python
+@gather
+class TechHelp:
+    """
+    Tech support request
+    
+    One specific problem for one specific user. The problem
+    should be about their technology.
+    """
+```
+
+### 2. Use `@user` and `@agent` to shape the conversation
+
+`@agent` influences the agent's behavior, tone of voice, etc.
+
+`@user` influences the agent's understanding of the users's situation.
+
+```python
+@user("Busy parent working from home")
+@user("Limited tech budget")
+@agent("Empathetic problem-solver")
+@agent("Suggest free/cheap solutions first")
+```
+
+### 4. Use field descriptions to describe the data, not a prompt
+
+```python
+
+# Good
+problem: "User's primary problem"
+impact: "Specific, ideally quantifiable, cost of this problem to the user"
+
+# Bad  
+issue_description: "Tell me what your problem is?"
+```
+
+## API Reference
+
+### Decorators
+
+- `@gather` - Makes a class into a conversational gatherer
+- `@user(context)` - Information about who you're helping
+- `@agent(behavior)` - How the agent should behave
+- `@hint(tooltip)` - Helpful context shown when users need clarification
+- `@must(rule)` - What the answer must include
+- `@reject(rule)` - What to avoid in answers
+
+### Presets
+
+- `@patient_teacher` - For explaining complex topics
+- `@quick_diagnosis` - For urgent problem-solving  
+- `@friendly_expert` - For ongoing consultation
+
+## License
+
+Apache 2.0 - see LICENSE file for details.
+
+# Whiteboard - Random development notes
+
+If you can hot-swap a data model mid-conversation, it's easy to be dynamic:
+
+```py
+@gather
+class TechSupport:
+    problem: "your computer's problem"
+    age: "age of your computer"
+
+support = TechSupport.gather()
+# ...
+age_in_years = some_function()
+
+if age_in_years > 3:
+    @gather(TechSupport)
+    class NewTechSupport:
+        dusted: "Have you dusted it recently?"
+    support = NewTechSupport()
+```
+
+Or maybe
+
+```py
+while True:
+    support = TechSupport.gather()
+    if support.__done:
+        break
+```
