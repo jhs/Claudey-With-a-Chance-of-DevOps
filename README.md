@@ -282,3 +282,7 @@ MVP is to be able to list a bunch of names, maybe split by community vs. softwar
 
 - For community posts, citation by DEERFlow should be easy; and subsequently written up into project documentation and/or the KB.
 - For software dependencies, exporting or reporting dependencies and licenses is a pretty straightforward tech policy for the KB. But really we want humans, not packages: attribute every major author of every software package. Thus for the first time, we can ask "who are some of the people who helped make today possible?" and we will see thousands of names.
+
+### Publish a framework in multiple languages e.g. TypeScript, Python
+
+Maybe find a common 3rd language from other big tools
