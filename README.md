@@ -140,6 +140,15 @@ Interactive mode questions:
 - CTFaux
 - Free Startup CTO
 
+## Decomposition
+
+- https://github.com/search?q=llm%20task%20decomposition&type=repositories
+- https://github.com/marawan1805/LLM-Task-Decomposition
+- https://apxml.com/courses/agentic-llm-memory-architectures/chapter-4-complex-planning-tool-integration/task-decomposition-strategies
+- https://github.com/arash-shahmansoori/hierarchical_planning_decompose_net
+- https://github.com/soharabhossain/delegent
+- https://apxml.com/courses/agentic-llm-memory-architectures/chapter-4-complex-planning-tool-integration/task-decomposition-strategies
+
 ## TODO
 
 1. Confirm whether CC can deliver
@@ -162,6 +171,8 @@ Interactive mode questions:
 - Log all "architecturally significant" work, changes, accomplishments, etc. which affect the structure, non-functional characteristics, dependencies, interfaces, or construction techniques, to the Apache Answer KB. Or maybe a KB article has an **ADR** tag to indicate it's an ADR. 
 - For now the user will be called the Product Owner (PO) to evoke that Agile role however actual users are more likely to be developers, etc.
 - Docker - runs in a container? Can run containers? Can pull containers?
+- [MetaGPT](https://github.com/FoundationAgents/MetaGPT) looks like it has lots of overlap and working code
+- [Instructor](https://github.com/567-labs/instructor/tree/main) structured output for LLMs (overlap with Pydantic and others?)
 - During "boot" step or initial step, use a Day-1 framework to build a score to guide everything. e.g. risk appetite, budget
 - Build 3 keep 1
 - Instead of managing a data model, use the filesystem and ask claude code to expand, maybe use ReST
