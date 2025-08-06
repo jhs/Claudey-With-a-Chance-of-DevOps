@@ -151,6 +151,7 @@ Interactive mode questions:
 
 ## TODO
 
+1. Choose Agent framework (and language) and build first version
 1. Confirm whether CC can deliver
 1. Look into The Open Hands SecurityAnalyzer, its security layer
 1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
