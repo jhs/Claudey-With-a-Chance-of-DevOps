@@ -11,12 +11,12 @@ class TechHelp:
     
     @hint("Be specific - 'computer is slow' vs 'Excel takes 5 minutes to open'")
     @must("specific problem you're facing")
-    problem: "What's not working?"
+    def problem(): "What's not working?"
 
-    tried: "What you've already tried"
+    def tried(): "What you've already tried"
     
     @hint("This helps me explain things at the right level for you")
-    experience: "Your comfort level with technology"
+    def experience(): "Your comfort level with technology"
 ```
 
 ## Why Chatfield?
@@ -46,9 +46,9 @@ from chatfield import gather
 class ComputerHelp:
     """What's wrong with your computer"""
     
-    problem: "What's happening with your computer?"
-    when_started: "When did this start?"
-    tried_solutions: "What have you tried so far?"
+    def problem(): "What's happening with your computer?"
+    def when_started(): "When did this start?"
+    def tried_solutions(): "What have you tried so far?"
 
 # Start the conversation
 help_session = ComputerHelp.gather()
@@ -72,18 +72,18 @@ class WebsiteHelp:
     @hint("examples: blog, online store, portfolio, company info site")
     @must("specific purpose or goal clear enough to protoype by a web developer")
     @reject("data reglation environment e.g. HIPAA, SOC2")
-    purpose: "What will your website do?"
+    def purpose(): "What will your website do?"
     
     @hint("main sections like Home, About, Services, Contact")
     @must("main sections identified")
-    scope: "What pages do you need?"
+    def scope(): "What pages do you need?"
 
     @must("at least 1")
     @must("no more than 10")
-    pages: "Approximate page count"
+    def pages(): "Approximate page count"
     
     @hint("Shopping cart? Contact forms? Photo galleries? Calendars?")
-    technical_needs: "Any special features?"  # Optional field
+    def technical_needs(): "Any special features?"  # Optional field
 ```
 
 ### Personalizing the Conversation
@@ -105,15 +105,15 @@ class BusinessWebsite:
     @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
     @must("specific business type")
     @must("main customer action")
-    business: "Tell me about your business"
+    def business(): "Tell me about your business"
     
     @hint("The words they use, not what you think sounds professional")
     @must("actual customer words, not marketing speak")
-    customers: "How do customers describe what you do?"
+    def customers(): "How do customers describe what you do?"
     
     @hint("Facebook page? Google listing? Old website? Nothing is fine too!")
     @reject("social media links only")
-    online_presence: "What online presence do you have now?"
+    def online_presence(): "What online presence do you have now?"
 ```
 
 ## Intermediate Examples
@@ -141,20 +141,20 @@ class HomeOfficeSetup:
     @hint("Video calls? Writing? Design? Coding? Be specific about daily tasks")
     @must("specific work tasks")
     @must("hours per day")
-    work_type: "What kind of work will you be doing?"
+    def work_type(): "What kind of work will you be doing?"
     
     @hint("Spare bedroom? Kitchen table? Corner of living room? Mention windows")
     @must("actual room or area")
     @must("mention lighting situation")
-    space: "Where will you be working?"
+    def space(): "Where will you be working?"
     
     @hint("Include everything: desk, chair, computer, accessories. $500? $2000?")
     @must("specific dollar amount or range")
     @reject("no budget" or "whatever it takes")
-    budget: "What's your total budget?"
+    def budget(): "What's your total budget?"
     
     @hint("Computer? Monitor? Desk? Chair? Even if it's just a laptop")
-    current_equipment: "What equipment do you already have?"
+    def current_equipment(): "What equipment do you already have?"
 ```
 
 ## Advanced Usage
@@ -181,13 +181,13 @@ def create_tech_helper(user_profile):
         sense for your {tech_level} technical background and {industry} needs.
         """
         
-        @must(f"relevant to {industry}")
-        challenge: "What technical challenge are you facing?"
+            @must(f"relevant to {industry}")
+        def challenge(): "What technical challenge are you facing?"
         
         @must("realistic timeline")
-        timeline: "When do you need this solved?"
+        def timeline(): "When do you need this solved?"
         
-        resources: "What resources do you have available?"
+        def resources(): "What resources do you have available?"
     
     return PersonalizedHelper
 
@@ -209,11 +209,11 @@ class DatabaseExplained:
     
     @hint("Customer list? Inventory? Sales records? What info matters most?")
     @must("specific business need")
-    need: "What information do you need to track?"
+    def need(): "What information do you need to track?"
     
     @hint("Spreadsheets? Paper? Sticky notes? Your current system")
     @must("current method mentioned")
-    current: "How do you track this now?"
+    def current(): "How do you track this now?"
 
 # Quick diagnosis for urgent issues  
 @quick_diagnosis
@@ -222,11 +222,11 @@ class EmailNotWorking:
     
     @hint("Error messages? Can't send? Can't receive? Wrong password?")
     @must("specific error or symptom")
-    issue: "What exactly is happening?"
+    def issue(): "What exactly is happening?"
     
     @hint("Gmail? Outlook? Yahoo? Company email?")
     @must("email provider")
-    provider: "Who's your email provider?"
+    def provider(): "Who's your email provider?"
 
 # Friendly expert for ongoing help
 @friendly_expert  
@@ -235,7 +235,7 @@ class DigitalTransformation:
     
     @hint("Invoice generation? Inventory tracking? Customer communication?")
     @must("specific process or workflow")
-    process: "Which process should we tackle first?"
+    def process(): "Which process should we tackle first?"
 ```
 
 ### Validation Rules as Context
@@ -256,20 +256,20 @@ class WebsiteRequirements:
     @must("specific business goal implementable by a developer")
     @must("how website helps achieve it")
     @reject("vague or unclear")
-    purpose: "What should your website accomplish?"
+    def purpose(): "What should your website accomplish?"
     
     @hint("What do they say when they call? How do they find you now?")
     @must("actual phrases customers use")
     @reject("marketing buzzwords")
     @reject("we do everything")
-    customer_message: "What do customers need to know?"
+    def customer_message(): "What do customers need to know?"
     
     @must("specific number or range")
     @hint("$500 for DIY? $5,000 for professional? Include ongoing costs")
     @hint("The most cheap is about $500 USD")
     @reject("as cheap as possible")
     @reject("money is no object")
-    build_budget: "Website budget for initial build"
+    def build_budget(): "Website budget for initial build"
     
     @must("specific number or range per a specific time frame (e.g. X USD per month)")
     @hint("$500 for DIY? $5,000 for professional? Include ongoing costs")
@@ -277,14 +277,14 @@ class WebsiteRequirements:
     @must("specific number or range for a specific time duration")
     @reject("as cheap as possible")
     @reject("money is no object")
-    maintenance_budget: "Website budget for long-term maintenance"
+    def maintenance_budget(): "Website budget for long-term maintenance"
     
     # These fields are optional because they have no @must decorator.
     @hint("Links to sites you like the look or feel of")
-    examples: "Websites you like"
+    def examples(): "Websites you like"
     
     @hint("Launch date? Important deadline? Or just 'soon'?")
-    timeline: "When do you need this?"
+    def timeline(): "When do you need this?"
 ```
 
 ## Best Practices
@@ -322,11 +322,11 @@ class TechHelp:
 ```python
 
 # Good
-problem: "User's primary problem"
-impact: "Specific, ideally quantifiable, cost of this problem to the user"
+def problem(): "User's primary problem"
+def impact(): "Specific, ideally quantifiable, cost of this problem to the user"
 
 # Bad  
-issue_description: "Tell me what your problem is?"
+def issue_description(): "Tell me what your problem is?"
 ```
 
 ## API Reference
@@ -357,8 +357,8 @@ If you can hot-swap a data model mid-conversation, it's easy to be dynamic:
 ```py
 @gather
 class TechSupport:
-    problem: "your computer's problem"
-    age: "age of your computer"
+    def problem(): "your computer's problem"
+    def age(): "age of your computer"
 
 support = TechSupport.gather()
 # ...
@@ -367,7 +367,7 @@ age_in_years = some_function()
 if age_in_years > 3:
     @gather(TechSupport)
     class NewTechSupport:
-        dusted: "Have you dusted it recently?"
+        def dusted(): "Have you dusted it recently?"
     support = NewTechSupport()
 ```
 
