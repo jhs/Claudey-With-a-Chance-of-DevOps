@@ -16,6 +16,17 @@ The repository now contains:
   - TypeScript and Tailwind CSS
   - CopilotKit sidebar UI for AI-powered DevOps assistance
   - OpenAI adapter for runtime integration
+- `chatfield/` - Python implementation of conversational data gathering
+  - Complete Python package with decorators for field definitions
+  - LLM-powered validation and conversation management
+  - Testing suite and example implementations
+- `chatfield-js/` - TypeScript/JavaScript implementation of Chatfield
+  - NPM package @chatfield/core for web applications
+  - React integration components and CopilotKit support
+  - Comprehensive test suite and usage examples
+- `doc/` - Project documentation and diagrams
+- `config/` - Container and proxy configuration files
+- `docker-compose.yml` - Multi-container development environment
 
 ## Architecture: Policy-Driven DevOps
 
@@ -72,8 +83,10 @@ This project is in the conceptual/planning phase with minimal implementation. Ke
 
 ## Current State
 
-Initial implementation includes:
-- Next.js web application (`/ui`) with CopilotKit integration
+The project now includes multiple working implementations:
+
+### UI Application (`/ui`)
+- Next.js web application with CopilotKit integration
 - Development environment setup with TypeScript and Tailwind CSS
 - CopilotSidebar component configured for DevOps assistance
 - OpenAI runtime adapter for AI capabilities
@@ -82,6 +95,33 @@ Development commands:
 - `npm run dev` - Start development server with turbopack
 - `npm run build` - Build production application
 - `npm run lint` - Run Next.js linting
+
+### Chatfield Python (`/chatfield`)
+- Complete Python package for conversational data gathering
+- Decorator-based API with LLM-powered validation
+- OpenAI integration and comprehensive test suite
+- Example implementations and documentation
+
+Development commands:
+- `python -m pytest` - Run test suite
+- `python example.py` - Run demo implementation
+
+### Chatfield TypeScript (`/chatfield-js`)
+- NPM package @chatfield/core v0.1.0
+- React components and CopilotKit integration
+- Jest test suite with comprehensive coverage
+- TypeScript definitions and ESLint configuration
+
+Development commands:
+- `npm run build` - Compile TypeScript to dist/
+- `npm run test` - Run Jest test suite
+- `npm run lint` - Run ESLint checks
+- `npm run dev` - Watch mode compilation
+
+### Development Environment
+- Docker Compose setup with Python, VNC, and proxy services
+- HAProxy configuration for service routing
+- Supervisor configuration for process management
 
 ## Key Design Principles
 

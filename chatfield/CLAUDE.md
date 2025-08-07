@@ -118,7 +118,6 @@ class Conversation:
     def get_next_field(self):
         """Determine which field to ask about next"""
         # 1. Check which fields are already collected
-        # 2. Evaluate @when conditions
         # 3. Return next uncollected field
         
     def validate_response(self, field: FieldMeta, response: str):
@@ -196,19 +195,6 @@ for field_name, field_desc in cls.__annotations__.items():
         # This is one of our fields
         # Get metadata that decorators attached
         # Build FieldMeta object
-```
-
-### Conditional Fields
-
-The `@when` decorator needs special handling:
-
-```python
-def when(condition):
-    def decorator(field):
-        # Store lambda on field metadata
-        # During gathering, evaluate with collected data
-        return field
-    return decorator
 ```
 
 ### Validation Prompts
