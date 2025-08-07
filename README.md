@@ -217,6 +217,18 @@ Interactive mode questions:
 - I feel like at some point, controlling the repo behind Claude Code's back as it were, and probably controlling CC's state, will happen. Most likely example is updating the CLAUDE.md file. or edit the [claude settings](https://docs.anthropic.com/en/docs/claude-code/settings)
 - The word "AI" is deliberately absent in this project. It's too vague. It's better to say: LLMs, transformers, APIs, SDKs, messages, records, whatever is clear and crisp. Also "vibes devops" is already enough cheek.
 
+Maybe change the Python API to this:
+```py
+class Whatever:
+  def scope():
+      """Scope of work"""
+      hint("A specific thing you want to build")
+      must("specific enough to implement by a tech team")
+      reject("data regulation environments HIPAA or SOC2")
+```
+
+Reconsider subclassing instead of decorators.
+
 Claude Code SDK
 - There is a CLI, TypeScript, and Python SDK. It seems there is parity but not confirmed.
 - [Custom system prompts](https://docs.anthropic.com/en/docs/claude-code/sdk#custom-system-prompts)
