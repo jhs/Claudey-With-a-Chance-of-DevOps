@@ -182,6 +182,7 @@ Interactive mode questions:
 - UI is [CopilotKit](https://github.com/CopilotKit/CopilotKit)
 - Maybe after the DEERFlow research, it outputs into an AA story but not posted yet. Then work from that story, possibly make updates/edits. Then save it as a success/failure story to the KB.
 - Perhaps with open source (agent?) building a "family tree of KBs" (e.g. "the AWS one", "the Azure one"), this creates knowldege "nucleation sites" or "well-traveled paths" where CWCD has lots of successes in an area and so more people feel comfortable using it for only that responsibility.
+- Make Chatfield able to timestamp and "document" when it gets information. So all data fields can track back to the human user who said it, a direct quote of their authorization message, timestamps, locations, email Message IDs
 - Is it helpful to steal the Base + LoRA language or architecture regarding the family tree of KBs, where the base might be "use Linode" then the LoRA is another article about how to build a to do app on Linux, so the output is a to do app on Linode? I think the answer is no.
 - CC <-> Browser Use bridge, or it could even connect into the :9222 CDP
 - CC web UIs, e.g. [claude-code-webui](https://github.com/sugyan/claude-code-webui) or [Claude Code UI](https://github.com/siteboon/claudecodeui/blob/main/public/screenshots/desktop-main.png)
