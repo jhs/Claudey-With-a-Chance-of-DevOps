@@ -1,6 +1,6 @@
-# Chatfield 🌾
+# Chatfield
 
-Conversational data gathering powered by LLMs. Transform rigid forms into natural conversations that actually help users express their needs.
+Data gathering in a Socratic dialogue powered by LLMs. Transform rigid forms into natural conversations that actually help users express their needs.
 
 ```python
 from chatfield import gather, must, reject, hint
