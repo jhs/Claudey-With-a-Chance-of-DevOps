@@ -81,6 +81,16 @@ lint = [
     "flake8>=6.0.0",
     "mypy>=1.5.0",
 ]
+notebook = [
+    "jupyter>=1.0.0",
+    "ipython>=8.0.0",
+    "notebook>=7.0.0",
+    "grandalf>=0.8",
+]
+visualization = [
+    "ipython>=8.0.0",
+    "grandalf>=0.8",
+]
 
 [project.urls]
 Homepage = "https://github.com/yourusername/chatfield"

@@ -1,6 +1,6 @@
 """LangGraph agent implementation for Chatfield Socratic dialogue data gathering."""
 
-from typing import Dict, List, Optional, Tuple, TypedDict, Annotated, Literal
+from typing import Dict, List, Optional, Tuple, TypedDict, Annotated, Literal, Any
 from dataclasses import dataclass
 from enum import Enum
 import operator
@@ -59,6 +59,7 @@ class ChatfieldAgent:
         )
         self.max_retries = max_retries
         self.graph = self._build_graph()
+        self._compiled_graph = None
         
     def _build_graph(self) -> StateGraph:
         """Build the LangGraph workflow."""
@@ -106,7 +107,8 @@ class ChatfieldAgent:
         
         workflow.add_edge("complete", END)
         
-        return workflow.compile()
+        self._compiled_graph = workflow.compile()
+        return self._compiled_graph
     
     def _initialize_conversation(self, state: ConversationState) -> ConversationState:
         """Initialize the Socratic dialogue with opening message."""
@@ -389,6 +391,51 @@ Be encouraging and specific about what's needed."""
         # This is a placeholder for testing
         # In production, this would interface with actual user input
         return "Test response"
+    
+    def get_graph(self):
+        """Get the compiled LangGraph for external use and visualization.
+        
+        Returns:
+            The compiled StateGraph that can be used for visualization or inspection.
+        """
+        if self._compiled_graph is None:
+            self._compiled_graph = self._build_graph()
+        return self._compiled_graph
+    
+    def get_graph_structure(self) -> Dict[str, Any]:
+        """Get a structured representation of the graph nodes and edges.
+        
+        Returns:
+            Dictionary containing nodes, edges, and metadata about the graph.
+        """
+        graph = self.get_graph()
+        
+        # Extract graph structure information
+        structure = {
+            "nodes": [
+                "initialize", "select_field", "ask_question", 
+                "process_response", "validate_response", 
+                "handle_validation", "complete"
+            ],
+            "edges": [
+                ("initialize", "select_field"),
+                ("ask_question", "process_response"),
+                ("process_response", "validate_response"),
+                ("validate_response", "handle_validation"),
+                ("complete", "END")
+            ],
+            "conditional_edges": {
+                "select_field": ["ask", "complete"],
+                "handle_validation": ["retry", "next", "skip"]
+            },
+            "entry_point": "initialize",
+            "meta": {
+                "fields": list(self.meta.fields.keys()),
+                "has_validation": any(f.has_validation_rules() for f in self.meta.fields.values())
+            }
+        }
+        
+        return structure
     
     def run(self, initial_data: Optional[Dict[str, str]] = None) -> Dict[str, str]:
         """Run the Socratic dialogue and collect data."""
