@@ -1,6 +1,6 @@
 # Chatfield
 
-Data gathering in a Socratic dialogue powered by LLMs. Transform rigid forms into natural conversations that actually help users express their needs.
+Conversational data gathering powered by LLMs and LangGraph agents. Transform rigid forms into natural conversations that actually help users express their needs.
 
 ```python
 from chatfield import gather, must, reject, hint
@@ -32,6 +32,12 @@ Traditional forms frustrate non-technical users. They don't know what "deploymen
 ```bash
 pip install chatfield
 ```
+
+### Requirements
+
+- Python 3.8+
+- OpenAI API key (set as `OPENAI_API_KEY` environment variable)
+- Dependencies: `langgraph`, `langchain`, `langchain-openai`
 
 ## Quick Start
 
@@ -345,6 +351,26 @@ def issue_description(): "Tell me what your problem is?"
 - `@patient_teacher` - For explaining complex topics
 - `@quick_diagnosis` - For urgent problem-solving  
 - `@friendly_expert` - For ongoing consultation
+
+### Advanced Configuration
+
+Chatfield uses LangGraph agents under the hood for conversation management:
+
+```python
+# Pass custom LLM settings
+result = MyGatherer.gather(
+    model="gpt-4",
+    temperature=0.5,
+    max_retries=5
+)
+```
+
+Features:
+- Stateful conversation management with LangGraph
+- Smart retry logic for validation
+- Natural conversation flow control
+- Streaming support (coming soon)
+- Multi-agent capabilities (coming soon)
 
 ## License
 

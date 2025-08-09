@@ -1,0 +1,13 @@
+include README.md
+include LICENSE
+include CLAUDE.md
+include pyproject.toml
+include setup.py
+recursive-include chatfield *.py
+recursive-include chatfield py.typed
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude tests *
+recursive-exclude examples *
+prune tests
+prune examples
