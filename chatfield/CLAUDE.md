@@ -1,8 +1,8 @@
-# CLAUDE.md - Chatfield Implementation Guide
+# CLAUDE.md - Chatfield Socratic Dialogue Implementation Guide
 
 ## Overview
 
-Chatfield is a Python package that transforms data gathering from rigid forms into natural conversations. It uses decorators to define fields and validation rules, then leverages LLMs to have helpful conversations that collect structured data.
+Chatfield is a Python package that transforms data gathering from rigid forms into Socratic dialogues. Through thoughtful questioning inspired by the Socratic method, it uses decorators to define fields and validation rules, then leverages LLMs to guide users through exploratory conversations that collect structured data while helping them clarify their thoughts.
 
 ## Core Architecture
 
@@ -10,8 +10,8 @@ Chatfield is a Python package that transforms data gathering from rigid forms in
 
 1. **Decorator-based API** - All configuration through decorators, not inheritance
 2. **String-only data** - All fields are strings, no complex types
-3. **LLM-powered validation** - Validation rules are prompts, not code
-4. **Conversational UX** - Natural dialogue, not step-by-step forms
+3. **LLM-powered validation** - Validation through Socratic questioning, not rigid rules
+4. **Socratic dialogue UX** - Thoughtful exploration, not step-by-step forms
 5. **Minimal magic** - Use Python's existing features cleverly
 
 ### The Clever Syntax Trick
@@ -30,10 +30,10 @@ This is syntactically valid Python that gives us clean field definitions without
 chatfield/
 ├── __init__.py          # Main exports
 ├── decorators.py        # Core decorators (@gather, @must, etc.)
-├── gatherer.py          # Gatherer class and metadata
-├── conversation.py      # LangGraph-based conversation management
-├── agent.py             # LangGraph agent implementation
-├── builder.py           # GathererBuilder for dynamic creation
+├── socrates.py          # Socrates class and metadata for dialogue management
+├── conversation.py      # LangGraph-based Socratic conversation management
+├── agent.py             # LangGraph agent implementation for Socratic dialogue
+├── builder.py           # SocratesBuilder for dynamic dialogue creation
 └── presets.py           # Common preset decorators
 ```
 
@@ -44,7 +44,7 @@ chatfield/
 ```python
 # @gather decorator
 def gather(cls):
-    """Transform a class into a conversational gatherer"""
+    """Transform a class into a Socratic dialogue interface"""
     # 1. Store original class metadata
     # 2. Process __annotations__ to find fields
     # 3. Collect decorators from each field
@@ -74,11 +74,11 @@ def agent(behavior: str):
     # Store in class metadata
 ```
 
-### 2. Gatherer Base Logic (`gatherer.py`)
+### 2. Socrates Base Logic (`socrates.py`)
 
 ```python
-class GathererMeta:
-    """Metadata for a gatherer class"""
+class SocratesMeta:
+    """Metadata for a Socratic dialogue class"""
     def __init__(self):
         self.user_context = []
         self.agent_context = []
@@ -95,13 +95,13 @@ class FieldMeta:
         self.hint = None
         self.when_condition = None
 
-def process_gatherer_class(cls):
-    """Extract all metadata from decorated class"""
+def process_socrates_class(cls):
+    """Extract all metadata from decorated class for Socratic dialogue"""
     # 1. Get docstring
     # 2. Get user/agent context from class decorators
     # 3. Process each field in __annotations__
     # 4. Extract decorators from each field
-    # 5. Build GathererMeta object
+    # 5. Build SocratesMeta object
     # 6. Add gather() method to class
 ```
 
@@ -110,7 +110,7 @@ def process_gatherer_class(cls):
 ```python
 class Conversation:
     """Manages conversations using LangGraph agents."""
-    def __init__(self, meta: GathererMeta, **kwargs):
+    def __init__(self, meta: SocratesMeta, **kwargs):
         self.meta = meta
         self.agent = ChatfieldAgent(meta, **kwargs)
         self.collected_data = {}
@@ -148,8 +148,8 @@ class ChatfieldAgent:
 ### 5. The Main gather() Method
 
 ```python
-def gather(self) -> 'GathererInstance':
-    """Main entry point - conducts the conversation"""
+def gather(self) -> 'SocratesInstance':
+    """Main entry point - conducts the Socratic dialogue"""
     # 1. Create Conversation instance
     # 2. Build initial prompt with context
     # 3. Start conversation loop:
@@ -228,7 +228,7 @@ class Validated:
 
 ### Dynamic Creation
 ```python
-def create_gatherer(user_info):
+def create_socratic_dialogue(user_info):
     @gather
     @user(f"User age: {user_info.age}")
     class Dynamic:

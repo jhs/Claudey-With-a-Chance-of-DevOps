@@ -1,7 +1,7 @@
-"""Unit tests for Chatfield gatherer metadata classes."""
+"""Unit tests for Chatfield Socratic dialogue metadata classes."""
 
 import pytest
-from chatfield.gatherer import FieldMeta, GathererMeta, GathererInstance, process_gatherer_class
+from chatfield.socrates import FieldMeta, SocratesMeta, SocratesInstance, process_socrates_class
 
 
 class TestFieldMeta:
@@ -56,12 +56,12 @@ class TestFieldMeta:
         assert field2.has_validation_rules()
 
 
-class TestGathererMeta:
-    """Test GathererMeta class."""
+class TestSocratesMeta:
+    """Test SocratesMeta class."""
     
-    def test_gatherer_meta_creation(self):
-        """Test creating a GathererMeta instance."""
-        meta = GathererMeta()
+    def test_socrates_meta_creation(self):
+        """Test creating a SocratesMeta instance."""
+        meta = SocratesMeta()
         assert meta.user_context == []
         assert meta.agent_context == []
         assert meta.docstring == ""
@@ -69,7 +69,7 @@ class TestGathererMeta:
     
     def test_add_user_context(self):
         """Test adding user context."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_user_context("Small business owner")
         meta.add_user_context("Not technical")
         
@@ -79,7 +79,7 @@ class TestGathererMeta:
     
     def test_add_agent_context(self):
         """Test adding agent context."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_agent_context("Helpful assistant")
         meta.add_agent_context("Patient teacher")
         
@@ -89,7 +89,7 @@ class TestGathererMeta:
     
     def test_set_docstring(self):
         """Test setting docstring."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.set_docstring("  Test docstring  ")
         assert meta.docstring == "Test docstring"
         
@@ -101,7 +101,7 @@ class TestGathererMeta:
     
     def test_add_field(self):
         """Test adding fields."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         field1 = meta.add_field("name", "Your name")
         field2 = meta.add_field("email", "Your email")
         
@@ -115,7 +115,7 @@ class TestGathererMeta:
     
     def test_get_field(self):
         """Test getting fields."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         field = meta.add_field("test", "Test field")
         
         retrieved = meta.get_field("test")
@@ -126,7 +126,7 @@ class TestGathererMeta:
     
     def test_get_field_names(self):
         """Test getting field names in order."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_field("first", "First field")
         meta.add_field("second", "Second field")
         meta.add_field("third", "Third field")
@@ -136,7 +136,7 @@ class TestGathererMeta:
     
     def test_has_context(self):
         """Test context detection."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         assert not meta.has_context()
         
         meta.add_user_context("User info")
@@ -151,26 +151,26 @@ class TestGathererMeta:
         assert meta3.has_context()
 
 
-class TestGathererInstance:
-    """Test GathererInstance class."""
+class TestSocratesInstance:
+    """Test SocratesInstance class."""
     
     def test_instance_creation(self):
-        """Test creating a GathererInstance."""
-        meta = GathererMeta()
+        """Test creating a SocratesInstance."""
+        meta = SocratesMeta()
         meta.add_field("name", "Your name")
         meta.add_field("email", "Your email")
         
         data = {"name": "John Doe", "email": "john@example.com"}
-        instance = GathererInstance(meta, data)
+        instance = SocratesInstance(meta, data)
         
         assert instance.name == "John Doe"
         assert instance.email == "john@example.com"
     
     def test_attribute_access(self):
         """Test accessing collected data as attributes."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         data = {"field1": "value1", "field2": "value2"}
-        instance = GathererInstance(meta, data)
+        instance = SocratesInstance(meta, data)
         
         assert instance.field1 == "value1"
         assert instance.field2 == "value2"
@@ -180,7 +180,7 @@ class TestGathererInstance:
     
     def test_get_data(self):
         """Test getting all data as dictionary."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         original_data = {"name": "John", "email": "john@example.com"}
         instance = GathererInstance(meta, original_data)
         
@@ -193,9 +193,9 @@ class TestGathererInstance:
     
     def test_get_with_default(self):
         """Test getting field with default value."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         data = {"name": "John"}
-        instance = GathererInstance(meta, data)
+        instance = SocratesInstance(meta, data)
         
         assert instance.get("name") == "John"
         assert instance.get("email") is None
@@ -203,39 +203,39 @@ class TestGathererInstance:
     
     def test_repr(self):
         """Test string representation."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         data = {"name": "John", "email": "john@example.com"}
-        instance = GathererInstance(meta, data)
+        instance = SocratesInstance(meta, data)
         
         repr_str = repr(instance)
-        assert "GathererInstance" in repr_str
+        assert "SocratesInstance" in repr_str
         assert "name='John'" in repr_str
         assert "email='john@example.com'" in repr_str
     
     def test_repr_long_values(self):
         """Test string representation with long values."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         long_value = "a" * 100
         data = {"long_field": long_value}
-        instance = GathererInstance(meta, data)
+        instance = SocratesInstance(meta, data)
         
         repr_str = repr(instance)
         assert "..." in repr_str  # Should be truncated
 
 
-class TestProcessGathererClass:
-    """Test the process_gatherer_class function."""
+class TestProcessSocratesClass:
+    """Test the process_socrates_class function."""
     
     def test_process_simple_class(self):
         """Test processing a simple class."""
         class Simple:
-            """Simple gatherer"""
+            """Simple Socratic dialogue"""
             def name(): "Your name"
             def email(): "Your email"
         
-        meta = process_gatherer_class(Simple)
+        meta = process_socrates_class(Simple)
         
-        assert meta.docstring == "Simple gatherer"
+        assert meta.docstring == "Simple Socratic dialogue"
         assert len(meta.fields) == 2
         assert "name" in meta.fields
         assert "email" in meta.fields

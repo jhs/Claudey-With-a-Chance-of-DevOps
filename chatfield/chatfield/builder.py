@@ -1,30 +1,30 @@
-"""Dynamic gatherer creation utilities."""
+"""Dynamic Socratic dialogue class creation utilities."""
 
 from typing import Dict, List, Any, Type, Optional
 from .decorators import gather, user, agent, must, reject, hint
 
 
-class GathererBuilder:
-    """Builder for creating gatherers programmatically."""
+class SocratesBuilder:
+    """Builder for creating Socratic dialogue classes programmatically."""
     
-    def __init__(self, name: str = "DynamicGatherer"):
+    def __init__(self, name: str = "DynamicSocrates"):
         self.name = name
         self.docstring = ""
         self.user_contexts: List[str] = []
         self.agent_contexts: List[str] = []
         self.fields: Dict[str, Dict[str, Any]] = {}
     
-    def set_docstring(self, docstring: str) -> 'GathererBuilder':
+    def set_docstring(self, docstring: str) -> 'SocratesBuilder':
         """Set the class docstring."""
         self.docstring = docstring
         return self
     
-    def add_user_context(self, context: str) -> 'GathererBuilder':
+    def add_user_context(self, context: str) -> 'SocratesBuilder':
         """Add user context information."""
         self.user_contexts.append(context)
         return self
     
-    def add_agent_context(self, behavior: str) -> 'GathererBuilder':
+    def add_agent_context(self, behavior: str) -> 'SocratesBuilder':
         """Add agent behavior context."""
         self.agent_contexts.append(behavior)
         return self
@@ -36,7 +36,7 @@ class GathererBuilder:
         must_rules: Optional[List[str]] = None,
         reject_rules: Optional[List[str]] = None,
         hint_text: Optional[str] = None
-    ) -> 'GathererBuilder':
+    ) -> 'SocratesBuilder':
         """Add a field with validation rules and hints."""
         self.fields[name] = {
             'description': description,
@@ -47,7 +47,7 @@ class GathererBuilder:
         return self
     
     def build(self) -> Type:
-        """Build and return the gatherer class."""
+        """Build and return the Socratic dialogue class."""
         # Create the class attributes dictionary
         class_attrs = {
             '__doc__': self.docstring,
@@ -89,8 +89,8 @@ class GathererBuilder:
         return cls
 
 
-def create_gatherer_from_dict(config: Dict[str, Any]) -> Type:
-    """Create a gatherer from a configuration dictionary.
+def create_socrates_from_dict(config: Dict[str, Any]) -> Type:
+    """Create a Socratic dialogue class from a configuration dictionary.
     
     Args:
         config: Dictionary with keys:
@@ -101,9 +101,9 @@ def create_gatherer_from_dict(config: Dict[str, Any]) -> Type:
             - fields (dict): Field definitions
     
     Returns:
-        Gatherer class ready to use
+        Socratic dialogue class ready to use
     """
-    builder = GathererBuilder(config.get('name', 'ConfigGatherer'))
+    builder = SocratesBuilder(config.get('name', 'ConfigSocrates'))
     
     if 'docstring' in config:
         builder.set_docstring(config['docstring'])
@@ -131,18 +131,18 @@ def create_gatherer_from_dict(config: Dict[str, Any]) -> Type:
     return builder.build()
 
 
-def create_gatherer_from_template(
+def create_socrates_from_template(
     template_name: str, 
     customizations: Optional[Dict[str, Any]] = None
 ) -> Type:
-    """Create a gatherer from a predefined template.
+    """Create a Socratic dialogue class from a predefined template.
     
     Args:
         template_name: Name of the template to use
         customizations: Optional customizations to apply
     
     Returns:
-        Gatherer class ready to use
+        Socratic dialogue class ready to use
     """
     templates = {
         'tech_support': {
@@ -248,4 +248,4 @@ def create_gatherer_from_template(
     if customizations:
         config.update(customizations)
     
-    return create_gatherer_from_dict(config)
+    return create_socrates_from_dict(config)

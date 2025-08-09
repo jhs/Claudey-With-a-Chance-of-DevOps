@@ -1,6 +1,6 @@
-"""Chatfield: Conversational data gathering powered by LLMs.
+"""Chatfield: Socratic dialogue for data gathering powered by LLMs.
 
-Transform rigid forms into natural conversations that help users express their needs.
+Transform rigid forms into thoughtful Socratic conversations that guide users to express their needs clearly.
 """
 
 __version__ = "0.2.0"

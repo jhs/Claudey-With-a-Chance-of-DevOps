@@ -1,4 +1,4 @@
-"""LangGraph agent implementation for Chatfield conversational data gathering."""
+"""LangGraph agent implementation for Chatfield Socratic dialogue data gathering."""
 
 from typing import Dict, List, Optional, Tuple, TypedDict, Annotated, Literal
 from dataclasses import dataclass
@@ -11,12 +11,12 @@ from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, System
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from .gatherer import GathererMeta, FieldMeta
+from .socrates import SocratesMeta, FieldMeta
 
 
 class ConversationState(TypedDict):
-    """State for the conversation graph."""
-    meta: GathererMeta
+    """State for the Socratic dialogue graph."""
+    meta: SocratesMeta
     messages: Annotated[List[BaseMessage], operator.add]
     collected_data: Dict[str, str]
     current_field: Optional[str]
@@ -28,7 +28,7 @@ class ConversationState(TypedDict):
 
 
 class FieldStatus(str, Enum):
-    """Status of a field in the conversation."""
+    """Status of a field in the Socratic dialogue."""
     PENDING = "pending"
     ASKING = "asking"
     VALIDATING = "validating"
@@ -43,11 +43,11 @@ class ValidationResult(BaseModel):
     
     
 class ChatfieldAgent:
-    """LangGraph-based conversational agent for data gathering."""
+    """LangGraph-based Socratic dialogue agent for data gathering."""
     
     def __init__(
         self, 
-        meta: GathererMeta,
+        meta: SocratesMeta,
         llm: Optional[ChatOpenAI] = None,
         max_retries: int = 3,
         temperature: float = 0.7
@@ -109,7 +109,7 @@ class ChatfieldAgent:
         return workflow.compile()
     
     def _initialize_conversation(self, state: ConversationState) -> ConversationState:
-        """Initialize the conversation with opening message."""
+        """Initialize the Socratic dialogue with opening message."""
         opening_message = self._build_opening_message()
         
         return {
@@ -271,7 +271,7 @@ class ChatfieldAgent:
         return state
     
     def _complete_conversation(self, state: ConversationState) -> ConversationState:
-        """Complete the conversation and return results."""
+        """Complete the Socratic dialogue and return results."""
         completion_message = AIMessage(
             content="Great! I've collected all the information I need. Thank you!"
         )
@@ -391,7 +391,7 @@ Be encouraging and specific about what's needed."""
         return "Test response"
     
     def run(self, initial_data: Optional[Dict[str, str]] = None) -> Dict[str, str]:
-        """Run the conversation and collect data."""
+        """Run the Socratic dialogue and collect data."""
         initial_state: ConversationState = {
             "meta": self.meta,
             "messages": [],

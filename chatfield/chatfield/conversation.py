@@ -5,16 +5,16 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from .gatherer import GathererMeta, GathererInstance
+from .socrates import SocratesMeta, SocratesInstance
 from .agent import ChatfieldAgent, ConversationState
 
 
 class Conversation:
-    """Manages conversations using LangGraph agents."""
+    """Manages Socratic dialogue conversations using LangGraph agents."""
     
     def __init__(
         self, 
-        meta: GathererMeta,
+        meta: SocratesMeta,
         api_key: Optional[str] = None,
         model: str = "gpt-4o-mini",
         temperature: float = 0.7,
@@ -44,9 +44,9 @@ class Conversation:
         self.conversation_history: List[Any] = []
     
     def conduct_conversation(self) -> Dict[str, str]:
-        """Run the conversation to collect all data.
+        """Run the Socratic dialogue to collect all data.
         
-        This method now uses the LangGraph agent to manage the conversation flow.
+        This method uses the LangGraph agent to manage the Socratic conversation flow.
         """
         print(f"\n{self._get_opening_message()}\n")
         
@@ -141,7 +141,7 @@ class Conversation:
         return "\n".join(messages)
     
     def get_conversation_summary(self) -> str:
-        """Get a summary of the conversation so far."""
+        """Get a summary of the Socratic dialogue so far."""
         if not self.collected_data:
             return "No data collected yet."
         
@@ -154,6 +154,6 @@ class Conversation:
         
         return f"Collected so far:\n" + "\n".join(summary_items)
     
-    def create_instance(self) -> GathererInstance:
-        """Create a GathererInstance from collected data."""
-        return GathererInstance(self.meta, self.collected_data)
+    def create_instance(self) -> SocratesInstance:
+        """Create a SocratesInstance from collected data."""
+        return SocratesInstance(self.meta, self.collected_data)

@@ -1,4 +1,4 @@
-"""Core metadata classes for Chatfield gatherers."""
+"""Core metadata classes for Chatfield Socratic dialogue system."""
 
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
@@ -7,7 +7,7 @@ import inspect
 
 @dataclass
 class FieldMeta:
-    """Metadata for a single field in a gatherer."""
+    """Metadata for a single field in a Socratic dialogue."""
     
     name: str
     description: str
@@ -33,8 +33,8 @@ class FieldMeta:
 
 
 @dataclass
-class GathererMeta:
-    """Metadata for a gatherer class."""
+class SocratesMeta:
+    """Metadata for a Socratic dialogue class."""
     
     user_context: List[str] = field(default_factory=list)
     agent_context: List[str] = field(default_factory=list)
@@ -72,10 +72,10 @@ class GathererMeta:
         return bool(self.user_context or self.agent_context or self.docstring)
 
 
-class GathererInstance:
-    """Instance created after completing a conversation."""
+class SocratesInstance:
+    """Instance created after completing a Socratic dialogue conversation."""
     
-    def __init__(self, meta: GathererMeta, collected_data: Dict[str, str]):
+    def __init__(self, meta: SocratesMeta, collected_data: Dict[str, str]):
         self._meta = meta
         self._data = collected_data.copy()
     
@@ -89,7 +89,7 @@ class GathererInstance:
         """String representation of collected data."""
         fields = ", ".join(f"{k}='{v[:50]}...'" if len(v) > 50 else f"{k}='{v}'" 
                           for k, v in self._data.items())
-        return f"GathererInstance({fields})"
+        return f"SocratesInstance({fields})"
     
     def get_data(self) -> Dict[str, str]:
         """Get all collected data as a dictionary."""
@@ -100,9 +100,9 @@ class GathererInstance:
         return self._data.get(field_name, default)
 
 
-def process_gatherer_class(cls: type) -> GathererMeta:
-    """Extract all metadata from a decorated class."""
-    meta = GathererMeta()
+def process_socrates_class(cls: type) -> SocratesMeta:
+    """Extract all metadata from a decorated class for Socratic dialogue."""
+    meta = SocratesMeta()
     
     # Get docstring
     if cls.__doc__:

@@ -1,6 +1,15 @@
-# Chatfield
+# Chatfield: The Socratic Method for Data Gathering
 
-Conversational data gathering powered by LLMs and LangGraph agents. Transform rigid forms into natural conversations that actually help users express their needs.
+Transform rigid forms into thoughtful Socratic dialogues powered by LLMs and LangGraph agents. Through careful questioning and guided exploration, Chatfield helps users articulate their needs clearly and completely.
+
+## The Socratic Approach
+
+Just as Socrates used thoughtful questioning to help people discover truth and understanding, Chatfield employs a Socratic dialogue method to gather information. Rather than presenting users with intimidating forms or technical jargon, it engages them in natural conversation that:
+
+- **Guides discovery** - Questions that help users explore and clarify their own thoughts
+- **Encourages reflection** - Validation that prompts users to think more deeply about their answers  
+- **Builds understanding** - Each question builds on previous answers, creating coherent understanding
+- **Adapts naturally** - The conversation adjusts to the user's level and responses
 
 ```python
 from chatfield import gather, must, reject, hint
@@ -21,11 +30,12 @@ class TechHelp:
 
 ## Why Chatfield?
 
-Traditional forms frustrate non-technical users. They don't know what "deployment environment" means or how to specify "system requirements." Chatfield lets you create intelligent, conversational interfaces that:
+Traditional forms frustrate users with rigid structures and technical terminology. Chatfield's Socratic method creates intelligent conversational interfaces that:
 
-- **Adapt to the user's level** - No intimidating technical jargon
-- **Validate naturally** - Guide users to provide useful information
-- **Feel human** - Like talking to a helpful expert, not filling out a form
+- **Teach through dialogue** - Like a patient teacher using the Socratic method to guide understanding
+- **Validate through exploration** - Help users refine their thinking through thoughtful questioning
+- **Build clarity** - Each exchange helps users express their needs more precisely
+- **Feel natural** - Like discussing your needs with a thoughtful mentor
 
 ## Installation
 
@@ -54,16 +64,16 @@ from chatfield import gather
 
 @gather
 class ComputerHelp:
-    """What's wrong with your computer"""
+    """A Socratic dialogue to understand your computer issues"""
     
     def problem(): "What's happening with your computer?"
     def when_started(): "When did this start?"
     def tried_solutions(): "What have you tried so far?"
 
-# Start the conversation
+# Start the Socratic dialogue
 help_session = ComputerHelp.gather()
 
-# Access the collected data
+# Access the insights gathered through dialogue
 print(help_session.problem)
 print(help_session.when_started)
 ```
@@ -77,7 +87,7 @@ from chatfield import gather, must, reject, hint
 
 @gather
 class WebsiteHelp:
-    """Help creating your first website"""
+    """A Socratic exploration of your website needs"""
     
     @hint("examples: blog, online store, portfolio, company info site")
     @must("specific purpose or goal clear enough to protoype by a web developer")
@@ -96,7 +106,7 @@ class WebsiteHelp:
     def technical_needs(): "Any special features?"  # Optional field
 ```
 
-### Personalizing the Conversation
+### Personalizing the Socratic Dialogue
 
 Adapt tone and approach to your users:
 
@@ -106,11 +116,11 @@ from chatfield import gather, must, user, agent, hint
 @gather
 @user("Small business owner, not technical")
 @user("Probably frustrated with tech complexity")
-#@agent("Friendly neighborhood tech expert")
-@agent("Grouchy big-city tech expert")
+#@agent("Socratic questioner, patient and thoughtful")
+@agent("Grouchy but insightful Socratic questioner")
 @agent("Use analogies to explain technical concepts")
 class BusinessWebsite:
-    """Let's build your business an online presence"""
+    """A Socratic journey to discover your business's online needs"""
     
     @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
     @must("specific business type")
@@ -343,7 +353,7 @@ def issue_description(): "Tell me what your problem is?"
 
 ### Decorators
 
-- `@gather` - Makes a class into a conversational gatherer
+- `@gather` - Transforms a class into a Socratic dialogue interface
 - `@user(context)` - Information about who you're helping
 - `@agent(behavior)` - How the agent should behave
 - `@hint(tooltip)` - Helpful context shown when users need clarification
@@ -358,11 +368,11 @@ def issue_description(): "Tell me what your problem is?"
 
 ### Advanced Configuration
 
-Chatfield uses LangGraph agents under the hood for conversation management:
+Chatfield uses LangGraph agents to orchestrate Socratic dialogues:
 
 ```python
-# Pass custom LLM settings
-result = MyGatherer.gather(
+# Pass custom LLM settings for your Socratic dialogue
+result = MySocraticDialogue.gather(
     model="gpt-4",
     temperature=0.5,
     max_retries=5
@@ -370,9 +380,9 @@ result = MyGatherer.gather(
 ```
 
 Features:
-- Stateful conversation management with LangGraph
-- Smart retry logic for validation
-- Natural conversation flow control
+- Stateful Socratic dialogue management with LangGraph
+- Thoughtful retry logic that guides users to better answers
+- Natural conversational flow following Socratic principles
 - Streaming support (coming soon)
 - Multi-agent capabilities (coming soon)
 
