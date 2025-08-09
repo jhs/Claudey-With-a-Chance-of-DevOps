@@ -118,11 +118,11 @@ Planning process
 
 1. Phase 1: Interactive mode - Q&A where the user answers every question, ascertains scope, current status, constraints, budget, etc.
 1. Phase 2: Independent High-level prep
-  - Complete enough of the plan to finish the high-level solution architecture and cost estimate
-  - Proposal sent to human:
-    - **Business Impact** - what does it accomplish, how it suits requirements and why that satisfies the goals
-    - **High-level solution architecture** (e.g. platforms/serviced used, tech stack)
-    - **Estimated recurring cost**
+    - Complete enough of the plan to finish the high-level solution architecture and cost estimate
+    - Proposal sent to human:
+        - **Business Impact** - what does it accomplish, how it suits requirements and why that satisfies the goals
+        - **High-level solution architecture** (e.g. platforms/serviced used, tech stack)
+        - **Estimated recurring cost**
 1. Phase 3: Independent mode - Continue building the tree top-down.
    - Possibly augment "hard-coded" milestones (e.g. "QA", "UAT", "Budget")
    - Have to expand/unpack all the nodes until you reach a level of detail sufficient to drive CC
