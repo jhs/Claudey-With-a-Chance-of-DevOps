@@ -25,14 +25,16 @@ def gather(cls: T) -> T:
         return cls._chatfield_meta_cached
     
     # Add the gather class method
-    # TODO: Here is where the Agentic framework will connect.
     @classmethod
-    def gather_method(cls_inner) -> GathererInstance:
-        """Conduct a conversation to gather data."""
+    def gather_method(cls_inner, **kwargs) -> GathererInstance:
+        """Conduct a conversation to gather data.
+        
+        Args:
+            **kwargs: Additional arguments passed to the conversation handler.
+        """
         meta = get_meta()
-        conversation = Conversation(meta)
+        conversation = Conversation(meta, **kwargs)
         collected_data = conversation.conduct_conversation()
-        # TODO: I don't think this will ultimately work because I want to easily change the meta mid-conversation.
         return GathererInstance(meta, collected_data)
     
     # Add the method to the class

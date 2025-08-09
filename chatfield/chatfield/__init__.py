@@ -3,7 +3,7 @@
 Transform rigid forms into natural conversations that help users express their needs.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .decorators import gather, must, reject, hint, user, agent
 from .presets import patient_teacher, quick_diagnosis, friendly_expert

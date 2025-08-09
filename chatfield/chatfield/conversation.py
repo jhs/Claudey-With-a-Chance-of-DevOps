@@ -1,111 +1,128 @@
-"""Conversation management for Chatfield."""
+"""LangGraph-based conversation management for Chatfield."""
 
-from typing import Dict, List, Optional, Tuple
-from .gatherer import GathererMeta, FieldMeta
-from .llm_backend import LLMBackend, OpenAIBackend
+from typing import Dict, List, Optional, Any
+import os
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
 
-
-class ConversationMessage:
-    """A single message in the conversation."""
-    
-    def __init__(self, role: str, content: str):
-        self.role = role  # 'user', 'assistant', 'system'
-        self.content = content
-    
-    def __repr__(self) -> str:
-        return f"{self.role}: {self.content[:50]}..."
+from .gatherer import GathererMeta, GathererInstance
+from .agent import ChatfieldAgent, ConversationState
 
 
 class Conversation:
-    """Manages the conversation state and flow."""
+    """Manages conversations using LangGraph agents."""
     
-    def __init__(self, meta: GathererMeta, llm_backend: Optional[LLMBackend] = None):
+    def __init__(
+        self, 
+        meta: GathererMeta,
+        api_key: Optional[str] = None,
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7,
+        max_retries: int = 3
+    ):
         self.meta = meta
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        
+        if not self.api_key:
+            raise ValueError("OpenAI API key required. Set OPENAI_API_KEY environment variable.")
+        
+        # Initialize LLM
+        self.llm = ChatOpenAI(
+            api_key=self.api_key,
+            model=model,
+            temperature=temperature
+        )
+        
+        # Create the agent
+        self.agent = ChatfieldAgent(
+            meta=meta,
+            llm=self.llm,
+            max_retries=max_retries
+        )
+        
         self.collected_data: Dict[str, str] = {}
-        self.conversation_history: List[ConversationMessage] = []
-        self.llm = llm_backend or OpenAIBackend()
-        self.max_retry_attempts = 3
-    
-    def get_next_field(self) -> Optional[FieldMeta]:
-        """Determine which field to ask about next."""
-        for field_name in self.meta.get_field_names():
-            if field_name not in self.collected_data:
-                return self.meta.get_field(field_name)
-        return None
-    
-    def get_uncollected_fields(self) -> List[str]:
-        """Get list of fields that haven't been collected yet."""
-        return [name for name in self.meta.get_field_names() 
-                if name not in self.collected_data]
-    
-    def validate_response(self, field: FieldMeta, response: str) -> Tuple[bool, str]:
-        """Check if response meets field requirements.
-        
-        Returns:
-            Tuple of (is_valid, feedback_message)
-        """
-        if not field.has_validation_rules():
-            return True, ""
-        
-        validation_prompt = self._build_validation_prompt(field, response)
-        
-        try:
-            validation_result = self.llm.validate_response(validation_prompt)
-            
-            # Parse the LLM's validation response
-            if validation_result.strip().upper().startswith('VALID'):
-                return True, ""
-            else:
-                return False, validation_result
-                
-        except Exception as e:
-            # If validation fails, be permissive and allow the response
-            print(f"Validation error: {e}")
-            return True, ""
-    
-    def _build_validation_prompt(self, field: FieldMeta, response: str) -> str:
-        """Build a prompt for the LLM to validate a response."""
-        rules = []
-        
-        if field.must_rules:
-            rules.extend([f"- MUST include: {rule}" for rule in field.must_rules])
-        
-        if field.reject_rules:
-            rules.extend([f"- MUST NOT include: {rule}" for rule in field.reject_rules])
-        
-        rules_text = "\\n".join(rules) if rules else "No specific validation rules."
-        
-        return f"""The user provided this answer: "{response}"
-
-For the field "{field.description}", validate that the answer follows these rules:
-{rules_text}
-
-If the answer is valid, respond with "VALID".
-If the answer is not valid, explain what's missing or wrong in a helpful way that will guide the user to provide a better answer."""
+        self.conversation_history: List[Any] = []
     
     def conduct_conversation(self) -> Dict[str, str]:
-        """Conduct the full conversation to collect all data.
+        """Run the conversation to collect all data.
+        
+        This method now uses the LangGraph agent to manage the conversation flow.
+        """
+        print(f"\n{self._get_opening_message()}\n")
+        
+        # Create initial state
+        initial_state: ConversationState = {
+            "meta": self.meta,
+            "messages": [],
+            "collected_data": {},
+            "current_field": None,
+            "validation_attempts": 0,
+            "max_retries": self.agent.max_retries,
+            "is_complete": False,
+            "needs_validation": False,
+            "validation_result": None
+        }
+        
+        # Run the conversation graph interactively
+        current_state = initial_state
+        
+        while not current_state["is_complete"]:
+            # Run one step of the graph
+            for event in self.agent.graph.stream(current_state):
+                # Process each node's output
+                for node_name, node_state in event.items():
+                    current_state = node_state
+                    
+                    # If we just asked a question, get user input
+                    if node_name == "ask_question" and current_state["messages"]:
+                        last_message = current_state["messages"][-1]
+                        if hasattr(last_message, 'content'):
+                            print(f"\n{last_message.content}")
+                            
+                            # Get actual user input
+                            user_response = input("Your answer: ").strip()
+                            
+                            if user_response:
+                                # Add user response to state
+                                current_state["messages"].append(
+                                    HumanMessage(content=user_response)
+                                )
+                    
+                    # If we have validation feedback, show it
+                    elif node_name == "handle_validation" and current_state.get("validation_result"):
+                        is_valid, feedback = current_state["validation_result"]
+                        if not is_valid and feedback:
+                            print(f"\n{feedback}")
+                            print("Let me ask again...")
+                    
+                    # Check if we're complete
+                    if current_state.get("is_complete", False):
+                        break
+            
+            # Update collected data
+            self.collected_data = current_state.get("collected_data", {})
+            
+            # Check completion
+            if current_state.get("is_complete", False):
+                break
+        
+        # Show completion message
+        if len(self.collected_data) == len(self.meta.fields):
+            print("\nGreat! I've collected all the information I need.")
+        
+        return self.collected_data
+    
+    def conduct_async_conversation(self, user_input_callback) -> Dict[str, str]:
+        """Run the conversation with async user input.
+        
+        Args:
+            user_input_callback: Async function that gets user input
         
         Returns:
             Dictionary of collected field data
         """
-        print(f"\\n{self._get_opening_message()}\\n")
-        
-        while True:
-            next_field = self.get_next_field()
-            if not next_field:
-                break
-            
-            # Ask about the field
-            success = self._ask_about_field(next_field)
-            if not success:
-                print("Conversation ended due to too many retry attempts.")
-                break
-        
-        if len(self.collected_data) == len(self.meta.fields):
-            print("\\nGreat! I've collected all the information I need.")
-        
-        return self.collected_data
+        # This would be implemented for async/streaming use cases
+        raise NotImplementedError("Async conversation not yet implemented")
     
     def _get_opening_message(self) -> str:
         """Generate the opening message for the conversation."""
@@ -115,82 +132,13 @@ If the answer is not valid, explain what's missing or wrong in a helpful way tha
             messages.append(self.meta.docstring)
         
         if self.meta.agent_context:
-            # Don't show agent context to user, but use it internally
+            # Agent context is used internally but not shown to user
             pass
         
         if not messages:
             messages.append("Let me ask you a few questions to gather the information I need.")
         
-        return "\\n".join(messages)
-    
-    def _ask_about_field(self, field: FieldMeta) -> bool:
-        """Ask about a specific field and collect the response.
-        
-        Returns:
-            True if successfully collected, False if too many retries
-        """
-        attempts = 0
-        
-        while attempts < self.max_retry_attempts:
-            # Build the prompt for this field
-            prompt = self._build_field_prompt(field)
-            
-            try:
-                # Get user input (in a real implementation, this would be through the LLM)
-                print(f"\\n{prompt}")
-                if field.hints:
-                    for hint in field.hints:
-                        print(f"💡 {hint}")
-                
-                # For now, we'll simulate user input
-                # In real implementation, this would be handled by the LLM conversation
-                response = input("Your answer: ").strip()
-                
-                if not response:
-                    print("Please provide an answer.")
-                    attempts += 1
-                    continue
-                
-                # Validate the response
-                is_valid, feedback = self.validate_response(field, response)
-                
-                if is_valid:
-                    self.collected_data[field.name] = response
-                    self.conversation_history.append(
-                        ConversationMessage("user", response)
-                    )
-                    return True
-                else:
-                    print(f"\\n{feedback}\\nLet me try asking again...")
-                    attempts += 1
-                    
-            except Exception as e:
-                print(f"Error during conversation: {e}")
-                attempts += 1
-        
-        print(f"Too many attempts for field '{field.name}'. Skipping...")
-        return False
-    
-    def _build_field_prompt(self, field: FieldMeta) -> str:
-        """Build a conversational prompt for asking about a field."""
-        # Start with the field description as a question
-        prompt = field.description
-        
-        # Make it conversational if it doesn't end with a question mark
-        if not prompt.rstrip().endswith('?'):
-            prompt += "?"
-        
-        # Add context about what we've already collected
-        if self.collected_data:
-            context_items = []
-            for collected_field, value in list(self.collected_data.items())[-2:]:  # Last 2 items
-                short_value = value[:30] + "..." if len(value) > 30 else value
-                context_items.append(f"{collected_field}: {short_value}")
-            
-            if context_items:
-                prompt = f"Based on what you've told me ({', '.join(context_items)}), {prompt.lower()}"
-        
-        return prompt
+        return "\n".join(messages)
     
     def get_conversation_summary(self) -> str:
         """Get a summary of the conversation so far."""
@@ -199,8 +147,13 @@ If the answer is not valid, explain what's missing or wrong in a helpful way tha
         
         summary_items = []
         for field_name, value in self.collected_data.items():
-            field_desc = self.meta.get_field(field_name).description if self.meta.get_field(field_name) else field_name
+            field = self.meta.get_field(field_name)
+            field_desc = field.description if field else field_name
             short_value = value[:50] + "..." if len(value) > 50 else value
             summary_items.append(f"- {field_desc}: {short_value}")
         
-        return f"Collected so far:\\n" + "\\n".join(summary_items)
+        return f"Collected so far:\n" + "\n".join(summary_items)
+    
+    def create_instance(self) -> GathererInstance:
+        """Create a GathererInstance from collected data."""
+        return GathererInstance(self.meta, self.collected_data)

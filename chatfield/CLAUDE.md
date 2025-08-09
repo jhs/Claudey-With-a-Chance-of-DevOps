@@ -30,11 +30,11 @@ This is syntactically valid Python that gives us clean field definitions without
 chatfield/
 ├── __init__.py          # Main exports
 ├── decorators.py        # Core decorators (@gather, @must, etc.)
-├── gatherer.py          # Gatherer class and conversation logic
-├── llm_backend.py       # LLM integration (start with OpenAI)
+├── gatherer.py          # Gatherer class and metadata
+├── conversation.py      # LangGraph-based conversation management
+├── agent.py             # LangGraph agent implementation
 ├── builder.py           # GathererBuilder for dynamic creation
-├── presets.py           # Common preset decorators
-└── conversation.py      # Conversation state management
+└── presets.py           # Common preset decorators
 ```
 
 ## Core Components to Implement
@@ -109,49 +109,40 @@ def process_gatherer_class(cls):
 
 ```python
 class Conversation:
-    """Manages the conversation state"""
-    def __init__(self, gatherer_meta: GathererMeta):
-        self.meta = gatherer_meta
+    """Manages conversations using LangGraph agents."""
+    def __init__(self, meta: GathererMeta, **kwargs):
+        self.meta = meta
+        self.agent = ChatfieldAgent(meta, **kwargs)
         self.collected_data = {}
-        self.conversation_history = []
         
-    def get_next_field(self):
-        """Determine which field to ask about next"""
-        # 1. Check which fields are already collected
-        # 3. Return next uncollected field
-        
-    def validate_response(self, field: FieldMeta, response: str):
-        """Check if response meets requirements"""
-        # 1. Build validation prompt from must/reject rules
-        # 2. Call LLM to validate
-        # 3. Return validation result
+    def conduct_conversation(self):
+        """Run the conversation to collect all data."""
+        # Uses LangGraph agent to manage conversation flow
+        # Returns collected data dictionary
 ```
 
-### 4. LLM Integration (`llm_backend.py`)
+### 4. LangGraph Agent (`agent.py`)
 
 ```python
-class LLMBackend:
-    """Abstract base for LLM providers"""
+class ChatfieldAgent:
+    """LangGraph-based conversational agent for data gathering."""
     
-    def create_conversation_prompt(self, meta: GathererMeta, field: FieldMeta, history: list):
-        """Build the system and user prompts"""
-        # Include:
-        # - Class docstring as main context
-        # - User context ("who you're talking to")
-        # - Agent context ("how to behave")
-        # - Current field being gathered
-        # - Conversation history
-        # - Validation rules for current field
+    def __init__(self, meta: GathererMeta, llm=None, **kwargs):
+        self.meta = meta
+        self.llm = llm or ChatOpenAI()  # Default to OpenAI
+        self.graph = self._build_graph()
         
-    def get_response(self, prompt: str) -> str:
-        """Get LLM response"""
-        pass
-
-class OpenAIBackend(LLMBackend):
-    """OpenAI implementation"""
-    # Use GPT-4 for best results
-    # Handle streaming responses
-    # Implement retry logic
+    def _build_graph(self):
+        """Build the LangGraph workflow."""
+        # Creates state machine with nodes for:
+        # - Field selection
+        # - Question asking
+        # - Response validation
+        # - Data collection
+        
+    def run(self, initial_data=None):
+        """Run the conversation and collect data."""
+        # Execute the graph and return collected data
 ```
 
 ### 5. The Main gather() Method
@@ -248,9 +239,9 @@ def create_gatherer(user_info):
 ## Testing Strategy
 
 1. **Unit tests** for decorator behavior
-2. **Integration tests** with mock LLM
-3. **Real LLM tests** with OpenAI (mark as slow)
-4. **Conversation flow tests** for complex scenarios
+2. **Integration tests** with real OpenAI API (requires API key)
+3. **Conversation flow tests** for complex scenarios
+4. Tests use `@pytest.mark.skipif` when API key not available
 
 ## Error Handling
 

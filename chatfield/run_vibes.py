@@ -33,7 +33,7 @@ class Request:
         "Your vision for the future success of this web app"
 
 if __name__ == "__main__":
-    print("\n=== Testing Real OpenAI API with Product Owner Request Model ===\n", file=sys.stderr)
+    print("\n=== Testing Real OpenAI API with Vibe Programmer Request Model ===\n", file=sys.stderr)
     
     # Create instance and gather data
     request = Request.gather()
@@ -41,9 +41,10 @@ if __name__ == "__main__":
     
     # Display results
     print("\n=== Gathered Information ===\n", file=sys.stderr)
-    print(f"Scope: {request.scope}", file=sys.stderr)
-    print(f"Current Status: {request.current_status}", file=sys.stderr)
-    print(f"Constraints: {request.constraints}", file=sys.stderr)
-    print(f"Budget: {request.budget}", file=sys.stderr)
+    print(f"What: {request.what}", file=sys.stderr)
+    print(f"Why: {request.why}", file=sys.stderr)
+    print(f"Style: {request.style}", file=sys.stderr)
+    print(f"Users: {request.users}", file=sys.stderr)
+    print(f"Dream: {request.dream}", file=sys.stderr)
     
     print(f"\n=== Test Complete ===\n", file=sys.stderr)
