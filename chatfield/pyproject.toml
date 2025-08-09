@@ -44,11 +44,17 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "openai>=1.0.0",
-    "langgraph>=0.2.0",
-    "langchain>=0.3.0",
-    "langchain-openai>=0.2.0",
-    "pydantic>=2.0.0",
+    "langchain>=0.3.27",
+    "langchain-core>=0.3.74",
+    "langchain-openai>=0.3.29",
+    "langchain-text-splitters>=0.3.9",
+    "langgraph>=0.6.4",
+    "langgraph-checkpoint>=2.1.1",
+    "langgraph-prebuilt>=0.6.4",
+    "langgraph-sdk>=0.2.0",
+    "openai>=1.99.6",
+    "pydantic>=2.11.7",
+    "pydantic_core>=2.33.2",
 ]
 
 [project.optional-dependencies]

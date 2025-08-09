@@ -30,14 +30,18 @@ Traditional forms frustrate non-technical users. They don't know what "deploymen
 ## Installation
 
 ```bash
-pip install chatfield
+pip install .
+```
+
+For development:
+```bash
+pip install -e .[dev]
 ```
 
 ### Requirements
 
 - Python 3.8+
 - OpenAI API key (set as `OPENAI_API_KEY` environment variable)
-- Dependencies: `langgraph`, `langchain`, `langchain-openai`
 
 ## Quick Start
 
