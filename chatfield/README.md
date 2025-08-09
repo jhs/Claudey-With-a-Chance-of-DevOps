@@ -379,3 +379,7 @@ while True:
     if support.__done:
         break
 ```
+
+Features
+- Pre-populate values based on ongoing conversation and/or propose some recommended possible answers to upcoming questions
+- Must have some kind of builder API to build these objects during runtime, not in source code.
