@@ -1,7 +1,7 @@
 """Tests for the @match decorator system."""
 
 import pytest
-from chatfield import Gatherer, must, reject
+from chatfield import Dialogue, must, reject
 from chatfield.match import match
 from chatfield.field_proxy import FieldValueProxy
 from chatfield.socrates import FieldMeta, SocratesInstance
@@ -12,7 +12,7 @@ class TestMatchDecorator:
     
     def test_basic_match_decorator(self):
         """Test basic @match decorator usage."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @match.is_personal("mentions personal use")
             def purpose(): "What's your project for?"
         
@@ -25,7 +25,7 @@ class TestMatchDecorator:
     
     def test_multiple_match_decorators(self):
         """Test multiple @match decorators on same field."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @match.is_personal("mentions personal use")
             @match.is_commercial("for business purposes")
             @match.is_educational("for learning")
@@ -42,14 +42,14 @@ class TestMatchDecorator:
     def test_duplicate_match_name_raises_error(self):
         """Test that duplicate match names raise ValueError."""
         with pytest.raises(ValueError, match="Duplicate match name 'is_valid'"):
-            class Example(Gatherer):
+            class Example(Dialogue):
                 @match.is_valid("checks validity")
                 @match.is_valid("another validity check")
                 def field(): "Test field"
     
     def test_match_with_must_reject(self):
         """Test @match works alongside @must and @reject."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @match.is_personal("personal project")
             @must("clear purpose")
             @reject("vague ideas")
@@ -78,7 +78,7 @@ class TestMustRejectAsMatch:
     
     def test_must_creates_match_rule(self):
         """Test @must creates internal match rule."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @must("specific requirement")
             def field(): "Test field"
         
@@ -96,7 +96,7 @@ class TestMustRejectAsMatch:
     
     def test_reject_creates_match_rule(self):
         """Test @reject creates internal match rule."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @reject("avoid this")
             def field(): "Test field"
         
@@ -115,7 +115,7 @@ class TestMustRejectAsMatch:
     def test_duplicate_must_raises_error(self):
         """Test duplicate @must rules raise error."""
         with pytest.raises(ValueError, match="Duplicate @must rule"):
-            class Example(Gatherer):
+            class Example(Dialogue):
                 @must("same rule")
                 @must("same rule")
                 def field(): "Test field"
@@ -123,14 +123,14 @@ class TestMustRejectAsMatch:
     def test_duplicate_reject_raises_error(self):
         """Test duplicate @reject rules raise error."""
         with pytest.raises(ValueError, match="Duplicate @reject rule"):
-            class Example(Gatherer):
+            class Example(Dialogue):
                 @reject("same rule")
                 @reject("same rule")
                 def field(): "Test field"
     
     def test_different_must_rules_allowed(self):
         """Test different @must rules are allowed."""
-        class Example(Gatherer):
+        class Example(Dialogue):
             @must("rule one")
             @must("rule two")
             @must("rule three")

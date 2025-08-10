@@ -1,34 +1,34 @@
-"""Test the Gatherer base class inheritance pattern."""
+"""Test the Dialogue base class inheritance pattern."""
 
 import pytest
-from chatfield import Gatherer, must, reject, hint, user, agent
+from chatfield import Dialogue, must, reject, hint, user, agent
 from chatfield.socrates import SocratesMeta
 
 
-class TestGathererInheritance:
-    """Test the Gatherer base class inheritance pattern."""
+class TestDialogueInheritance:
+    """Test the Dialogue base class inheritance pattern."""
     
-    def test_simple_gatherer(self):
-        """Test basic Gatherer inheritance."""
-        class SimpleGatherer(Gatherer):
-            """Test gatherer"""
+    def test_simple_dialogue(self):
+        """Test basic Dialogue inheritance."""
+        class SimpleDialogue(Dialogue):
+            """Test dialogue"""
             def name(): "Your name"
             def email(): "Your email"
         
         # Should have gather method
-        assert hasattr(SimpleGatherer, 'gather')
-        assert callable(SimpleGatherer.gather)
+        assert hasattr(SimpleDialogue, 'gather')
+        assert callable(SimpleDialogue.gather)
         
         # Should have metadata
-        meta = SimpleGatherer._get_meta()
+        meta = SimpleDialogue._get_meta()
         assert isinstance(meta, SocratesMeta)
-        assert meta.docstring == "Test gatherer"
+        assert meta.docstring == "Test dialogue"
         assert 'name' in meta.fields
         assert 'email' in meta.fields
     
-    def test_gatherer_with_field_decorators(self):
-        """Test Gatherer with field decorators."""
-        class DecoratedGatherer(Gatherer):
+    def test_dialogue_with_field_decorators(self):
+        """Test Dialogue with field decorators."""
+        class DecoratedDialogue(Dialogue):
             """Test with decorators"""
             
             @must("be specific")
@@ -38,7 +38,7 @@ class TestGathererInheritance:
             @hint("Think carefully")
             def solution(): "Your solution"
         
-        meta = DecoratedGatherer._get_meta()
+        meta = DecoratedDialogue._get_meta()
         
         # Check problem field
         problem_field = meta.fields['problem']
@@ -49,53 +49,53 @@ class TestGathererInheritance:
         solution_field = meta.fields['solution']
         assert "Think carefully" in solution_field.hints
     
-    def test_gatherer_with_class_decorators(self):
-        """Test Gatherer with class-level decorators."""
+    def test_dialogue_with_class_decorators(self):
+        """Test Dialogue with class-level decorators."""
         @user("Test user")
         @agent("Test agent")
-        class ContextGatherer(Gatherer):
+        class ContextDialogue(Dialogue):
             """Test with context"""
             def field(): "Test field"
         
-        meta = ContextGatherer._get_meta()
+        meta = ContextDialogue._get_meta()
         assert "Test user" in meta.user_context
         assert "Test agent" in meta.agent_context
     
     
     def test_multiple_inheritance_levels(self):
-        """Test inheritance from a Gatherer subclass."""
-        class BaseGatherer(Gatherer):
-            """Base gatherer"""
+        """Test inheritance from a Dialogue subclass."""
+        class BaseDialogue(Dialogue):
+            """Base dialogue"""
             def base_field(): "Base field"
         
-        class DerivedGatherer(BaseGatherer):
-            """Derived gatherer"""
+        class DerivedDialogue(BaseDialogue):
+            """Derived dialogue"""
             def derived_field(): "Derived field"
         
         # Both should have gather method
-        assert hasattr(BaseGatherer, 'gather')
-        assert hasattr(DerivedGatherer, 'gather')
+        assert hasattr(BaseDialogue, 'gather')
+        assert hasattr(DerivedDialogue, 'gather')
         
         # Check metadata
-        base_meta = BaseGatherer._get_meta()
+        base_meta = BaseDialogue._get_meta()
         assert 'base_field' in base_meta.fields
         
-        derived_meta = DerivedGatherer._get_meta()
+        derived_meta = DerivedDialogue._get_meta()
         assert 'base_field' in derived_meta.fields
         assert 'derived_field' in derived_meta.fields
     
-    def test_gatherer_with_match_decorators(self):
-        """Test Gatherer with @match decorators."""
+    def test_dialogue_with_match_decorators(self):
+        """Test Dialogue with @match decorators."""
         from chatfield import match
         
-        class MatchGatherer(Gatherer):
+        class MatchDialogue(Dialogue):
             """Test match decorators"""
             
             @match.personal("is personal")
             @match.work("is for work")
             def project_type(): "Project type"
         
-        meta = MatchGatherer._get_meta()
+        meta = MatchDialogue._get_meta()
         field_meta = meta.fields['project_type']
         
         # Check match rules are stored

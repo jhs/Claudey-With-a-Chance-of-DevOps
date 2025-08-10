@@ -127,7 +127,7 @@ class Conversation:
 class ChatfieldAgent:
     """LangGraph-based conversational agent for data gathering."""
     
-    def __init__(self, meta: GathererMeta, llm=None, **kwargs):
+    def __init__(self, meta: DialogueMeta, llm=None, **kwargs):
         self.meta = meta
         self.llm = llm or ChatOpenAI()  # Default to OpenAI
         self.graph = self._build_graph()

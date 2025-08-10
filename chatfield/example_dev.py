@@ -7,13 +7,13 @@ and can be used for development.
 """
 
 import os
-from chatfield import Gatherer, must, hint, __version__
+from chatfield import Dialogue, must, hint, __version__
 
 print(f"Chatfield v{__version__} - Development Mode")
 print("=" * 50)
 
 
-class QuickDemo(Gatherer):
+class QuickDemo(Dialogue):
     """Quick demonstration of Chatfield capabilities"""
     
     @hint("e.g., building a website, fixing a bug, learning Python")

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Example showing the new Gatherer class-based approach.
+Example showing the new Dialogue class-based approach.
 
 This demonstrates the cleaner syntax using inheritance instead of decorators.
 """
 
 import os
-from chatfield import Gatherer, must, hint, reject, match, user, agent, __version__
+from chatfield import Dialogue, must, hint, reject, match, user, agent, __version__
 
-print(f"Chatfield v{__version__} - Gatherer Class Example")
+print(f"Chatfield v{__version__} - Dialogue Class Example")
 print("=" * 50)
 
 
-# Simple example - just inherit from Gatherer
-class QuickDemo(Gatherer):
+# Simple example - just inherit from Dialogue
+class QuickDemo(Dialogue):
     """Quick demonstration of Chatfield capabilities"""
     
     @hint("e.g., building a website, fixing a bug, learning Python")
@@ -29,7 +29,7 @@ class QuickDemo(Gatherer):
 @user("Probably frustrated with tech complexity")
 @agent("Patient Socratic questioner")
 @agent("Use analogies to explain technical concepts")
-class BusinessWebsite(Gatherer):
+class BusinessWebsite(Dialogue):
     """A Socratic journey to discover your business's online needs"""
     
     @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
@@ -47,7 +47,7 @@ class BusinessWebsite(Gatherer):
 
 
 # Example with match decorators
-class ProjectPlanning(Gatherer):
+class ProjectPlanning(Dialogue):
     """Planning your next project"""
     
     @match.personal("is a personal project")
@@ -76,10 +76,10 @@ def main():
         print("3. pip install python-dotenv")
         return
     
-    print("\nExamples of the new Gatherer class syntax:")
+    print("\nExamples of the new Dialogue class syntax:")
     print()
-    print("1. Simple inheritance from Gatherer:")
-    print("   class MyGatherer(Gatherer):")
+    print("1. Simple inheritance from Dialogue:")
+    print("   class MyDialogue(Dialogue):")
     print("       def field(): 'description'")
     print()
     print("2. With field decorators:")
@@ -90,10 +90,10 @@ def main():
     print("3. With class decorators:")
     print("   @user('context about user')")
     print("   @agent('how to behave')")
-    print("   class MyGatherer(Gatherer):")
+    print("   class MyDialogue(Dialogue):")
     print()
     print("Usage remains the same:")
-    print("   result = MyGatherer.gather()")
+    print("   result = MyDialogue.gather()")
     print("   print(result.field)")
     print()
     
@@ -102,7 +102,7 @@ def main():
     # print(f"Task: {result.task}")
     # print(f"Experience: {result.experience}")
     
-    print("✅ Gatherer class pattern is working correctly!")
+    print("✅ Dialogue class pattern is working correctly!")
     print()
     print("Benefits over @gather decorator:")
     print("- Better IDE support and autocomplete")

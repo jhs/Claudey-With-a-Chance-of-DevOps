@@ -2,13 +2,13 @@
 """Test real OpenAI API calls with full logging."""
 
 import sys
-from chatfield import Gatherer, user, agent, hint, must, reject
+from chatfield import Dialogue, user, agent, hint, must, reject
 
 @user("Vibe Programmer - a person wanting to build a web application via prompting and chat")
 @agent("Implementor of the vibe programmer's vision")
 @agent("Asks followup or clarifying questions to the vibe programmer to get enough detail to implement correctly")
 @agent("Summarizes key details back to the vibe programmer to ensure mutual understanding")
-class Request(Gatherer):
+class Request(Dialogue):
     """Vibe programmer's request for technical work"""
     
     @hint("Functional requirements")

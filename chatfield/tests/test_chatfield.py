@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from chatfield.agent import ChatfieldAgent, ConversationState, ValidationResult
 from chatfield.conversation import Conversation
 from chatfield.socrates import SocratesMeta, FieldMeta
-from chatfield import Gatherer, must, reject, hint, user, agent
+from chatfield import Dialogue, must, reject, hint, user, agent
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
@@ -121,18 +121,18 @@ class TestConversation:
         assert conversation.collected_data == {}
         assert conversation.conversation_history == []
     
-    def test_conversation_with_simple_gatherer(self):
+    def test_conversation_with_simple_dialogue(self):
         """Test a simple conversation flow with real API."""
-        class SimpleGatherer(Gatherer):
-            """A simple data gatherer for testing."""
+        class SimpleDialogue(Dialogue):
+            """A simple dialogue for testing."""
             
             def name():
                 """What is your name"""
         
         # This test would require actual user input or mocking
         # For now, we just test that the class was properly decorated
-        assert hasattr(SimpleGatherer, 'gather')
-        assert callable(SimpleGatherer.gather)
+        assert hasattr(SimpleDialogue, 'gather')
+        assert callable(SimpleDialogue.gather)
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
@@ -141,7 +141,7 @@ class TestDecorators:
     
     def test_gather_decorator(self):
         """Test that @gather adds the gather method."""
-        class TestClass(Gatherer):
+        class TestClass(Dialogue):
             """Test class"""
             def field():
                 """A field"""
@@ -151,7 +151,7 @@ class TestDecorators:
     
     def test_field_decorators(self):
         """Test field-level decorators."""
-        class TestClass(Gatherer):
+        class TestClass(Dialogue):
             """Test class"""
             
             @must("specific requirement")
@@ -172,7 +172,7 @@ class TestDecorators:
         """Test class-level decorators."""
         @user("A test user")
         @agent("Be helpful")
-        class TestClass(Gatherer):
+        class TestClass(Dialogue):
             """Test class"""
             def field():
                 """A field"""
@@ -190,7 +190,7 @@ class TestEndToEnd:
     def test_simple_data_gathering(self):
         """Test complete data gathering flow."""
         @agent("Be concise and professional")
-        class ContactInfo(Gatherer):
+        class ContactInfo(Dialogue):
             """Gather basic contact information."""
             
             @hint("First and last name")

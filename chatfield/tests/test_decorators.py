@@ -1,7 +1,7 @@
 """Unit tests for Chatfield decorators."""
 
 import pytest
-from chatfield import Gatherer, must, reject, hint, user, agent
+from chatfield import Dialogue, must, reject, hint, user, agent
 from chatfield.socrates import SocratesMeta, process_socrates_class
 
 
@@ -10,7 +10,7 @@ class TestFieldDecorators:
     
     def test_basic_function_fields(self):
         """Test basic function-based field definition."""
-        class SimpleFunction(Gatherer):
+        class SimpleFunction(Dialogue):
             def name(): "Your name"
             def email(): "Your email"
         
@@ -23,7 +23,7 @@ class TestFieldDecorators:
     
     def test_must_decorator(self):
         """Test @must decorator stores rules."""
-        class WithMust(Gatherer):
+        class WithMust(Dialogue):
             @must("specific requirement")
             def field(): "Test field"
         
@@ -33,7 +33,7 @@ class TestFieldDecorators:
     
     def test_multiple_must_rules(self):
         """Test multiple @must decorators."""
-        class MultipleMust(Gatherer):
+        class MultipleMust(Dialogue):
             @must("rule 1")
             @must("rule 2")
             @must("rule 3")
@@ -46,7 +46,7 @@ class TestFieldDecorators:
     
     def test_reject_decorator(self):
         """Test @reject decorator."""
-        class WithReject(Gatherer):
+        class WithReject(Dialogue):
             @reject("avoid this")
             def field(): "Test field"
         
@@ -56,7 +56,7 @@ class TestFieldDecorators:
     
     def test_hint_decorator(self):
         """Test @hint decorator."""
-        class WithHint(Gatherer):
+        class WithHint(Dialogue):
             @hint("Helpful tip")
             def field(): "Test field"
         
@@ -98,7 +98,7 @@ class TestFieldDecorators:
     
     def test_all_field_decorators(self):
         """Test field with all decorator types combined."""
-        class AllDecorators(Gatherer):
+        class AllDecorators(Dialogue):
             @must("required info")
             @reject("forbidden content")
             @hint("Helpful guidance")
@@ -119,7 +119,7 @@ class TestClassDecorators:
     def test_user_decorator(self):
         """Test @user decorator stores context."""
         @user("Test user context")
-        class WithUser(Gatherer):
+        class WithUser(Dialogue):
             def field(): "Test field"
         
         meta = WithUser._get_meta()
@@ -129,7 +129,7 @@ class TestClassDecorators:
         """Test multiple @user decorators accumulate."""
         @user("Context 1")
         @user("Context 2")
-        class MultipleUser(Gatherer):
+        class MultipleUser(Dialogue):
             def field(): "Test field"
         
         meta = MultipleUser._get_meta()
@@ -139,7 +139,7 @@ class TestClassDecorators:
     def test_agent_decorator(self):
         """Test @agent decorator stores behavior."""
         @agent("Test agent behavior")
-        class WithAgent(Gatherer):
+        class WithAgent(Dialogue):
             def field(): "Test field"
         
         meta = WithAgent._get_meta()
@@ -149,7 +149,7 @@ class TestClassDecorators:
         """Test multiple @agent decorators accumulate."""
         @agent("Behavior 1")
         @agent("Behavior 2") 
-        class MultipleAgent(Gatherer):
+        class MultipleAgent(Dialogue):
             def field(): "Test field"
         
         meta = MultipleAgent._get_meta()
@@ -166,7 +166,7 @@ class TestComplexDecorators:
         @user("User context 2")
         @agent("Agent behavior 1")
         @agent("Agent behavior 2")
-        class FullStack(Gatherer):
+        class FullStack(Dialogue):
             """Test docstring"""
             def field1(): "First field"
             def field2(): "Second field"
@@ -200,7 +200,7 @@ class TestInheritance:
             @must("base requirement")
             def base_field(): "Base field"
         
-        class DerivedClass(Gatherer, BaseClass):
+        class DerivedClass(Dialogue, BaseClass):
             @must("derived requirement")
             def derived_field(): "Derived field"
         
@@ -224,7 +224,7 @@ class TestFunctionSyntaxValidation:
     
     def test_functions_without_docstring_ignored(self):
         """Test that functions without docstrings are ignored."""
-        class NoDocstring(Gatherer):
+        class NoDocstring(Dialogue):
             def valid_field(): "This has a docstring"
             
             def invalid_field():
@@ -237,7 +237,7 @@ class TestFunctionSyntaxValidation:
     
     def test_builtin_methods_ignored(self):
         """Test that built-in methods are ignored."""
-        class WithBuiltins(Gatherer):
+        class WithBuiltins(Dialogue):
             def field(): "Valid field"
             
             # These should all be ignored
@@ -259,7 +259,7 @@ class TestFunctionSyntaxValidation:
     
     def test_mixed_functions_ignored_correctly(self):
         """Test that non-field functions are ignored properly."""
-        class MixedFunctions(Gatherer):
+        class MixedFunctions(Dialogue):
             def valid_field(): "This is a valid field"
             
             def no_docstring():
@@ -291,7 +291,7 @@ class TestFunctionSyntaxValidation:
     
     def test_empty_function_body(self):
         """Test that functions with empty bodies work correctly."""
-        class EmptyBodies(Gatherer):
+        class EmptyBodies(Dialogue):
             def field1(): "Field with pass"
             def field2(): "Field with ellipsis"
                 
@@ -305,19 +305,19 @@ class TestErrorCases:
     """Test error handling in decorators."""
     
     def test_empty_class(self):
-        """Test Gatherer with no fields."""
-        class Empty(Gatherer):
-            """Empty gatherer"""
+        """Test Dialogue with no fields."""
+        class Empty(Dialogue):
+            """Empty dialogue"""
             pass
         
         assert hasattr(Empty, 'gather')
         meta = Empty._get_meta()
-        assert meta.docstring == "Empty gatherer"
+        assert meta.docstring == "Empty dialogue"
         assert len(meta.fields) == 0
     
     def test_no_docstring(self):
-        """Test Gatherer with no docstring."""
-        class NoDoc(Gatherer):
+        """Test Dialogue with no docstring."""
+        class NoDoc(Dialogue):
             def field(): "Test field"
         
         meta = NoDoc._get_meta()

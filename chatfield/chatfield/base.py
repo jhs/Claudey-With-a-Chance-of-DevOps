@@ -4,20 +4,20 @@ from typing import Type, TypeVar, Dict, Optional
 from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 from .conversation import Conversation
 
-T = TypeVar('T', bound='Gatherer')
+T = TypeVar('T', bound='Dialogue')
 
 # Global cache for metadata by class
 _metadata_cache: Dict[type, SocratesMeta] = {}
 
 
-class Gatherer:
+class Dialogue:
     """Base class for creating Socratic dialogue interfaces.
     
-    Inherit from this class to create a data gatherer that conducts
+    Inherit from this class to create a dialogue that conducts
     conversations to collect information from users.
     
     Example:
-        class TechHelp(Gatherer):
+        class TechHelp(Dialogue):
             def problem(): "What's not working?"
             def tried(): "What have you tried?"
     """

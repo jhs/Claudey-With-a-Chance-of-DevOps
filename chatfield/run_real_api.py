@@ -2,13 +2,13 @@
 """Test real OpenAI API calls with full logging."""
 
 import sys
-from chatfield import Gatherer, user, agent, hint, must, reject
+from chatfield import Dialogue, user, agent, hint, must, reject
 
 @user("Product Owner")
 @user("Not deep technical, but has a clear vision of what they want")
 @agent("Technology partner for the Product Owner")
 @agent("Needs to understand the request in detail to implement correctly")
-class Request(Gatherer):
+class Request(Dialogue):
     """Product Owner's request for technical work"""
     
     @hint("A specific thing you want to build")

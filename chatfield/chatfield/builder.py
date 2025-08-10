@@ -1,7 +1,7 @@
 """Dynamic Socratic dialogue class creation utilities."""
 
 from typing import Dict, List, Any, Type, Optional
-from .base import Gatherer
+from .base import Dialogue
 from .decorators import user, agent, must, reject, hint
 
 
@@ -73,8 +73,8 @@ class SocratesBuilder:
             
             class_attrs[field_name] = field_attr
         
-        # Create the dynamic class inheriting from Gatherer
-        cls = type(self.name, (Gatherer,), class_attrs)
+        # Create the dynamic class inheriting from Dialogue
+        cls = type(self.name, (Dialogue,), class_attrs)
         
         # Apply user contexts
         for context in self.user_contexts:

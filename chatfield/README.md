@@ -12,9 +12,9 @@ Just as Socrates used thoughtful questioning to help people discover truth and u
 - **Adapts naturally** - The conversation adjusts to the user's level and responses
 
 ```python
-from chatfield import Gatherer, must, reject, hint
+from chatfield import Dialogue, must, reject, hint
 
-class TechHelp(Gatherer):
+class TechHelp(Dialogue):
     """Your technical challenges"""
     
     @hint("Be specific - 'computer is slow' vs 'Excel takes 5 minutes to open'")
@@ -59,9 +59,9 @@ pip install -e .[dev]
 Help someone fix their computer issue:
 
 ```python
-from chatfield import Gatherer
+from chatfield import Dialogue
 
-class ComputerHelp(Gatherer):
+class ComputerHelp(Dialogue):
     """A Socratic dialogue to understand your computer issues"""
     
     def problem(): "What's happening with your computer?"
@@ -81,9 +81,9 @@ print(help_session.when_started)
 Ensure you get useful information:
 
 ```python
-from chatfield import Gatherer, must, reject, hint
+from chatfield import Dialogue, must, reject, hint
 
-class WebsiteHelp(Gatherer):
+class WebsiteHelp(Dialogue):
     """A Socratic exploration of your website needs"""
     
     @must("specific purpose or goal clear enough to protoype by a web developer")
@@ -106,9 +106,9 @@ class WebsiteHelp(Gatherer):
 Use `@match` to tell Chatfield how fields do or don't match your criteria or predicate.
 
 ```python
-from chatfield import Gatherer, match
+from chatfield import Dialogue, match
 
-class WebsiteHelp(Gatherer):
+class WebsiteHelp(Dialogue):
     """A Socratic exploration of your website needs"""
     
     @match.personal("is a personal project")
@@ -132,14 +132,14 @@ print(web_help.purpose.work) # False
 Adapt tone and approach to your users:
 
 ```python
-from chatfield import Gatherer, must, user, agent, hint
+from chatfield import Dialogue, must, user, agent, hint
 
 @user("Small business owner, not technical")
 @user("Probably frustrated with tech complexity")
 #@agent("Socratic questioner, patient and thoughtful")
 @agent("Grouchy but insightful Socratic questioner")
 @agent("Use analogies to explain technical concepts")
-class BusinessWebsite(Gatherer):
+class BusinessWebsite(Dialogue):
     """A Socratic journey to discover your business's online needs"""
     
     @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
@@ -167,7 +167,7 @@ class BusinessWebsite(Gatherer):
 @agent("Patient teacher, not a salesperson")
 @agent("Suggest specific products when appropriate")
 @agent("Always explain the 'why' behind recommendations")
-class HomeOfficeSetup(Gatherer):
+class HomeOfficeSetup(Dialogue):
     """
     Setting up a functional home office
     
@@ -198,11 +198,11 @@ class HomeOfficeSetup(Gatherer):
 
 ## Advanced Usage
 
-### Dynamic Gatherers from User Data
+### Dynamic Dialogues from User Data
 
 ```python
 def create_tech_helper(user_profile):
-    """Create a personalized gatherer based on user profile"""
+    """Create a personalized dialogue based on user profile"""
     
     tech_level = user_profile.get('tech_level', 'beginner')
     industry = user_profile.get('industry', 'general')
@@ -211,7 +211,7 @@ def create_tech_helper(user_profile):
     @user(f"Primary concern: {user_profile.get('pain_point')}")
     @agent(f"Adjust explanations for {tech_level} level")
     @agent("Provide industry-specific examples")
-    class PersonalizedHelper(Gatherer):
+    class PersonalizedHelper(Dialogue):
         f"""
         Solving your {industry} technology challenges
         
@@ -242,7 +242,7 @@ from chatfield import patient_teacher, quick_diagnosis, friendly_expert, hint
 
 # Patient teacher for complex topics
 @patient_teacher
-class DatabaseExplained(Gatherer):
+class DatabaseExplained(Dialogue):
     """Understanding databases for your business"""
     
     @hint("Customer list? Inventory? Sales records? What info matters most?")
@@ -255,7 +255,7 @@ class DatabaseExplained(Gatherer):
 
 # Quick diagnosis for urgent issues  
 @quick_diagnosis
-class EmailNotWorking(Gatherer):
+class EmailNotWorking(Dialogue):
     """Let's get your email working again"""
     
     @hint("Error messages? Can't send? Can't receive? Wrong password?")
@@ -268,7 +268,7 @@ class EmailNotWorking(Gatherer):
 
 # Friendly expert for ongoing help
 @friendly_expert  
-class DigitalTransformation(Gatherer):
+class DigitalTransformation(Dialogue):
     """Modernizing your business processes"""
     
     @hint("Invoice generation? Inventory tracking? Customer communication?")
@@ -281,7 +281,7 @@ class DigitalTransformation(Gatherer):
 ```python
 @user("Non-technical founder needing a website")
 @agent("Guide away from over-engineering")
-class WebsiteRequirements(Gatherer):
+class WebsiteRequirements(Dialogue):
     """
     Planning a website that actually gets built
     
@@ -331,7 +331,7 @@ class WebsiteRequirements(Gatherer):
 Describe the data. Do not write the prompt or Agent script.
 
 ```python
-class TechHelp(Gatherer):
+class TechHelp(Dialogue):
     """
     Tech support request
     
@@ -369,7 +369,7 @@ def issue_description(): "Tell me what your problem is?"
 
 ### Core Classes
 
-- `Gatherer` - Base class for creating Socratic dialogue interfaces (inherit from this)
+- `Dialogue` - Base class for creating Socratic dialogue interfaces (inherit from this)
 
 ### Decorators
 
