@@ -61,19 +61,6 @@ class TestGathererInheritance:
         assert "Test user" in meta.user_context
         assert "Test agent" in meta.agent_context
     
-    def test_gatherer_backwards_compatibility(self):
-        """Test that @gather still works with Gatherer subclass."""
-        from chatfield import gather
-        
-        @gather  # Should be a no-op
-        class BackwardsGatherer(Gatherer):
-            """Backwards compatible"""
-            def test(): "Test field"
-        
-        # Should still work normally
-        assert hasattr(BackwardsGatherer, 'gather')
-        meta = BackwardsGatherer._get_meta()
-        assert 'test' in meta.fields
     
     def test_multiple_inheritance_levels(self):
         """Test inheritance from a Gatherer subclass."""

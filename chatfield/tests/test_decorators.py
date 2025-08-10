@@ -1,34 +1,8 @@
 """Unit tests for Chatfield decorators."""
 
 import pytest
-from chatfield.decorators import gather, must, reject, hint, user, agent
+from chatfield import Gatherer, must, reject, hint, user, agent
 from chatfield.socrates import SocratesMeta, process_socrates_class
-
-
-class TestGatherDecorator:
-    """Test the @gather decorator."""
-    
-    def test_gather_adds_method(self):
-        """Test that @gather adds the gather() class method."""
-        @gather
-        class Simple:
-            def name(): "Your name"
-        
-        assert hasattr(Simple, 'gather')
-        assert callable(Simple.gather)
-    
-    def test_gather_stores_metadata(self):
-        """Test that @gather stores metadata on the class."""
-        @gather
-        class WithMeta:
-            """Test gatherer"""
-            def field(): "Test field"
-        
-        assert hasattr(WithMeta, '_chatfield_meta')
-        meta = WithMeta._chatfield_meta
-        assert isinstance(meta, SocratesMeta)
-        assert meta.docstring == "Test gatherer"
-        assert 'field' in meta.fields
 
 
 class TestFieldDecorators:
@@ -36,12 +10,11 @@ class TestFieldDecorators:
     
     def test_basic_function_fields(self):
         """Test basic function-based field definition."""
-        @gather
-        class SimpleFunction:
+        class SimpleFunction(Gatherer):
             def name(): "Your name"
             def email(): "Your email"
         
-        meta = SimpleFunction._chatfield_meta
+        meta = SimpleFunction._get_meta()
         assert len(meta.fields) == 2
         assert "name" in meta.fields
         assert "email" in meta.fields
@@ -50,48 +23,44 @@ class TestFieldDecorators:
     
     def test_must_decorator(self):
         """Test @must decorator stores rules."""
-        @gather
-        class WithMust:
+        class WithMust(Gatherer):
             @must("specific requirement")
             def field(): "Test field"
         
-        meta = WithMust._chatfield_meta
+        meta = WithMust._get_meta()
         field_meta = meta.fields["field"]
         assert "specific requirement" in field_meta.must_rules
     
     def test_multiple_must_rules(self):
         """Test multiple @must decorators."""
-        @gather
-        class MultipleMust:
+        class MultipleMust(Gatherer):
             @must("rule 1")
             @must("rule 2")
             @must("rule 3")
             def field(): "Test field"
         
-        meta = MultipleMust._chatfield_meta
+        meta = MultipleMust._get_meta()
         field_meta = meta.fields["field"]
         # Decorators apply in reverse order
         assert field_meta.must_rules == ["rule 3", "rule 2", "rule 1"]
     
     def test_reject_decorator(self):
         """Test @reject decorator."""
-        @gather
-        class WithReject:
+        class WithReject(Gatherer):
             @reject("avoid this")
             def field(): "Test field"
         
-        meta = WithReject._chatfield_meta
+        meta = WithReject._get_meta()
         field_meta = meta.fields["field"]
         assert "avoid this" in field_meta.reject_rules
     
     def test_hint_decorator(self):
         """Test @hint decorator."""
-        @gather
-        class WithHint:
+        class WithHint(Gatherer):
             @hint("Helpful tip")
             def field(): "Test field"
         
-        meta = WithHint._chatfield_meta
+        meta = WithHint._get_meta()
         field_meta = meta.fields["field"]
         assert field_meta.hints == ["Helpful tip"]
     
@@ -129,14 +98,13 @@ class TestFieldDecorators:
     
     def test_all_field_decorators(self):
         """Test field with all decorator types combined."""
-        @gather
-        class AllDecorators:
+        class AllDecorators(Gatherer):
             @must("required info")
             @reject("forbidden content")
             @hint("Helpful guidance")
             def complex_field(): "Complex field"
         
-        meta = AllDecorators._chatfield_meta
+        meta = AllDecorators._get_meta()
         field_meta = meta.fields["complex_field"]
         
         assert field_meta.description == "Complex field"
@@ -151,44 +119,40 @@ class TestClassDecorators:
     def test_user_decorator(self):
         """Test @user decorator stores context."""
         @user("Test user context")
-        @gather
-        class WithUser:
+        class WithUser(Gatherer):
             def field(): "Test field"
         
-        meta = WithUser._chatfield_meta
+        meta = WithUser._get_meta()
         assert "Test user context" in meta.user_context
     
     def test_multiple_user_contexts(self):
         """Test multiple @user decorators accumulate."""
         @user("Context 1")
         @user("Context 2")
-        @gather
-        class MultipleUser:
+        class MultipleUser(Gatherer):
             def field(): "Test field"
         
-        meta = MultipleUser._chatfield_meta
+        meta = MultipleUser._get_meta()
         assert "Context 1" in meta.user_context
         assert "Context 2" in meta.user_context
     
     def test_agent_decorator(self):
         """Test @agent decorator stores behavior."""
         @agent("Test agent behavior")
-        @gather
-        class WithAgent:
+        class WithAgent(Gatherer):
             def field(): "Test field"
         
-        meta = WithAgent._chatfield_meta
+        meta = WithAgent._get_meta()
         assert "Test agent behavior" in meta.agent_context
     
     def test_multiple_agent_contexts(self):
         """Test multiple @agent decorators accumulate."""
         @agent("Behavior 1")
         @agent("Behavior 2") 
-        @gather
-        class MultipleAgent:
+        class MultipleAgent(Gatherer):
             def field(): "Test field"
         
-        meta = MultipleAgent._chatfield_meta
+        meta = MultipleAgent._get_meta()
         assert "Behavior 1" in meta.agent_context
         assert "Behavior 2" in meta.agent_context
 
@@ -202,13 +166,12 @@ class TestComplexDecorators:
         @user("User context 2")
         @agent("Agent behavior 1")
         @agent("Agent behavior 2")
-        @gather
-        class FullStack:
+        class FullStack(Gatherer):
             """Test docstring"""
             def field1(): "First field"
             def field2(): "Second field"
         
-        meta = FullStack._chatfield_meta
+        meta = FullStack._get_meta()
         
         # Check docstring
         assert meta.docstring == "Test docstring"
@@ -228,68 +191,6 @@ class TestComplexDecorators:
         assert meta.fields["field2"].description == "Second field"
 
 
-class TestDecoratorOrder:
-    """Test that decorator order doesn't matter."""
-    
-    def test_gather_first(self):
-        """Test @gather decorator applied first."""
-        @gather
-        @user("User context")
-        @agent("Agent behavior")
-        class GatherFirst:
-            def field(): "Test field"
-        
-        assert hasattr(GatherFirst, 'gather')
-        meta = GatherFirst._chatfield_meta
-        assert "User context" in meta.user_context
-        assert "Agent behavior" in meta.agent_context
-    
-    def test_gather_last(self):
-        """Test @gather decorator applied last."""
-        @user("User context")
-        @agent("Agent behavior")
-        @gather
-        class GatherLast:
-            def field(): "Test field"
-        
-        assert hasattr(GatherLast, 'gather')
-        meta = GatherLast._chatfield_meta
-        assert "User context" in meta.user_context
-        assert "Agent behavior" in meta.agent_context
-
-
-class TestBackwardCompatibility:
-    """Test that old annotation syntax no longer works."""
-    
-    def test_annotations_ignored(self):
-        """Test that __annotations__ are ignored now."""
-        class OldStyle:
-            # This old syntax should not work anymore
-            name: "Your name"
-            email: "Your email"
-        
-        # Process without @gather to test raw processing
-        meta = process_socrates_class(OldStyle)
-        
-        # Should have no fields since we don't process annotations anymore
-        assert len(meta.fields) == 0
-    
-    def test_mixed_old_and_new_syntax(self):
-        """Test mixing old and new syntax (only new should work)."""
-        @gather
-        class Mixed:
-            # Old syntax - should be ignored
-            old_field: "Old style field"
-            
-            # New syntax - should work
-            def new_field(): "New style field"
-        
-        meta = Mixed._chatfield_meta
-        assert len(meta.fields) == 1
-        assert "new_field" in meta.fields
-        assert "old_field" not in meta.fields
-
-
 class TestInheritance:
     """Test that decorators work properly with inheritance."""
     
@@ -299,12 +200,11 @@ class TestInheritance:
             @must("base requirement")
             def base_field(): "Base field"
         
-        @gather
-        class DerivedClass(BaseClass):
+        class DerivedClass(Gatherer, BaseClass):
             @must("derived requirement")
             def derived_field(): "Derived field"
         
-        meta = DerivedClass._chatfield_meta
+        meta = DerivedClass._get_meta()
         
         # Should have both fields
         assert len(meta.fields) == 2
@@ -324,22 +224,20 @@ class TestFunctionSyntaxValidation:
     
     def test_functions_without_docstring_ignored(self):
         """Test that functions without docstrings are ignored."""
-        @gather  
-        class NoDocstring:
+        class NoDocstring(Gatherer):
             def valid_field(): "This has a docstring"
             
             def invalid_field():
                 pass  # No docstring
         
-        meta = NoDocstring._chatfield_meta
+        meta = NoDocstring._get_meta()
         assert len(meta.fields) == 1
         assert "valid_field" in meta.fields
         assert "invalid_field" not in meta.fields
     
     def test_builtin_methods_ignored(self):
         """Test that built-in methods are ignored."""
-        @gather
-        class WithBuiltins:
+        class WithBuiltins(Gatherer):
             def field(): "Valid field"
             
             # These should all be ignored
@@ -352,7 +250,7 @@ class TestFunctionSyntaxValidation:
             def __repr__(self):
                 return "test"
         
-        meta = WithBuiltins._chatfield_meta
+        meta = WithBuiltins._get_meta()
         assert len(meta.fields) == 1
         assert "field" in meta.fields
         assert "__init__" not in meta.fields
@@ -361,8 +259,7 @@ class TestFunctionSyntaxValidation:
     
     def test_mixed_functions_ignored_correctly(self):
         """Test that non-field functions are ignored properly."""
-        @gather
-        class MixedFunctions:
+        class MixedFunctions(Gatherer):
             def valid_field(): "This is a valid field"
             
             def no_docstring():
@@ -384,7 +281,7 @@ class TestFunctionSyntaxValidation:
                 """Class method should be ignored"""
                 return "not a field"
         
-        meta = MixedFunctions._chatfield_meta
+        meta = MixedFunctions._get_meta()
         assert len(meta.fields) == 1
         assert "valid_field" in meta.fields
         assert "no_docstring" not in meta.fields
@@ -394,12 +291,11 @@ class TestFunctionSyntaxValidation:
     
     def test_empty_function_body(self):
         """Test that functions with empty bodies work correctly."""
-        @gather
-        class EmptyBodies:
+        class EmptyBodies(Gatherer):
             def field1(): "Field with pass"
             def field2(): "Field with ellipsis"
                 
-        meta = EmptyBodies._chatfield_meta
+        meta = EmptyBodies._get_meta()
         assert len(meta.fields) == 2
         assert meta.fields["field1"].description == "Field with pass"
         assert meta.fields["field2"].description == "Field with ellipsis"
@@ -409,22 +305,21 @@ class TestErrorCases:
     """Test error handling in decorators."""
     
     def test_empty_class(self):
-        """Test @gather on class with no fields."""
-        @gather
-        class Empty:
+        """Test Gatherer with no fields."""
+        class Empty(Gatherer):
             """Empty gatherer"""
             pass
         
         assert hasattr(Empty, 'gather')
-        meta = Empty._chatfield_meta
+        meta = Empty._get_meta()
         assert meta.docstring == "Empty gatherer"
         assert len(meta.fields) == 0
     
     def test_no_docstring(self):
-        """Test @gather on class with no docstring."""
-        @gather
-        class NoDoc:
+        """Test Gatherer with no docstring."""
+        class NoDoc(Gatherer):
             def field(): "Test field"
         
-        meta = NoDoc._chatfield_meta
+        meta = NoDoc._get_meta()
         assert meta.docstring == ""
+        assert len(meta.fields) == 1

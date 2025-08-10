@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from chatfield.agent import ChatfieldAgent, ConversationState, ValidationResult
 from chatfield.conversation import Conversation
 from chatfield.socrates import SocratesMeta, FieldMeta
-from chatfield.decorators import gather, must, reject, hint, user, agent
+from chatfield import Gatherer, must, reject, hint, user, agent
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
@@ -123,8 +123,7 @@ class TestConversation:
     
     def test_conversation_with_simple_gatherer(self):
         """Test a simple conversation flow with real API."""
-        @gather
-        class SimpleGatherer:
+        class SimpleGatherer(Gatherer):
             """A simple data gatherer for testing."""
             
             def name():
@@ -142,8 +141,7 @@ class TestDecorators:
     
     def test_gather_decorator(self):
         """Test that @gather adds the gather method."""
-        @gather
-        class TestClass:
+        class TestClass(Gatherer):
             """Test class"""
             def field():
                 """A field"""
@@ -153,8 +151,7 @@ class TestDecorators:
     
     def test_field_decorators(self):
         """Test field-level decorators."""
-        @gather
-        class TestClass:
+        class TestClass(Gatherer):
             """Test class"""
             
             @must("specific requirement")
@@ -163,7 +160,7 @@ class TestDecorators:
             def field():
                 """Test field"""
         
-        meta = TestClass._chatfield_meta
+        meta = TestClass._get_meta()
         field = meta.get_field("field")
         
         assert field is not None
@@ -173,15 +170,14 @@ class TestDecorators:
     
     def test_class_decorators(self):
         """Test class-level decorators."""
-        @gather
         @user("A test user")
         @agent("Be helpful")
-        class TestClass:
+        class TestClass(Gatherer):
             """Test class"""
             def field():
                 """A field"""
         
-        meta = TestClass._chatfield_meta
+        meta = TestClass._get_meta()
         
         assert "A test user" in meta.user_context
         assert "Be helpful" in meta.agent_context
@@ -193,9 +189,8 @@ class TestEndToEnd:
     
     def test_simple_data_gathering(self):
         """Test complete data gathering flow."""
-        @gather
         @agent("Be concise and professional")
-        class ContactInfo:
+        class ContactInfo(Gatherer):
             """Gather basic contact information."""
             
             @hint("First and last name")

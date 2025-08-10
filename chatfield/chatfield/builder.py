@@ -1,7 +1,8 @@
 """Dynamic Socratic dialogue class creation utilities."""
 
 from typing import Dict, List, Any, Type, Optional
-from .decorators import gather, user, agent, must, reject, hint
+from .base import Gatherer
+from .decorators import user, agent, must, reject, hint
 
 
 class SocratesBuilder:
@@ -72,8 +73,8 @@ class SocratesBuilder:
             
             class_attrs[field_name] = field_attr
         
-        # Create the dynamic class
-        cls = type(self.name, (), class_attrs)
+        # Create the dynamic class inheriting from Gatherer
+        cls = type(self.name, (Gatherer,), class_attrs)
         
         # Apply user contexts
         for context in self.user_contexts:
@@ -82,9 +83,6 @@ class SocratesBuilder:
         # Apply agent contexts
         for behavior in self.agent_contexts:
             cls = agent(behavior)(cls)
-        
-        # Apply the @gather decorator
-        cls = gather(cls)
         
         return cls
 

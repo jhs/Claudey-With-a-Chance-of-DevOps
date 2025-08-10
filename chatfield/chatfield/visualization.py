@@ -24,11 +24,9 @@ def get_agent_graph(
         Compiled LangGraph that can be visualized
         
     Example:
-        >>> from chatfield import get_agent_graph
-        >>> from chatfield.decorators import gather
+        >>> from chatfield import get_agent_graph, Gatherer
         >>> 
-        >>> @gather
-        >>> class MyForm:
+        >>> class MyForm(Gatherer):
         >>>     name: "Your name"
         >>>     email: "Your email"
         >>> 
@@ -57,7 +55,7 @@ def get_graph_from_class(
     """Create a graph directly from a decorated Socrates class.
     
     Args:
-        cls: A class decorated with @gather
+        cls: A class inheriting from Gatherer
         llm: Optional LLM instance
         max_retries: Maximum validation retry attempts
         temperature: LLM temperature setting
@@ -66,11 +64,9 @@ def get_graph_from_class(
         Compiled LangGraph for visualization
         
     Example:
-        >>> from chatfield import get_graph_from_class
-        >>> from chatfield.decorators import gather
+        >>> from chatfield import get_graph_from_class, Gatherer
         >>> 
-        >>> @gather
-        >>> class SimpleForm:
+        >>> class SimpleForm(Gatherer):
         >>>     name: "Your name"
         >>> 
         >>> graph = get_graph_from_class(SimpleForm)

@@ -1,8 +1,8 @@
 """Tests for the @match decorator system."""
 
 import pytest
+from chatfield import Gatherer, must, reject
 from chatfield.match import match
-from chatfield.decorators import gather, must, reject
 from chatfield.field_proxy import FieldValueProxy
 from chatfield.socrates import FieldMeta, SocratesInstance
 
@@ -12,12 +12,11 @@ class TestMatchDecorator:
     
     def test_basic_match_decorator(self):
         """Test basic @match decorator usage."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @match.is_personal("mentions personal use")
             def purpose(): "What's your project for?"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["purpose"]
         
         assert "is_personal" in field_meta.match_rules
@@ -26,14 +25,13 @@ class TestMatchDecorator:
     
     def test_multiple_match_decorators(self):
         """Test multiple @match decorators on same field."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @match.is_personal("mentions personal use")
             @match.is_commercial("for business purposes")
             @match.is_educational("for learning")
             def purpose(): "What's your project for?"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["purpose"]
         
         assert len(field_meta.match_rules) == 3
@@ -44,22 +42,20 @@ class TestMatchDecorator:
     def test_duplicate_match_name_raises_error(self):
         """Test that duplicate match names raise ValueError."""
         with pytest.raises(ValueError, match="Duplicate match name 'is_valid'"):
-            @gather
-            class Example:
+            class Example(Gatherer):
                 @match.is_valid("checks validity")
                 @match.is_valid("another validity check")
                 def field(): "Test field"
     
     def test_match_with_must_reject(self):
         """Test @match works alongside @must and @reject."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @match.is_personal("personal project")
             @must("clear purpose")
             @reject("vague ideas")
             def purpose(): "What's your purpose?"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["purpose"]
         
         # Check custom match rule
@@ -82,12 +78,11 @@ class TestMustRejectAsMatch:
     
     def test_must_creates_match_rule(self):
         """Test @must creates internal match rule."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @must("specific requirement")
             def field(): "Test field"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["field"]
         
         # Should have one internal must match rule
@@ -101,12 +96,11 @@ class TestMustRejectAsMatch:
     
     def test_reject_creates_match_rule(self):
         """Test @reject creates internal match rule."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @reject("avoid this")
             def field(): "Test field"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["field"]
         
         # Should have one internal reject match rule
@@ -121,8 +115,7 @@ class TestMustRejectAsMatch:
     def test_duplicate_must_raises_error(self):
         """Test duplicate @must rules raise error."""
         with pytest.raises(ValueError, match="Duplicate @must rule"):
-            @gather
-            class Example:
+            class Example(Gatherer):
                 @must("same rule")
                 @must("same rule")
                 def field(): "Test field"
@@ -130,22 +123,20 @@ class TestMustRejectAsMatch:
     def test_duplicate_reject_raises_error(self):
         """Test duplicate @reject rules raise error."""
         with pytest.raises(ValueError, match="Duplicate @reject rule"):
-            @gather
-            class Example:
+            class Example(Gatherer):
                 @reject("same rule")
                 @reject("same rule")
                 def field(): "Test field"
     
     def test_different_must_rules_allowed(self):
         """Test different @must rules are allowed."""
-        @gather
-        class Example:
+        class Example(Gatherer):
             @must("rule one")
             @must("rule two")
             @must("rule three")
             def field(): "Test field"
         
-        meta = Example._chatfield_meta
+        meta = Example._get_meta()
         field_meta = meta.fields["field"]
         
         must_rules = [k for k in field_meta.match_rules if k.startswith("_must_")]

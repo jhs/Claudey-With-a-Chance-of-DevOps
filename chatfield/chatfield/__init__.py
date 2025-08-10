@@ -6,7 +6,7 @@ Transform rigid forms into thoughtful Socratic conversations that guide users to
 __version__ = "0.2.0"
 
 from .base import Gatherer
-from .decorators import gather, must, reject, hint, user, agent
+from .decorators import must, reject, hint, user, agent
 from .match import match
 from .presets import patient_teacher, quick_diagnosis, friendly_expert
 from .visualization import (
@@ -23,7 +23,6 @@ __all__ = [
     # Core base class
     "Gatherer",
     # Core decorators
-    "gather",
     "must", 
     "reject",
     "hint",

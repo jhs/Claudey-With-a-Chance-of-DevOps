@@ -3,8 +3,8 @@
 import pytest
 from chatfield.field_proxy import FieldValueProxy
 from chatfield.socrates import FieldMeta, SocratesInstance, process_socrates_class
+from chatfield import Gatherer, must, reject
 from chatfield.match import match
-from chatfield.decorators import gather, must, reject
 
 
 class TestFieldPresence:
@@ -12,8 +12,7 @@ class TestFieldPresence:
     
     def test_none_means_invalid(self):
         """Test that None indicates field is invalid/not collected."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def name():
                 """Your name"""
@@ -31,8 +30,7 @@ class TestFieldPresence:
     
     def test_empty_string_is_valid(self):
         """Test that empty string is a valid collected value."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def name():
                 """Your name"""
@@ -47,8 +45,7 @@ class TestFieldPresence:
     
     def test_whitespace_only_is_valid(self):
         """Test that whitespace-only string is a valid collected value."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def description():
                 """Description"""
@@ -63,8 +60,7 @@ class TestFieldPresence:
     
     def test_explicit_na_is_valid(self):
         """Test that user explicitly saying N/A is valid."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def notes():
                 """Additional notes"""
@@ -79,8 +75,7 @@ class TestFieldPresence:
     
     def test_actual_content_is_valid(self):
         """Test that fields with actual content are valid."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def project():
                 """Project description"""
@@ -95,8 +90,7 @@ class TestFieldPresence:
     
     def test_mixed_collected_and_uncollected(self):
         """Test instance with some collected and some uncollected fields."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def name():
                 """Your name"""
@@ -126,8 +120,7 @@ class TestFieldPresence:
     
     def test_field_with_validation_rules_none_when_not_collected(self):
         """Test that fields with @must/@reject rules are None when not collected."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             
             @must("include timeline")
@@ -144,8 +137,7 @@ class TestFieldPresence:
     
     def test_field_with_validation_rules_not_none_when_collected(self):
         """Test that fields with @must/@reject rules are not None when collected."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             
             @must("include timeline")
@@ -164,8 +156,7 @@ class TestFieldPresence:
     
     def test_checking_validity_with_is_not_none(self):
         """Test that we can check field validity using 'is not None'."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def required_field():
                 """Required information"""
@@ -191,8 +182,7 @@ class TestFieldPresence:
     
     def test_field_proxy_still_works_for_collected_fields(self):
         """Test that FieldValueProxy features still work for collected fields."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             
             @match.is_corporate("sounds like a company")
@@ -220,8 +210,7 @@ class TestFieldPresence:
     
     def test_unknown_field_raises_attribute_error(self):
         """Test that accessing unknown fields raises AttributeError."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def name():
                 """Your name"""
@@ -241,8 +230,7 @@ class TestFieldPresence:
     
     def test_get_method_with_none_fields(self):
         """Test the get() method returns None for uncollected fields."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def field1():
                 """Field 1"""
@@ -264,8 +252,7 @@ class TestFieldPresence:
     
     def test_distinction_between_none_and_empty(self):
         """Explicitly test the distinction between None (not discussed) and "" (discussed as N/A)."""
-        @gather
-        class TestForm:
+        class TestForm(Gatherer):
             """Test form"""
             def not_discussed():
                 """Field not discussed yet"""
