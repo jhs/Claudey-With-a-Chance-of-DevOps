@@ -7,6 +7,7 @@ import inspect
 from .socrates import process_socrates_class, SocratesInstance
 from .conversation import Conversation
 from .match import match as match_decorator
+from .base import Gatherer
 
 T = TypeVar('T')
 
@@ -14,10 +15,17 @@ T = TypeVar('T')
 def gather(cls: T) -> T:
     """Transform a class into a Socratic dialogue interface.
     
+    This decorator provides backwards compatibility for the @gather decorator.
+    New code should inherit from Gatherer instead.
+    
     This decorator processes the class annotations to find field descriptions,
     collects metadata from field and class decorators, and adds a gather()
     class method to conduct conversations.
     """
+    
+    # If class already inherits from Gatherer, just return it
+    if issubclass(cls, Gatherer):
+        return cls
     
     def get_meta():
         """Get metadata, creating it if needed."""
