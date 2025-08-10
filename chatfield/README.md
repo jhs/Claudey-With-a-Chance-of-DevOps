@@ -101,6 +101,39 @@ class WebsiteHelp(Dialogue):
     def technical_needs(): "Any special features?"  # Optional field
 ```
 
+### Type Transformations
+
+Transform free-form responses into structured data:
+
+```python
+from chatfield import Dialogue, as_int, as_list, as_percent, choose_one
+
+class TeamProject(Dialogue):
+    """Planning your team project"""
+    
+    @as_int
+    @must("between 2 and 20")
+    def team_size(): "How many people on your team?"
+    
+    @as_percent
+    @hint("How much is done? Half? 75%? Almost done?")
+    def progress(): "Current completion percentage"
+    
+    @as_list(of=str)
+    @hint("List the main technologies: Python, React, Docker, etc.")
+    def tech_stack(): "Technologies you're using"
+    
+    @choose_one("startup", "enterprise", "agency", "nonprofit")
+    def company_type(): "What kind of organization?"
+
+# Usage
+project = TeamProject.gather()
+print(project.team_size)      # 5 (integer)
+print(project.progress)       # 0.75 (float between 0-1)
+print(project.tech_stack)     # ["Python", "React", "PostgreSQL"]
+print(project.company_type)   # "startup"
+```
+
 ### Easy Field Comprehension
 
 Use `@match` to tell Chatfield how fields do or don't match your criteria or predicate.
@@ -158,6 +191,46 @@ class BusinessWebsite(Dialogue):
 
 ## Intermediate Examples
 
+### Common Decorator Patterns
+
+Here are typical decorator combinations for real-world use cases:
+
+```python
+from chatfield import Dialogue, as_int, as_list, as_date, choose_one, must, hint
+
+class EventPlanning(Dialogue):
+    """Planning your event details"""
+    
+    # Convert text to numbers with constraints
+    @as_int
+    @must("between 10 and 500")
+    @hint("Be realistic about attendance")
+    def attendees(): "Expected number of attendees"
+    
+    # Parse dates with validation
+    @as_date(format="US")
+    @must("at least 2 weeks from today")
+    def event_date(): "When is your event?"
+    
+    # Extract lists from natural language
+    @as_list(of=str)
+    @hint("Main dishes, sides, desserts, drinks")
+    def catering_needs(): "Food and beverages to serve"
+    
+    # Constrained choices
+    @choose_one("indoor", "outdoor", "hybrid")
+    @must("consider weather if outdoor")
+    def venue_type(): "Type of venue"
+
+# The LLM handles natural language intelligently:
+# User: "We're expecting around fifty people"
+# → attendees = 50
+# User: "Sometime next month, maybe the 15th?"  
+# → event_date = parsed date object
+# User: "Pizza, salad, and some sodas"
+# → catering_needs = ["pizza", "salad", "sodas"]
+```
+
 ### Multi-Context Guidance
 
 ```python
@@ -197,6 +270,83 @@ class HomeOfficeSetup(Dialogue):
 ```
 
 ## Advanced Usage
+
+### Combining Decorators
+
+Decorators can be stacked to create rich field definitions with validation, transformation, and matching:
+
+```python
+from chatfield import (
+    Dialogue, must, reject, hint, match,
+    as_int, as_float, as_list, as_dict, as_date, as_duration,
+    choose_many, user, agent
+)
+
+@user("Startup founder planning product launch")
+@agent("Experienced advisor, practical and direct")
+class ProductLaunch(Dialogue):
+    """Planning your product launch strategy"""
+    
+    # Numeric fields with validation
+    @as_int
+    @must("at least 1000")
+    @hint("Your honest estimate, not your dream number")
+    def first_year_customers(): "Realistic customer target for year one"
+    
+    # Percentage with business logic
+    @as_float
+    @as_percent
+    @must("between 10% and 90%")
+    @match.conservative("less than 30%")
+    @match.aggressive("more than 60%") 
+    def market_capture(): "Expected market share"
+    
+    # Structured data extraction
+    @as_dict("feature", "value", "differentiator")
+    @must("clear competitive advantage")
+    @hint("Feature: Fast delivery, Value: Same-day, Differentiator: Only one in region")
+    def main_selling_point(): "Your key competitive advantage"
+    
+    # Multiple selections with constraints
+    @choose_many("social", "search", "email", "content", "paid_ads", "partnerships")
+    @must("at least 2 channels")
+    @reject("all channels at once")
+    def marketing_channels(): "Marketing channels to focus on"
+    
+    # Date/time handling
+    @as_date(format="US")
+    @must("within next 12 months")
+    @match.soon("within 3 months")
+    @match.planned("3-6 months out")
+    @match.future("6+ months away")
+    def launch_date(): "Target launch date"
+    
+    # Duration with context
+    @as_duration(unit="months")
+    @must("realistic timeline")
+    @hint("Most MVPs take 3-6 months. Be honest!")
+    def development_time(): "Time to build MVP"
+    
+    # Lists with smart parsing
+    @as_list(of=str)
+    @must("at least 3 competitors")
+    @hint("Both direct and indirect competitors")
+    def competitors(): "Main competitors"
+
+# After gathering
+launch = ProductLaunch.gather()
+
+# Access transformed data
+print(launch.first_year_customers)  # 5000 (int)
+print(launch.market_capture)        # 0.25 (25% as decimal)
+print(launch.main_selling_point)    # {"feature": "...", "value": "...", "differentiator": "..."}
+
+# Use match predicates
+if launch.market_capture.aggressive:
+    print("Ambitious growth target! Let's plan accordingly.")
+if launch.launch_date.soon:
+    print("Launching soon - time to accelerate!")
+```
 
 ### Dynamic Dialogues from User Data
 
@@ -373,12 +523,38 @@ def issue_description(): "Tell me what your problem is?"
 
 ### Decorators
 
+#### Context and Behavior
 - `@user(context)` - Information about who you're helping
 - `@agent(behavior)` - How the agent should behave
+
+#### Field Validation
 - `@hint(tooltip)` - Helpful context shown when users need clarification
 - `@must(rule)` - What the answer must include
 - `@reject(rule)` - What to avoid in answers
 - `@match.<name>(criteria)` - Define custom match criteria for field comprehension
+
+#### Type Transformations
+
+Transform user responses into structured data types:
+
+**Numeric Transformations:**
+- `@as_int` - Convert to integer ("five" → 5, "2.5k" → 2500)
+- `@as_float` - Convert to decimal ("three and a half" → 3.5, "1.5 million" → 1500000.0)
+- `@as_percent` - Convert to percentage as 0-1 scale ("50%" → 0.5, "half" → 0.5)
+
+**Collection Transformations:**
+- `@as_list(of=Type)` - Parse as list ("apples, oranges" → ["apples", "oranges"])
+- `@as_set` - Parse as unique values, removing duplicates
+- `@as_dict("key1", "key2")` - Extract dictionary with specified keys
+
+**Choice Transformations:**
+- `@choose_one("option1", "option2", mandatory=True)` - Single choice selection
+- `@choose_many("opt1", "opt2", "opt3", mandatory=True)` - Multiple choice selection
+
+**Date/Time Transformations:**
+- `@as_date(format="ISO")` - Parse as date (formats: "ISO", "US", "EU")
+- `@as_duration(unit="seconds")` - Convert to duration (units: seconds, minutes, hours, days, weeks, months, years)
+- `@as_timezone` - Parse as timezone identifier
 
 ### Presets
 
