@@ -21,6 +21,13 @@ class MatchDecorator:
         Returns:
             A decorator factory that takes criteria and returns a decorator
         """
+        # Prevent using 'valid' as a match name
+        if match_name == 'valid':
+            raise AttributeError(
+                "Cannot use 'valid' as a match name. The 'valid' property is reserved "
+                "for checking if all @must and @reject validation rules pass."
+            )
+        
         def decorator_factory(criteria: str) -> Callable:
             """Factory that creates the actual decorator.
             

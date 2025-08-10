@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 from chatfield.agent import ChatfieldAgent, ConversationState, ValidationResult
 from chatfield.conversation import Conversation
-from chatfield.gatherer import GathererMeta, FieldMeta
+from chatfield.socrates import SocratesMeta, FieldMeta
 from chatfield.decorators import gather, must, reject, hint, user, agent
 
 
@@ -16,7 +16,7 @@ class TestChatfieldAgent:
     
     def test_agent_initialization(self):
         """Test that agent initializes correctly."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_field("name", "What is your name?")
         meta.add_field("email", "What is your email?")
         
@@ -28,7 +28,7 @@ class TestChatfieldAgent:
     
     def test_build_opening_message(self):
         """Test opening message generation."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.set_docstring("Welcome to our survey!")
         meta.add_user_context("You are a developer")
         meta.add_agent_context("Be friendly and helpful")
@@ -42,7 +42,7 @@ class TestChatfieldAgent:
     
     def test_field_prompt_building(self):
         """Test field prompt generation."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         field = meta.add_field("project", "Describe your project")
         field.add_hint("Be specific about your goals")
         
@@ -54,7 +54,7 @@ class TestChatfieldAgent:
     
     def test_validation_prompt_building(self):
         """Test validation prompt generation."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         field = meta.add_field("email", "Your email address")
         field.add_must_rule("valid email format")
         field.add_reject_rule("temporary email services")
@@ -68,7 +68,7 @@ class TestChatfieldAgent:
     
     def test_parse_validation_result(self):
         """Test parsing of validation results."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         agent = ChatfieldAgent(meta)
         
         # Test valid response
@@ -83,7 +83,7 @@ class TestChatfieldAgent:
     
     def test_get_uncollected_fields(self):
         """Test getting list of uncollected fields."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_field("name", "Your name")
         meta.add_field("email", "Your email")
         meta.add_field("phone", "Your phone")
@@ -112,7 +112,7 @@ class TestConversation:
     
     def test_conversation_initialization(self):
         """Test conversation initialization."""
-        meta = GathererMeta()
+        meta = SocratesMeta()
         meta.add_field("name", "What is your name?")
         
         conversation = Conversation(meta)
