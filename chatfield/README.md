@@ -12,10 +12,9 @@ Just as Socrates used thoughtful questioning to help people discover truth and u
 - **Adapts naturally** - The conversation adjusts to the user's level and responses
 
 ```python
-from chatfield import gather, must, reject, hint
+from chatfield import Gatherer, must, reject, hint
 
-@gather
-class TechHelp:
+class TechHelp(Gatherer):
     """Your technical challenges"""
     
     @hint("Be specific - 'computer is slow' vs 'Excel takes 5 minutes to open'")
@@ -60,10 +59,9 @@ pip install -e .[dev]
 Help someone fix their computer issue:
 
 ```python
-from chatfield import gather
+from chatfield import Gatherer
 
-@gather
-class ComputerHelp:
+class ComputerHelp(Gatherer):
     """A Socratic dialogue to understand your computer issues"""
     
     def problem(): "What's happening with your computer?"
@@ -83,10 +81,9 @@ print(help_session.when_started)
 Ensure you get useful information:
 
 ```python
-from chatfield import gather, must, reject, hint
+from chatfield import Gatherer, must, reject, hint
 
-@gather
-class WebsiteHelp:
+class WebsiteHelp(Gatherer):
     """A Socratic exploration of your website needs"""
     
     @must("specific purpose or goal clear enough to protoype by a web developer")
@@ -109,10 +106,9 @@ class WebsiteHelp:
 Use `@match` to tell Chatfield how fields do or don't match your criteria or predicate.
 
 ```python
-from chatfield import gather, match
+from chatfield import Gatherer, match
 
-@gather
-class WebsiteHelp:
+class WebsiteHelp(Gatherer):
     """A Socratic exploration of your website needs"""
     
     @match.personal("is a personal project")
@@ -136,15 +132,14 @@ print(web_help.purpose.work) # False
 Adapt tone and approach to your users:
 
 ```python
-from chatfield import gather, must, user, agent, hint
+from chatfield import Gatherer, must, user, agent, hint
 
-@gather
 @user("Small business owner, not technical")
 @user("Probably frustrated with tech complexity")
 #@agent("Socratic questioner, patient and thoughtful")
 @agent("Grouchy but insightful Socratic questioner")
 @agent("Use analogies to explain technical concepts")
-class BusinessWebsite:
+class BusinessWebsite(Gatherer):
     """A Socratic journey to discover your business's online needs"""
     
     @hint("Examples: bakery, accounting firm, yoga studio, plumbing service")
@@ -166,14 +161,13 @@ class BusinessWebsite:
 ### Multi-Context Guidance
 
 ```python
-@gather
 @user("Non-technical person setting up home office")
 @user("Budget conscious, needs practical advice")
 @user("Overwhelmed by options")
 @agent("Patient teacher, not a salesperson")
 @agent("Suggest specific products when appropriate")
 @agent("Always explain the 'why' behind recommendations")
-class HomeOfficeSetup:
+class HomeOfficeSetup(Gatherer):
     """
     Setting up a functional home office
     
@@ -213,12 +207,11 @@ def create_tech_helper(user_profile):
     tech_level = user_profile.get('tech_level', 'beginner')
     industry = user_profile.get('industry', 'general')
     
-    @gather
     @user(f"{tech_level} user in {industry}")
     @user(f"Primary concern: {user_profile.get('pain_point')}")
     @agent(f"Adjust explanations for {tech_level} level")
     @agent("Provide industry-specific examples")
-    class PersonalizedHelper:
+    class PersonalizedHelper(Gatherer):
         f"""
         Solving your {industry} technology challenges
         
@@ -226,7 +219,7 @@ def create_tech_helper(user_profile):
         sense for your {tech_level} technical background and {industry} needs.
         """
         
-            @must(f"relevant to {industry}")
+        @must(f"relevant to {industry}")
         def challenge(): "What technical challenge are you facing?"
         
         @must("realistic timeline")
@@ -249,7 +242,7 @@ from chatfield import patient_teacher, quick_diagnosis, friendly_expert, hint
 
 # Patient teacher for complex topics
 @patient_teacher
-class DatabaseExplained:
+class DatabaseExplained(Gatherer):
     """Understanding databases for your business"""
     
     @hint("Customer list? Inventory? Sales records? What info matters most?")
@@ -262,7 +255,7 @@ class DatabaseExplained:
 
 # Quick diagnosis for urgent issues  
 @quick_diagnosis
-class EmailNotWorking:
+class EmailNotWorking(Gatherer):
     """Let's get your email working again"""
     
     @hint("Error messages? Can't send? Can't receive? Wrong password?")
@@ -275,7 +268,7 @@ class EmailNotWorking:
 
 # Friendly expert for ongoing help
 @friendly_expert  
-class DigitalTransformation:
+class DigitalTransformation(Gatherer):
     """Modernizing your business processes"""
     
     @hint("Invoice generation? Inventory tracking? Customer communication?")
@@ -286,10 +279,9 @@ class DigitalTransformation:
 ### Validation Rules as Context
 
 ```python
-@gather
 @user("Non-technical founder needing a website")
 @agent("Guide away from over-engineering")
-class WebsiteRequirements:
+class WebsiteRequirements(Gatherer):
     """
     Planning a website that actually gets built
     
@@ -339,8 +331,7 @@ class WebsiteRequirements:
 Describe the data. Do not write the prompt or Agent script.
 
 ```python
-@gather
-class TechHelp:
+class TechHelp(Gatherer):
     """
     Tech support request
     
@@ -376,14 +367,18 @@ def issue_description(): "Tell me what your problem is?"
 
 ## API Reference
 
+### Core Classes
+
+- `Gatherer` - Base class for creating Socratic dialogue interfaces (inherit from this)
+
 ### Decorators
 
-- `@gather` - Transforms a class into a Socratic dialogue interface
 - `@user(context)` - Information about who you're helping
 - `@agent(behavior)` - How the agent should behave
 - `@hint(tooltip)` - Helpful context shown when users need clarification
 - `@must(rule)` - What the answer must include
 - `@reject(rule)` - What to avoid in answers
+- `@match.<name>(criteria)` - Define custom match criteria for field comprehension
 
 ### Presets
 
@@ -420,8 +415,7 @@ Apache 2.0 - see LICENSE file for details.
 If you can hot-swap a data model mid-conversation, it's easy to be dynamic:
 
 ```py
-@gather
-class TechSupport:
+class TechSupport(Gatherer):
     def problem(): "your computer's problem"
     def age(): "age of your computer"
 
@@ -430,8 +424,7 @@ support = TechSupport.gather()
 age_in_years = some_function()
 
 if age_in_years > 3:
-    @gather(TechSupport)
-    class NewTechSupport:
+    class NewTechSupport(TechSupport):
         def dusted(): "Have you dusted it recently?"
     support = NewTechSupport()
 ```
