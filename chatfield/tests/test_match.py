@@ -41,7 +41,7 @@ class TestMatchDecorator:
     
     def test_duplicate_match_name_raises_error(self):
         """Test that duplicate match names raise ValueError."""
-        with pytest.raises(ValueError, match="Duplicate match name 'is_valid'"):
+        with pytest.raises(ValueError, match="Duplicate transformation 'is_valid'"):
             class Example(Dialogue):
                 @match.is_valid("checks validity")
                 @match.is_valid("another validity check")

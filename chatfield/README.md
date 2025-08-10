@@ -123,7 +123,7 @@ class TeamProject(Dialogue):
     @hint("List the main technologies: Python, React, Docker, etc.")
     def tech_stack(): "Technologies you're using"
     
-    @choose_one("startup", "enterprise", "agency", "nonprofit")
+    @as_choose_one("startup", "enterprise", "agency", "nonprofit")
     def company_type(): "What kind of organization?"
 
 # Usage
@@ -218,7 +218,7 @@ class EventPlanning(Dialogue):
     def catering_needs(): "Food and beverages to serve"
     
     # Constrained choices
-    @choose_one("indoor", "outdoor", "hybrid")
+    @as_choose_one("indoor", "outdoor", "hybrid")
     @must("consider weather if outdoor")
     def venue_type(): "Type of venue"
 
@@ -308,7 +308,7 @@ class ProductLaunch(Dialogue):
     def main_selling_point(): "Your key competitive advantage"
     
     # Multiple selections with constraints
-    @choose_many("social", "search", "email", "content", "paid_ads", "partnerships")
+    @as_choose_many("social", "search", "email", "content", "paid_ads", "partnerships")
     @must("at least 2 channels")
     @reject("all channels at once")
     def marketing_channels(): "Marketing channels to focus on"
@@ -548,8 +548,8 @@ Transform user responses into structured data types:
 - `@as_dict("key1", "key2")` - Extract dictionary with specified keys
 
 **Choice Transformations:**
-- `@choose_one("option1", "option2", mandatory=True)` - Single choice selection
-- `@choose_many("opt1", "opt2", "opt3", mandatory=True)` - Multiple choice selection
+- `@as_choose_one("option1", "option2", mandatory=True)` - Single choice selection
+- `@as_choose_many("opt1", "opt2", "opt3", mandatory=True)` - Multiple choice selection
 
 **Date/Time Transformations:**
 - `@as_date(format="ISO")` - Parse as date (formats: "ISO", "US", "EU")

@@ -158,7 +158,7 @@ def as_dict(*keys: str) -> Callable:
 
 # Choice Selection Decorators
 
-def choose(*choices: str, mandatory: bool = False, allow_multiple: bool = False) -> Callable:
+def as_choice(*choices: str, mandatory: bool = False, allow_multiple: bool = False) -> Callable:
     """Select from provided choices.
     
     Args:
@@ -167,18 +167,18 @@ def choose(*choices: str, mandatory: bool = False, allow_multiple: bool = False)
         allow_multiple: If True, can select multiple choices
     
     Examples:
-        @choose("small", "medium", "large")
+        @as_choice("small", "medium", "large")
         "I need a medium one" -> "medium"
         
-        @choose("red", "blue", "green", allow_multiple=True)
+        @as_choice("red", "blue", "green", allow_multiple=True)
         "red and blue" -> ["red", "blue"]
     """
     def decorator(func: Callable) -> Callable:
         if not choices:
-            raise ValueError("choose requires at least one choice")
+            raise ValueError("as_choice requires at least one choice")
         
         decorator_obj = TypeDecorator(
-            'choose',
+            'as_choice',
             f'Select from choices: {", ".join(choices)}' +
             (f' ({"required" if mandatory else "optional"}, '
              f'{"multiple allowed" if allow_multiple else "single choice"})'),
@@ -191,28 +191,28 @@ def choose(*choices: str, mandatory: bool = False, allow_multiple: bool = False)
     return decorator
 
 
-def choose_one(*choices: str, mandatory: bool = True) -> Callable:
+def as_choose_one(*choices: str, mandatory: bool = True) -> Callable:
     """Select exactly one from provided choices.
     
-    Convenience wrapper for choose with allow_multiple=False.
+    Convenience wrapper for as_choice with allow_multiple=False.
     
     Args:
         *choices: Available options to choose from
         mandatory: If False, can return None if no match
     """
-    return choose(*choices, mandatory=mandatory, allow_multiple=False)
+    return as_choice(*choices, mandatory=mandatory, allow_multiple=False)
 
 
-def choose_many(*choices: str, mandatory: bool = True) -> Callable:
+def as_choose_many(*choices: str, mandatory: bool = True) -> Callable:
     """Select multiple from provided choices.
     
-    Convenience wrapper for choose with allow_multiple=True.
+    Convenience wrapper for as_choice with allow_multiple=True.
     
     Args:
         *choices: Available options to choose from  
         mandatory: If False, can return empty list
     """
-    return choose(*choices, mandatory=mandatory, allow_multiple=True)
+    return as_choice(*choices, mandatory=mandatory, allow_multiple=True)
 
 
 # Time/Date Type Transformations
@@ -336,7 +336,7 @@ def build_transformation_prompt(
         'as_list': '["item1", "item2"]',
         'as_set': '["unique1", "unique2"]',
         'as_dict': '{"key1": "value1", "key2": "value2"}',
-        'choose': '"selected_choice"',
+        'as_choice': '"selected_choice"',
         'as_date': '"2024-01-15"',
         'as_duration': '7200',
         'as_timezone': '"America/New_York"'

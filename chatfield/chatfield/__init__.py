@@ -11,7 +11,7 @@ from .match import match
 from .types import (
     as_int, as_float, as_percent,
     as_list, as_set, as_dict,
-    choose, choose_one, choose_many,
+    as_choice, as_choose_one, as_choose_many,
     as_date, as_duration, as_timezone,
     get_field_transformations, build_transformation_prompt
 )
@@ -46,9 +46,9 @@ __all__ = [
     "as_list",
     "as_set",
     "as_dict",
-    "choose",
-    "choose_one",
-    "choose_many",
+    "as_choice",
+    "as_choose_one",
+    "as_choose_many",
     "as_date",
     "as_duration",
     "as_timezone",

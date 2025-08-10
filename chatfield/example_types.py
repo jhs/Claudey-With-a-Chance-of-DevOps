@@ -11,7 +11,7 @@ from chatfield.match import match
 from chatfield.types import (
     as_int, as_float, as_percent,
     as_list, as_set, as_dict,
-    choose, choose_one, choose_many,
+    as_choice, as_choose_one, as_choose_many,
     as_date, as_duration, as_timezone
 )
 
@@ -42,13 +42,13 @@ class ProjectPlanning(Dialogue):
     def team_lead(): return "Who will lead? (provide name, role, and years of experience)"
     
     # Choice selections
-    @choose_one("startup", "scaleup", "enterprise", "government")
+    @as_choose_one("startup", "scaleup", "enterprise", "government")
     def company_type(): return "What type of organization?"
     
-    @choose_many("development", "testing", "deployment", "monitoring", "documentation")
+    @as_choose_many("development", "testing", "deployment", "monitoring", "documentation")
     def phases(): return "Which project phases will you need?"
     
-    @choose("low", "medium", "high", "critical", mandatory=True)
+    @as_choice("low", "medium", "high", "critical", mandatory=True)
     def priority(): return "What's the priority level?"
     
     # Time and date transformations
@@ -74,7 +74,7 @@ class UserProfile(Dialogue):
     def age(): return "What's your age?"
     
     @as_list(of=str)
-    @choose_many("reading", "gaming", "sports", "music", "travel", "cooking")
+    @as_choose_many("reading", "gaming", "sports", "music", "travel", "cooking")
     @match.is_active("includes physical activities")
     def hobbies(): return "What are your hobbies?"
     
@@ -91,7 +91,7 @@ class UserProfile(Dialogue):
 class EventPlanning(Dialogue):
     """Example for event planning with various transformations."""
     
-    @choose_one("conference", "workshop", "meetup", "webinar", mandatory=True)
+    @as_choose_one("conference", "workshop", "meetup", "webinar", mandatory=True)
     def event_type(): return "What type of event?"
     
     @as_int
@@ -121,7 +121,7 @@ def demonstrate_prompt_building():
     @as_int
     @as_percent
     @match.is_large("greater than 1000")
-    @choose("small", "medium", "large", "enterprise")
+    @as_choice("small", "medium", "large", "enterprise")
     def budget():
         return "Project budget"
     
@@ -146,7 +146,7 @@ def demonstrate_prompt_building():
     "as_int": 50000,
     "as_percent": 0.05,  // Assuming out of $1M
     "is_large": true,
-    "choose": "large"
+    "as_choice": "large"
 }""")
 
 
@@ -161,7 +161,7 @@ def main():
     print("Available decorator families:")
     print("- Numeric: @as_int, @as_float, @as_percent")
     print("- Collections: @as_list, @as_set, @as_dict")
-    print("- Choices: @choose, @choose_one, @choose_many")
+    print("- Choices: @as_choice, @as_choose_one, @as_choose_many")
     print("- Time/Date: @as_date, @as_duration, @as_timezone")
     print("- Matching: @match.condition('criteria')")
     print("\nAll decorators work together in parallel!")

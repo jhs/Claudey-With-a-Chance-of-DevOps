@@ -11,7 +11,7 @@ class MatchDecorator:
     """Dynamic match decorator that creates custom matchers via attribute access.
     
     The @match decorator works alongside other transformation decorators like
-    @as_int, @as_list, @choose, etc. All decorators on a field are processed
+    @as_int, @as_list, @as_choice, etc. All decorators on a field are processed
     in a single LLM call for efficiency.
     
     Usage:

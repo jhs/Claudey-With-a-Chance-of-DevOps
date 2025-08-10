@@ -4,7 +4,7 @@ import pytest
 from chatfield.types import (
     as_int, as_float, as_percent,
     as_list, as_set, as_dict,
-    choose, choose_one, choose_many,
+    as_choice, as_choose_one, as_choose_many,
     as_date, as_duration, as_timezone,
     get_field_transformations, build_transformation_prompt
 )
@@ -112,53 +112,53 @@ class TestCollectionDecorators:
 class TestChoiceDecorators:
     """Test choice selection decorators."""
     
-    def test_choose_basic(self):
-        """Test basic @choose decorator."""
-        @choose("small", "medium", "large")
+    def test_as_choice_basic(self):
+        """Test basic @as_choice decorator."""
+        @as_choice("small", "medium", "large")
         def size(): 
             return "Pick a size"
         
         transformations = get_field_transformations(size)
-        assert 'choose' in transformations
-        assert transformations['choose']['choices'] == ["small", "medium", "large"]
-        assert transformations['choose']['mandatory'] is False
-        assert transformations['choose']['allow_multiple'] is False
+        assert 'as_choice' in transformations
+        assert transformations['as_choice']['choices'] == ["small", "medium", "large"]
+        assert transformations['as_choice']['mandatory'] is False
+        assert transformations['as_choice']['allow_multiple'] is False
     
-    def test_choose_with_options(self):
-        """Test @choose with options."""
-        @choose("red", "blue", "green", mandatory=True, allow_multiple=True)
+    def test_as_choice_with_options(self):
+        """Test @as_choice with options."""
+        @as_choice("red", "blue", "green", mandatory=True, allow_multiple=True)
         def colors(): 
             return "Pick colors"
         
         transformations = get_field_transformations(colors)
-        assert transformations['choose']['mandatory'] is True
-        assert transformations['choose']['allow_multiple'] is True
+        assert transformations['as_choice']['mandatory'] is True
+        assert transformations['as_choice']['allow_multiple'] is True
     
-    def test_choose_one_wrapper(self):
-        """Test @choose_one convenience wrapper."""
-        @choose_one("yes", "no", mandatory=True)
+    def test_as_choose_one_wrapper(self):
+        """Test @as_choose_one convenience wrapper."""
+        @as_choose_one("yes", "no", mandatory=True)
         def confirm(): 
             return "Confirm?"
         
         transformations = get_field_transformations(confirm)
-        assert 'choose' in transformations
-        assert transformations['choose']['allow_multiple'] is False
-        assert transformations['choose']['mandatory'] is True
+        assert 'as_choice' in transformations
+        assert transformations['as_choice']['allow_multiple'] is False
+        assert transformations['as_choice']['mandatory'] is True
     
-    def test_choose_many_wrapper(self):
-        """Test @choose_many convenience wrapper."""
-        @choose_many("python", "javascript", "rust")
+    def test_as_choose_many_wrapper(self):
+        """Test @as_choose_many convenience wrapper."""
+        @as_choose_many("python", "javascript", "rust")
         def languages(): 
             return "Programming languages?"
         
         transformations = get_field_transformations(languages)
-        assert 'choose' in transformations
-        assert transformations['choose']['allow_multiple'] is True
+        assert 'as_choice' in transformations
+        assert transformations['as_choice']['allow_multiple'] is True
     
-    def test_choose_no_choices_raises(self):
-        """Test @choose without choices raises error."""
+    def test_as_choice_no_choices_raises(self):
+        """Test @as_choice without choices raises error."""
         with pytest.raises(ValueError, match="requires at least one choice"):
-            @choose()
+            @as_choice()
             def pick(): 
                 return "Pick something"
 
@@ -229,7 +229,7 @@ class TestCombinedDecorators:
         """Test combining different transformation types."""
         @as_int
         @as_list(of=str)
-        @choose("low", "medium", "high")
+        @as_choice("low", "medium", "high")
         def mixed_field(): 
             return "Enter value"
         
@@ -237,7 +237,7 @@ class TestCombinedDecorators:
         assert len(transformations) == 3
         assert 'as_int' in transformations
         assert 'as_list' in transformations
-        assert 'choose' in transformations
+        assert 'as_choice' in transformations
     
     def test_duplicate_decorator_raises(self):
         """Test duplicate decorator type raises error."""
@@ -299,7 +299,7 @@ class TestPromptBuilder:
                 'description': 'Parse as list',
                 'item_type': 'str'
             },
-            'choose': {
+            'as_choice': {
                 'description': 'Select from: A, B, C',
                 'choices': ['A', 'B', 'C'],
                 'allow_multiple': True
@@ -312,9 +312,9 @@ class TestPromptBuilder:
         assert "Select options" in prompt
         assert "I want A and B" in prompt
         assert "as_list:" in prompt
-        assert "choose:" in prompt
+        assert "as_choice:" in prompt
         assert '"as_list":' in prompt
-        assert '"choose":' in prompt
+        assert '"as_choice":' in prompt
 
 
 class TestIntegrationWithMatch:
