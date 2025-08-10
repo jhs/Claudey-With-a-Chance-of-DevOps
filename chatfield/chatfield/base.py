@@ -1,6 +1,6 @@
 """Base class for Chatfield gatherers."""
 
-from typing import Type, TypeVar, Dict, Optional
+from typing import Type, TypeVar, Dict
 from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 
 T = TypeVar('T', bound='Dialogue')
@@ -52,12 +52,7 @@ class Dialogue:
         """Access to the processed metadata."""
         return cls._get_meta()
     
-    done = False
+    done = False # TODO: Should be a getter that checks whether all fields are valid.
 
-    def go(self):
-        """Run the dialogue interaction.
-        
-        This method should be overridden in subclasses to implement the
-        specific interaction logic.
-        """
-        raise NotImplementedError("Subclasses must implement the go() method.")
+    def __repr__(self):
+        return f'<{self.__class__.__name__} >' #  {self._chatfield_meta.name}>'

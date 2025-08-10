@@ -2,7 +2,6 @@
 
 from typing import Optional, Dict, Any
 from .socrates import SocratesMeta, process_socrates_class
-from .agent import ChatfieldAgent
 from langchain_openai import ChatOpenAI
 
 
@@ -37,6 +36,7 @@ def get_agent_graph(
         >>> from IPython.display import Image, display
         >>> display(Image(graph.get_graph().draw_mermaid_png()))
     """
+    # This will throw an undefined label error.
     agent = ChatfieldAgent(
         meta=meta,
         llm=llm,

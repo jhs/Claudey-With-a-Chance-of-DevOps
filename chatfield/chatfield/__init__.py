@@ -6,7 +6,7 @@ Transform rigid forms into thoughtful Socratic conversations that guide users to
 __version__ = "0.2.0"
 
 from .base import Dialogue
-from .decorators import must, reject, hint, user, agent as agent_decorator
+from .decorators import must, reject, hint, user, agent
 from .match import match
 from .types import (
     as_int, as_float, as_percent,
@@ -24,10 +24,7 @@ from .visualization import (
     display_graph_in_notebook
 )
 from .socrates import SocratesMeta, FieldMeta, SocratesInstance, process_socrates_class
-from .agent import ChatfieldAgent
-
-# Re-export agent decorator with the correct name
-agent = agent_decorator
+from .evaluator import Evaluator
 
 __all__ = [
     # Core base class
@@ -70,4 +67,5 @@ __all__ = [
     "SocratesInstance",
     "process_socrates_class",
     "ChatfieldAgent",
+    "Evaluator",
 ]

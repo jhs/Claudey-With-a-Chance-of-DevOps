@@ -4,6 +4,7 @@
 import os
 import sys
 from chatfield import Dialogue, user, agent, hint, must, reject
+from chatfield import Evaluator
 
 import dotenv
 
@@ -11,7 +12,7 @@ import dotenv
 @user("Not deep technical, but has a clear vision of what they want")
 @agent("Technology partner for the Product Owner")
 @agent("Needs to understand the request in detail to implement correctly")
-class Request(Dialogue):
+class UserRequest(Dialogue):
     """Product Owner's request for technical work"""
     
     @hint("A specific thing you want to build")
@@ -37,14 +38,19 @@ def main():
     dotenv.load_dotenv(override=True)
     print("\n=== Testing Real OpenAI API with Product Owner Request Model ===\n", file=sys.stderr)
 
-    user_request = Request()
+    user_request = UserRequest()
+    evaluator = Evaluator(user_request)
 
     while True:
-        print(f'Request done status: {user_request.done}')
-        user_request.go()
+        print(f'In my loop; request done={user_request.done}')
+        res = evaluator.go()
+        print(f'Evaluator.go returned {res!r}. User request is done={user_request.done}')
 
         if user_request.done:
             break
+    
+        print(f"I'm bored")
+        break
 
     print(f"Dialogue finished. Final Request object is done={user_request.done}:")
     print(f"Scope of work: {user_request.scope}")
