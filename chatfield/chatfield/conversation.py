@@ -41,6 +41,7 @@ class Conversation:
         )
         
         self.collected_data: Dict[str, str] = {}
+        self.match_evaluations: Dict[str, Dict[str, Optional[bool]]] = {}
         self.conversation_history: List[Any] = []
     
     def conduct_conversation(self) -> Dict[str, str]:
@@ -102,6 +103,11 @@ class Conversation:
             # Update collected data
             self.collected_data = current_state.get("collected_data", {})
             
+            # Evaluate match rules for newly collected fields
+            for field_name, value in self.collected_data.items():
+                if field_name not in self.match_evaluations:
+                    self.match_evaluations[field_name] = self._evaluate_match_rules(field_name, value)
+            
             # Check completion
             if current_state.get("is_complete", False):
                 break
@@ -156,4 +162,47 @@ class Conversation:
     
     def create_instance(self) -> SocratesInstance:
         """Create a SocratesInstance from collected data."""
-        return SocratesInstance(self.meta, self.collected_data)
+        return SocratesInstance(self.meta, self.collected_data, self.match_evaluations)
+    
+    def _evaluate_match_rules(self, field_name: str, value: str) -> Dict[str, Optional[bool]]:
+        """Evaluate all match rules for a field value.
+        
+        Args:
+            field_name: Name of the field
+            value: The collected value for the field
+            
+        Returns:
+            Dictionary mapping match rule names to their boolean evaluations
+        """
+        field_meta = self.meta.get_field(field_name)
+        if not field_meta or not field_meta.match_rules:
+            return {}
+        
+        evaluations = {}
+        
+        for match_name, match_info in field_meta.match_rules.items():
+            # Skip internal must/reject rules for match evaluation
+            # They are already handled during validation
+            if match_name.startswith('_must_') or match_name.startswith('_reject_'):
+                continue
+            
+            criteria = match_info.get('criteria', '')
+            
+            # Use LLM to evaluate if the value matches the criteria
+            eval_prompt = f"""
+            Given this user response: "{value}"
+            
+            Does it match this criteria: "{criteria}"?
+            
+            Respond with only 'YES' or 'NO'.
+            """
+            
+            try:
+                response = self.llm.invoke([HumanMessage(content=eval_prompt)])
+                result_text = response.content.strip().upper()
+                evaluations[match_name] = result_text == 'YES'
+            except Exception:
+                # If evaluation fails, store None
+                evaluations[match_name] = None
+        
+        return evaluations

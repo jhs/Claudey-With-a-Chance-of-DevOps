@@ -6,6 +6,7 @@ import inspect
 
 from .socrates import process_socrates_class, SocratesInstance
 from .conversation import Conversation
+from .match import match as match_decorator
 
 T = TypeVar('T')
 
@@ -35,7 +36,8 @@ def gather(cls: T) -> T:
         meta = get_meta()
         conversation = Conversation(meta, **kwargs)
         collected_data = conversation.conduct_conversation()
-        return SocratesInstance(meta, collected_data)
+        # Use create_instance to properly include match evaluations
+        return conversation.create_instance()
     
     # Add the method to the class
     setattr(cls, 'gather', gather_method)
@@ -54,14 +56,45 @@ def gather(cls: T) -> T:
 def must(rule: str) -> Callable:
     """Mark what an answer must include.
     
+    This is now implemented as a wrapper around the @match system,
+    where the rule is evaluated and expected to match (True).
+    
     Args:
         rule: Description of what the answer must include
     """
     def decorator(func: Callable) -> Callable:
-        # Store the rule in metadata on the function
+        # Generate unique internal match name
+        match_id = f"_must_{hash(rule) & 0xFFFFFF:06x}"
+        
+        # Initialize match rules dict if needed
+        if not hasattr(func, '_chatfield_match_rules'):
+            func._chatfield_match_rules = {}
+        
+        # Check for hash collision (extremely rare but possible)
+        if match_id in func._chatfield_match_rules:
+            # If same rule text, it's a duplicate - error
+            if func._chatfield_match_rules[match_id]['criteria'] == rule:
+                raise ValueError(f"Duplicate @must rule: '{rule}'")
+            # If different rule text, it's a hash collision - regenerate
+            counter = 0
+            new_match_id = match_id
+            while new_match_id in func._chatfield_match_rules:
+                counter += 1
+                new_match_id = f"{match_id}_{counter}"
+            match_id = new_match_id
+        
+        # Store as a match rule with expected=True
+        func._chatfield_match_rules[match_id] = {
+            'criteria': rule,
+            'expected': True,  # Must rules expect True
+            'type': 'must'
+        }
+        
+        # Also keep backward compatibility
         if not hasattr(func, '_chatfield_must_rules'):
             func._chatfield_must_rules = []
         func._chatfield_must_rules.append(rule)
+        
         return func
     
     return decorator
@@ -70,13 +103,45 @@ def must(rule: str) -> Callable:
 def reject(rule: str) -> Callable:
     """Mark what to avoid in answers.
     
+    This is now implemented as a wrapper around the @match system,
+    where the rule is evaluated and expected NOT to match (False).
+    
     Args:
         rule: Description of what the answer should avoid
     """
     def decorator(func: Callable) -> Callable:
+        # Generate unique internal match name
+        match_id = f"_reject_{hash(rule) & 0xFFFFFF:06x}"
+        
+        # Initialize match rules dict if needed
+        if not hasattr(func, '_chatfield_match_rules'):
+            func._chatfield_match_rules = {}
+        
+        # Check for hash collision
+        if match_id in func._chatfield_match_rules:
+            # If same rule text, it's a duplicate - error
+            if func._chatfield_match_rules[match_id]['criteria'] == rule:
+                raise ValueError(f"Duplicate @reject rule: '{rule}'")
+            # If different rule text, it's a hash collision - regenerate
+            counter = 0
+            new_match_id = match_id
+            while new_match_id in func._chatfield_match_rules:
+                counter += 1
+                new_match_id = f"{match_id}_{counter}"
+            match_id = new_match_id
+        
+        # Store as a match rule with expected=False
+        func._chatfield_match_rules[match_id] = {
+            'criteria': rule,
+            'expected': False,  # Reject rules expect False
+            'type': 'reject'
+        }
+        
+        # Also keep backward compatibility
         if not hasattr(func, '_chatfield_reject_rules'):
             func._chatfield_reject_rules = []
         func._chatfield_reject_rules.append(rule)
+        
         return func
     
     return decorator

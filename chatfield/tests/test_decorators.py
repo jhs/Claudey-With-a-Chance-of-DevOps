@@ -2,7 +2,7 @@
 
 import pytest
 from chatfield.decorators import gather, must, reject, hint, user, agent
-from chatfield.gatherer import GathererMeta, process_gatherer_class
+from chatfield.socrates import SocratesMeta, process_socrates_class
 
 
 class TestGatherDecorator:
@@ -26,7 +26,7 @@ class TestGatherDecorator:
         
         assert hasattr(WithMeta, '_chatfield_meta')
         meta = WithMeta._chatfield_meta
-        assert isinstance(meta, GathererMeta)
+        assert isinstance(meta, SocratesMeta)
         assert meta.docstring == "Test gatherer"
         assert 'field' in meta.fields
 
@@ -104,7 +104,7 @@ class TestFieldDecorators:
             @hint('Test hint')
             def field(): "Test field description"
         
-        meta = process_gatherer_class(TestClass)
+        meta = process_socrates_class(TestClass)
         
         assert 'field' in meta.fields
         field_meta = meta.fields['field']
@@ -121,7 +121,7 @@ class TestFieldDecorators:
             @hint('Third hint')
             def field(): "Test field with multiple hints"
         
-        meta = process_gatherer_class(TestClass)
+        meta = process_socrates_class(TestClass)
         field_meta = meta.fields['field']
         
         assert field_meta.hints == ['Third hint', 'Second hint', 'First hint']
@@ -269,7 +269,7 @@ class TestBackwardCompatibility:
             email: "Your email"
         
         # Process without @gather to test raw processing
-        meta = process_gatherer_class(OldStyle)
+        meta = process_socrates_class(OldStyle)
         
         # Should have no fields since we don't process annotations anymore
         assert len(meta.fields) == 0

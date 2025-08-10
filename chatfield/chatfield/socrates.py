@@ -11,17 +11,33 @@ class FieldMeta:
     
     name: str
     description: str
+    match_rules: Dict[str, Dict] = field(default_factory=dict)
+    hints: List[str] = field(default_factory=list)
+    # Keep deprecated fields for backward compatibility
     must_rules: List[str] = field(default_factory=list)
     reject_rules: List[str] = field(default_factory=list)
-    hints: List[str] = field(default_factory=list)
     
     def add_must_rule(self, rule: str) -> None:
-        """Add a validation requirement."""
+        """Add a validation requirement (deprecated, use match_rules)."""
         self.must_rules.append(rule)
     
     def add_reject_rule(self, rule: str) -> None:
-        """Add a validation rejection rule."""
+        """Add a validation rejection rule (deprecated, use match_rules)."""
         self.reject_rules.append(rule)
+    
+    def get_must_rules(self) -> List[str]:
+        """Get all must rules (extracted from match_rules for compatibility)."""
+        # Return from match_rules if available, otherwise from must_rules
+        match_must = [rule['criteria'] for name, rule in self.match_rules.items() 
+                      if rule.get('type') == 'must']
+        return match_must if match_must else self.must_rules
+    
+    def get_reject_rules(self) -> List[str]:
+        """Get all reject rules (extracted from match_rules for compatibility)."""
+        # Return from match_rules if available, otherwise from reject_rules
+        match_reject = [rule['criteria'] for name, rule in self.match_rules.items() 
+                        if rule.get('type') == 'reject']
+        return match_reject if match_reject else self.reject_rules
     
     def add_hint(self, hint: str) -> None:
         """Add a hint tooltip."""
@@ -29,7 +45,7 @@ class FieldMeta:
     
     def has_validation_rules(self) -> bool:
         """Check if this field has any validation rules."""
-        return bool(self.must_rules or self.reject_rules)
+        return bool(self.match_rules or self.must_rules or self.reject_rules)
 
 
 @dataclass
@@ -75,14 +91,47 @@ class SocratesMeta:
 class SocratesInstance:
     """Instance created after completing a Socratic dialogue conversation."""
     
-    def __init__(self, meta: SocratesMeta, collected_data: Dict[str, str]):
+    def __init__(self, meta: SocratesMeta, collected_data: Dict[str, str], 
+                 match_evaluations: Optional[Dict[str, Dict[str, Optional[bool]]]] = None):
+        """Initialize the instance with collected data and match evaluations.
+        
+        Args:
+            meta: The metadata for the Socratic dialogue
+            collected_data: Dictionary of field names to collected string values
+            match_evaluations: Dictionary of field names to match evaluation results
+        """
         self._meta = meta
         self._data = collected_data.copy()
+        self._match_evaluations = match_evaluations or {}
+        self._proxies = {}  # Cache for FieldValueProxy objects
     
-    def __getattr__(self, name: str) -> str:
-        """Allow access to collected data as attributes."""
+    def __getattr__(self, name: str):
+        """Allow access to collected data as attributes.
+        
+        Returns FieldValueProxy objects that support match attributes.
+        """
         if name in self._data:
-            return self._data[name]
+            # Return cached proxy if available
+            if name not in self._proxies:
+                # Import here to avoid circular dependency
+                from .field_proxy import FieldValueProxy
+                
+                # Get field metadata
+                field_meta = self._meta.get_field(name)
+                if field_meta:
+                    # Create proxy with match evaluations for this field
+                    field_evaluations = self._match_evaluations.get(name, {})
+                    self._proxies[name] = FieldValueProxy(
+                        self._data[name], 
+                        field_meta, 
+                        field_evaluations
+                    )
+                else:
+                    # No metadata, return raw string (backward compatibility)
+                    return self._data[name]
+            
+            return self._proxies[name]
+        
         raise AttributeError(f"No field '{name}' was collected")
     
     def __repr__(self) -> str:
@@ -91,13 +140,25 @@ class SocratesInstance:
                           for k, v in self._data.items())
         return f"SocratesInstance({fields})"
     
+    def _get_raw_value(self, field_name: str) -> Optional[str]:
+        """Get the raw string value without proxy wrapping.
+        
+        Internal method for when you need the actual string.
+        """
+        return self._data.get(field_name)
+    
     def get_data(self) -> Dict[str, str]:
         """Get all collected data as a dictionary."""
         return self._data.copy()
     
-    def get(self, field_name: str, default: Optional[str] = None) -> Optional[str]:
-        """Get field value with optional default."""
-        return self._data.get(field_name, default)
+    def get(self, field_name: str, default: Optional[str] = None):
+        """Get field value with optional default.
+        
+        Returns a FieldValueProxy if field has match rules, otherwise a string.
+        """
+        if field_name in self._data:
+            return getattr(self, field_name)  # Use __getattr__ to get proxy
+        return default
 
 
 def process_socrates_class(cls: type) -> SocratesMeta:
@@ -140,6 +201,10 @@ def process_socrates_class(cls: type) -> SocratesMeta:
                 field_meta = meta.add_field(field_name, field_desc)
                 
                 # Get field metadata set by decorators
+                # New match rules system
+                if hasattr(attr_obj, '_chatfield_match_rules'):
+                    field_meta.match_rules = getattr(attr_obj, '_chatfield_match_rules', {})
+                # Legacy must/reject rules (for backward compatibility)
                 if hasattr(attr_obj, '_chatfield_must_rules'):
                     field_meta.must_rules = getattr(attr_obj, '_chatfield_must_rules', [])
                 if hasattr(attr_obj, '_chatfield_reject_rules'):

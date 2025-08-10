@@ -89,12 +89,10 @@ from chatfield import gather, must, reject, hint
 class WebsiteHelp:
     """A Socratic exploration of your website needs"""
     
-    @hint("examples: blog, online store, portfolio, company info site")
     @must("specific purpose or goal clear enough to protoype by a web developer")
     @reject("data reglation environment e.g. HIPAA, SOC2")
     def purpose(): "What will your website do?"
     
-    @hint("main sections like Home, About, Services, Contact")
     @must("main sections identified")
     def scope(): "What pages do you need?"
 
@@ -104,6 +102,33 @@ class WebsiteHelp:
     
     @hint("Shopping cart? Contact forms? Photo galleries? Calendars?")
     def technical_needs(): "Any special features?"  # Optional field
+```
+
+### Easy Field Comprehension
+
+Use `@match` to tell Chatfield how fields do or don't match your criteria or predicate.
+
+```python
+from chatfield import gather, match
+
+@gather
+class WebsiteHelp:
+    """A Socratic exploration of your website needs"""
+    
+    @match.personal("is a personal project")
+    @match.work("is a project for work")
+    def purpose(): "What will your website do?"
+    
+    def scope(): "What pages do you need?"
+
+web_help = WebsiteHelp()
+print(web_help.purpose.personal) # Output: None [since chat has not begun]
+print(web_help.purpose.work) # Output: None [since chat has not begun]
+
+# ... after some chatting wherein the user says it's a small project for his dog.
+
+print(web_help.purpose.personal) # True
+print(web_help.purpose.work) # False
 ```
 
 ### Personalizing the Socratic Dialogue
