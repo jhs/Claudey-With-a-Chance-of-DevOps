@@ -1,4 +1,8 @@
-"""Match decorator system for Chatfield."""
+"""Match decorator system for Chatfield.
+
+The @match decorator is part of the larger family of transformation decorators.
+It evaluates field values to boolean results based on custom criteria.
+"""
 
 from typing import Callable, Dict, Any
 
@@ -6,9 +10,14 @@ from typing import Callable, Dict, Any
 class MatchDecorator:
     """Dynamic match decorator that creates custom matchers via attribute access.
     
+    The @match decorator works alongside other transformation decorators like
+    @as_int, @as_list, @choose, etc. All decorators on a field are processed
+    in a single LLM call for efficiency.
+    
     Usage:
         @match.is_personal("mentions personal use")
         @match.is_commercial("for business purposes")
+        @as_list  # Can combine with type transformations
         def purpose(): "What's your project for?"
     """
     
@@ -31,18 +40,29 @@ class MatchDecorator:
                 Decorator that adds the match rule to the function
             """
             def decorator(func: Callable) -> Callable:
-                # Initialize match rules dict if needed
+                # Initialize transformations dict if needed (shared with types.py)
+                if not hasattr(func, '_chatfield_transformations'):
+                    func._chatfield_transformations = {}
+                
+                # Also keep match_rules for backwards compatibility
                 if not hasattr(func, '_chatfield_match_rules'):
                     func._chatfield_match_rules = {}
                 
                 # Check for duplicate match name
-                if match_name in func._chatfield_match_rules:
+                if match_name in func._chatfield_transformations:
                     raise ValueError(
-                        f"Duplicate match name '{match_name}' on field. "
-                        f"Each match name must be unique per field."
+                        f"Duplicate transformation '{match_name}' on field. "
+                        f"Each transformation name must be unique per field."
                     )
                 
-                # Store the match rule
+                # Store in both locations for compatibility
+                transformation_data = {
+                    'description': f'Evaluate: {criteria} (return true/false)',
+                    'criteria': criteria,
+                    'type': 'match'
+                }
+                
+                func._chatfield_transformations[match_name] = transformation_data
                 func._chatfield_match_rules[match_name] = {
                     'criteria': criteria,
                     'expected': None,  # Will be evaluated by LLM during conversation
@@ -54,6 +74,19 @@ class MatchDecorator:
             return decorator
         
         return decorator_factory
+
+
+# Helper function to get all match rules from a field
+def get_field_matches(field_func: Callable) -> dict:
+    """Get all match rules from a field.
+    
+    Args:
+        field_func: The field function with match decorators applied
+        
+    Returns:
+        Dictionary of match names to their criteria
+    """
+    return getattr(field_func, '_chatfield_match_rules', {})
 
 
 # Create the singleton instance that will be imported

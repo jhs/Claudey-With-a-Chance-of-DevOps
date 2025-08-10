@@ -8,6 +8,13 @@ __version__ = "0.2.0"
 from .base import Dialogue
 from .decorators import must, reject, hint, user, agent as agent_decorator
 from .match import match
+from .types import (
+    as_int, as_float, as_percent,
+    as_list, as_set, as_dict,
+    choose, choose_one, choose_many,
+    as_date, as_duration, as_timezone,
+    get_field_transformations, build_transformation_prompt
+)
 from .presets import patient_teacher, quick_diagnosis, friendly_expert
 from .visualization import (
     get_agent_graph,
@@ -32,6 +39,21 @@ __all__ = [
     "user",
     "agent",
     "match",
+    # Type transformation decorators
+    "as_int",
+    "as_float", 
+    "as_percent",
+    "as_list",
+    "as_set",
+    "as_dict",
+    "choose",
+    "choose_one",
+    "choose_many",
+    "as_date",
+    "as_duration",
+    "as_timezone",
+    "get_field_transformations",
+    "build_transformation_prompt",
     # Presets
     "patient_teacher",
     "quick_diagnosis", 
