@@ -148,3 +148,4 @@ Development commands:
 2. Use Claude to explore codebase and update policy understanding
 3. Maintain article ID consistency with tombstoning for obsolete policies
 4. Structure updates for PO approval before syncing back to knowledge base
+- always remember for this entire project that we prefer to delete old code and not implement backward-compatibility code but rather to just upgrade everything then
