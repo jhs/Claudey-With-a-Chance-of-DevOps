@@ -36,14 +36,9 @@ class UserRequest(Dialogue):
 
 def main():
     dotenv.load_dotenv(override=True)
-    print("\n=== Testing Real OpenAI API with Product Owner Request Model ===\n", file=sys.stderr)
+    print("Test Real OpenAI API with Product Owner Request Model ===")
 
     user_request = UserRequest()
-    print(f'Initialized request: .scope is None         : {user_request.scope is None} {type(user_request.scope)}')
-    print(f'Initialized request: .current_status is None: {user_request.current_status is None} {type(user_request.current_status)}')
-    print(f'Initialized request: .constraints is None   : {user_request.constraints is None} {type(user_request.constraints)}')
-    print(f'Initialized request: .budget is None        : {user_request.budget is None} {type(user_request.budget)}')
-    print(f'')
 
     evaluator = Evaluator(user_request)
     while True:

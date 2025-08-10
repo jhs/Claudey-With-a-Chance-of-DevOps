@@ -12,7 +12,7 @@ from .base import Dialogue
 
 class State(TypedDict):
     messages: list[Dict[str, Any]]
-    data_model: Dialogue
+    dialogue_data: Dict[str, Any]  # Serialized dialogue data (msgpack-compatible)
 
 
 class Evaluator:
@@ -21,10 +21,15 @@ class Evaluator:
     """
     
     def __init__(self, dialogue: Dialogue):
-        self.state = State(messages=[], data_model=dialogue, i=0)
+        self.dialogue = dialogue
         self.checkpointer = InMemorySaver()
         self.graph = self._build_graph()
         self.thread_id = str(uuid.uuid4())
+
+        self.state = State(
+            messages=[], 
+            dialogue_data=dialogue.to_msgpack_dict(),
+        )
         
     def _build_graph(self):
         builder = StateGraph(State)
@@ -44,7 +49,9 @@ class Evaluator:
     def initialize(self, state:State) -> State:
         print(f'Node> Initialize')
         # print(f'State: {state!r}')
-        print(f'  Data model: {state["data_model"]!r}')
+        print(f'  Data model: {self.dialogue!r}')
+        # Update state with current dialogue data
+        state["dialogue_data"] = self.dialogue.to_msgpack_dict()
         return state
         
     def think(self, state: State) -> State:
@@ -76,4 +83,3 @@ class Evaluator:
                 # print("Assistant:", value["messages"][-1].content)
                 # print(f'  >> {type(value)} {value!r}')
                 pass
-        return 3.14159

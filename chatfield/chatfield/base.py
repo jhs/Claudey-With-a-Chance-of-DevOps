@@ -1,6 +1,6 @@
 """Base class for Chatfield gatherers."""
 
-from typing import Type, TypeVar, Dict
+from typing import Type, TypeVar, Dict, Any
 from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 
 T = TypeVar('T', bound='Dialogue')
@@ -170,3 +170,28 @@ class Dialogue:
             fields_str = ", ".join(field_status)
             return f'<{self.__class__.__name__} {fields_str}>'
         return f'<{self.__class__.__name__}>'
+    
+    def to_msgpack_dict(self) -> Dict[str, Any]:
+        """Convert this Dialogue instance to a msgpack-compatible dictionary.
+        
+        This captures both the class definition metadata and current field values
+        with their evaluations and transformations.
+        
+        Returns:
+            A dictionary containing only msgpack-serializable types
+        """
+        from .serialization import dialogue_to_msgpack_dict
+        return dialogue_to_msgpack_dict(self)
+    
+    @classmethod
+    def from_msgpack_dict(cls, data: Dict[str, Any]) -> 'Dialogue':
+        """Reconstruct a Dialogue instance from a msgpack dictionary.
+        
+        Args:
+            data: Dictionary created by to_msgpack_dict()
+            
+        Returns:
+            A reconstructed Dialogue instance with all field values
+        """
+        from .serialization import msgpack_dict_to_dialogue
+        return msgpack_dict_to_dialogue(data, dialogue_class=cls)
