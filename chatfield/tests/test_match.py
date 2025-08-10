@@ -241,17 +241,3 @@ class TestSocratesInstanceWithProxy:
         assert isinstance(purpose, FieldValueProxy)
         assert str(purpose) == "personal blog"
         assert purpose.is_personal is True
-    
-    def test_instance_backward_compatibility(self):
-        """Test backward compatibility for fields without metadata."""
-        from chatfield.socrates import SocratesMeta
-        
-        meta = SocratesMeta()
-        # Don't add field metadata - simulate old-style usage
-        
-        instance = SocratesInstance(meta, {"name": "John Doe"}, {})
-        
-        # Should return raw string for fields without metadata
-        name = instance.name
-        assert isinstance(name, str)
-        assert name == "John Doe"

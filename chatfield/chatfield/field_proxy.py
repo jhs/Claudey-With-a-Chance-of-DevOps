@@ -49,30 +49,6 @@ class FieldValueProxy:
         """Return True if the value is not empty."""
         return bool(self._value)
     
-    def __setattr__(self, name: str, value):
-        """Prevent setting attributes, especially the 'valid' property.
-        
-        Args:
-            name: The attribute name
-            value: The value to set
-            
-        Raises:
-            AttributeError: If trying to set the 'valid' property or any other attribute
-        """
-        # Allow setting internal attributes during initialization
-        if name in ('_value', '_field_meta', '_evaluations', '_proxies'):
-            object.__setattr__(self, name, value)
-        elif name == 'valid':
-            raise AttributeError(
-                "Cannot set 'valid' attribute. The validity of a field is determined "
-                "automatically based on its @must and @reject validation rules."
-            )
-        else:
-            raise AttributeError(
-                f"Cannot set attribute '{name}' on FieldValueProxy. "
-                f"Field values are immutable once created."
-            )
-    
     def __getattr__(self, name: str):
         """Provide access to match rule evaluations.
         
@@ -129,34 +105,3 @@ class FieldValueProxy:
         """
         if match_name in self._field_meta.match_rules:
             self._evaluations[match_name] = result
-    
-    @property
-    def valid(self) -> bool:
-        """Check if the field value is valid according to all must/reject rules.
-        
-        A field is valid when:
-        - All @must rules evaluate to True
-        - All @reject rules evaluate to False
-        
-        Returns:
-            True if all validation rules pass, False otherwise
-        """
-        # Check all match rules
-        for match_name, rule_config in self._field_meta.match_rules.items():
-            rule_type = rule_config.get('type')
-            expected = rule_config.get('expected')
-            
-            # For must rules (expected=True) and reject rules (expected=False)
-            if rule_type in ('must', 'reject'):
-                # Get the evaluation result for this rule
-                actual = self._evaluations.get(match_name)
-                
-                # If not evaluated yet, consider it invalid
-                if actual is None:
-                    return False
-                
-                # Check if the actual matches the expected
-                if actual != expected:
-                    return False
-        
-        return True

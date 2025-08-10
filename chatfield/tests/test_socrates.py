@@ -142,11 +142,11 @@ class TestSocratesMeta:
         meta.add_user_context("User info")
         assert meta.has_context()
         
-        meta2 = GathererMeta()
+        meta2 = SocratesMeta()
         meta2.add_agent_context("Agent behavior")
         assert meta2.has_context()
         
-        meta3 = GathererMeta()
+        meta3 = SocratesMeta()
         meta3.set_docstring("Test docstring")
         assert meta3.has_context()
 
@@ -169,11 +169,15 @@ class TestSocratesInstance:
     def test_attribute_access(self):
         """Test accessing collected data as attributes."""
         meta = SocratesMeta()
+        # Add fields to metadata
+        meta.add_field("field1", "Field 1")
+        meta.add_field("field2", "Field 2")
+        
         data = {"field1": "value1", "field2": "value2"}
         instance = SocratesInstance(meta, data)
         
-        assert instance.field1 == "value1"
-        assert instance.field2 == "value2"
+        assert str(instance.field1) == "value1"
+        assert str(instance.field2) == "value2"
         
         with pytest.raises(AttributeError):
             _ = instance.nonexistent_field
@@ -181,23 +185,31 @@ class TestSocratesInstance:
     def test_get_data(self):
         """Test getting all data as dictionary."""
         meta = SocratesMeta()
+        # Add field metadata
+        meta.add_field("name", "Name")
+        meta.add_field("email", "Email")
+        
         original_data = {"name": "John", "email": "john@example.com"}
-        instance = GathererInstance(meta, original_data)
+        instance = SocratesInstance(meta, original_data)
         
         retrieved_data = instance.get_data()
         assert retrieved_data == original_data
         
         # Should be a copy, not the original
         retrieved_data["name"] = "Jane"
-        assert instance.name == "John"
+        assert str(instance.name) == "John"
     
     def test_get_with_default(self):
         """Test getting field with default value."""
         meta = SocratesMeta()
+        # Add fields to metadata
+        meta.add_field("name", "Name")
+        meta.add_field("email", "Email")
+        
         data = {"name": "John"}
         instance = SocratesInstance(meta, data)
         
-        assert instance.get("name") == "John"
+        assert str(instance.get("name")) == "John"
         assert instance.get("email") is None
         assert instance.get("email", "default@example.com") == "default@example.com"
     
@@ -249,7 +261,7 @@ class TestProcessSocratesClass:
             _chatfield_agent_context = ["Agent behavior"]
             def field(): "Test field"
         
-        meta = process_gatherer_class(WithContext)
+        meta = process_socrates_class(WithContext)
         
         assert "User info" in meta.user_context
         assert "Agent behavior" in meta.agent_context
@@ -260,7 +272,7 @@ class TestProcessSocratesClass:
             """Empty class"""
             pass
         
-        meta = process_gatherer_class(Empty)
+        meta = process_socrates_class(Empty)
         
         assert meta.docstring == "Empty class"
         assert len(meta.fields) == 0
@@ -278,7 +290,7 @@ class TestProcessSocratesClass:
             def no_docstring():
                 pass
         
-        meta = process_gatherer_class(Mixed)
+        meta = process_socrates_class(Mixed)
         
         assert len(meta.fields) == 1
         assert "string_field" in meta.fields

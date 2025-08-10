@@ -108,31 +108,34 @@ class SocratesInstance:
     def __getattr__(self, name: str):
         """Allow access to collected data as attributes.
         
-        Returns FieldValueProxy objects that support match attributes.
+        Returns FieldValueProxy objects that support match attributes, or None for uncollected fields.
         """
-        if name in self._data:
-            # Return cached proxy if available
+        # Check if this is a known field from metadata
+        if name in self._meta.fields:
+            # If field was not collected, return None (not valid/not discussed)
+            if name not in self._data:
+                return None
+            
+            # Field was collected, return proxy
             if name not in self._proxies:
                 # Import here to avoid circular dependency
                 from .field_proxy import FieldValueProxy
                 
                 # Get field metadata
                 field_meta = self._meta.get_field(name)
-                if field_meta:
-                    # Create proxy with match evaluations for this field
-                    field_evaluations = self._match_evaluations.get(name, {})
-                    self._proxies[name] = FieldValueProxy(
-                        self._data[name], 
-                        field_meta, 
-                        field_evaluations
-                    )
-                else:
-                    # No metadata, return raw string (backward compatibility)
-                    return self._data[name]
+                
+                # Create proxy with match evaluations for this field
+                field_evaluations = self._match_evaluations.get(name, {})
+                self._proxies[name] = FieldValueProxy(
+                    self._data[name], 
+                    field_meta, 
+                    field_evaluations
+                )
             
             return self._proxies[name]
         
-        raise AttributeError(f"No field '{name}' was collected")
+        # For unknown attributes, raise AttributeError as normal
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
     def __repr__(self) -> str:
         """String representation of collected data."""
