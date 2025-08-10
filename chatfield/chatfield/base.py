@@ -51,3 +51,13 @@ class Dialogue:
     def _chatfield_meta(cls) -> SocratesMeta:
         """Access to the processed metadata."""
         return cls._get_meta()
+    
+    done = False
+
+    def go(self):
+        """Run the dialogue interaction.
+        
+        This method should be overridden in subclasses to implement the
+        specific interaction logic.
+        """
+        raise NotImplementedError("Subclasses must implement the go() method.")
