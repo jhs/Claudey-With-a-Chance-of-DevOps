@@ -191,26 +191,26 @@ def choose(*choices: str, mandatory: bool = False, allow_multiple: bool = False)
     return decorator
 
 
-def choose_one(*choices: str, mandatory: bool = False) -> Callable:
+def choose_one(*choices: str, mandatory: bool = True) -> Callable:
     """Select exactly one from provided choices.
     
     Convenience wrapper for choose with allow_multiple=False.
     
     Args:
         *choices: Available options to choose from
-        mandatory: If False (default), can return None if no match
+        mandatory: If False, can return None if no match
     """
     return choose(*choices, mandatory=mandatory, allow_multiple=False)
 
 
-def choose_many(*choices: str, mandatory: bool = False) -> Callable:
+def choose_many(*choices: str, mandatory: bool = True) -> Callable:
     """Select multiple from provided choices.
     
     Convenience wrapper for choose with allow_multiple=True.
     
     Args:
         *choices: Available options to choose from  
-        mandatory: If False (default), can return empty list
+        mandatory: If False, can return empty list
     """
     return choose(*choices, mandatory=mandatory, allow_multiple=True)
 
