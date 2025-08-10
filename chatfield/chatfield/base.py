@@ -145,9 +145,12 @@ class Dialogue:
     
     @property
     def done(self):
-        """Check if all required fields have been collected."""
-        # TODO: Implement logic to check if all fields are valid
-        # For now, check if all fields have been collected (not None)
+        """Check if all required fields have been collected.
+        
+        Returns True when all fields have been populated with values.
+        Fields are only populated when they pass validation, so checking
+        for non-None values is sufficient.
+        """
         if not hasattr(self, '_meta'):
             return False
         return all(
