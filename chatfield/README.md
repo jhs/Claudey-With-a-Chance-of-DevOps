@@ -441,3 +441,6 @@ while True:
 Features
 - Pre-populate values based on ongoing conversation and/or propose some recommended possible answers to upcoming questions
 - Must have some kind of builder API to build these objects during runtime, not in source code.
+- @as_percent, @as_float, etc. ideally can do both:
+  - @as_percent as a plain decorator, just uses some default prompt
+  - @as_float("Some string here") allows the developer to hint, e.g. "Either pi or tao"
