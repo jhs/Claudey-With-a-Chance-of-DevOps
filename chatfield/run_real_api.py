@@ -39,8 +39,13 @@ def main():
     print("\n=== Testing Real OpenAI API with Product Owner Request Model ===\n", file=sys.stderr)
 
     user_request = UserRequest()
-    evaluator = Evaluator(user_request)
+    print(f'Initialized request: .scope is None         : {user_request.scope is None} {type(user_request.scope)}')
+    print(f'Initialized request: .current_status is None: {user_request.current_status is None} {type(user_request.current_status)}')
+    print(f'Initialized request: .constraints is None   : {user_request.constraints is None} {type(user_request.constraints)}')
+    print(f'Initialized request: .budget is None        : {user_request.budget is None} {type(user_request.budget)}')
+    print(f'')
 
+    evaluator = Evaluator(user_request)
     while True:
         print(f'In my loop; request done={user_request.done}')
         res = evaluator.go()

@@ -12,6 +12,7 @@ class FieldMeta:
     name: str
     description: str
     match_rules: Dict[str, Dict] = field(default_factory=dict)
+    transformations: Dict[str, Dict] = field(default_factory=dict)
     hints: List[str] = field(default_factory=list)
     # Keep deprecated fields for backward compatibility
     must_rules: List[str] = field(default_factory=list)
@@ -92,23 +93,27 @@ class SocratesInstance:
     """Instance created after completing a Socratic dialogue conversation."""
     
     def __init__(self, meta: SocratesMeta, collected_data: Dict[str, str], 
-                 match_evaluations: Optional[Dict[str, Dict[str, Optional[bool]]]] = None):
-        """Initialize the instance with collected data and match evaluations.
+                 match_evaluations: Optional[Dict[str, Dict[str, Optional[bool]]]] = None,
+                 transformations: Optional[Dict[str, Dict[str, Any]]] = None):
+        """Initialize the instance with collected data, match evaluations, and transformations.
         
         Args:
             meta: The metadata for the Socratic dialogue
             collected_data: Dictionary of field names to collected string values
             match_evaluations: Dictionary of field names to match evaluation results
+            transformations: Dictionary of field names to transformation results
         """
         self._meta = meta
         self._data = collected_data.copy()
         self._match_evaluations = match_evaluations or {}
+        self._transformations = transformations or {}
         self._proxies = {}  # Cache for FieldValueProxy objects
     
     def __getattr__(self, name: str):
         """Allow access to collected data as attributes.
         
-        Returns FieldValueProxy objects that support match attributes, or None for uncollected fields.
+        Returns FieldValueProxy objects that support match attributes and transformations, 
+        or None for uncollected fields.
         """
         # Check if this is a known field from metadata
         if name in self._meta.fields:
@@ -124,12 +129,14 @@ class SocratesInstance:
                 # Get field metadata
                 field_meta = self._meta.get_field(name)
                 
-                # Create proxy with match evaluations for this field
+                # Create proxy with match evaluations and transformations for this field
                 field_evaluations = self._match_evaluations.get(name, {})
+                field_transformations = self._transformations.get(name, {})
                 self._proxies[name] = FieldValueProxy(
                     self._data[name], 
                     field_meta, 
-                    field_evaluations
+                    field_evaluations,
+                    field_transformations
                 )
             
             return self._proxies[name]
@@ -207,6 +214,19 @@ def process_socrates_class(cls: type) -> SocratesMeta:
                 # New match rules system
                 if hasattr(attr_obj, '_chatfield_match_rules'):
                     field_meta.match_rules = getattr(attr_obj, '_chatfield_match_rules', {})
+                # New transformations system (shared with match rules)
+                if hasattr(attr_obj, '_chatfield_transformations'):
+                    # Extract only actual type transformations (as_* keys)
+                    all_transformations = getattr(attr_obj, '_chatfield_transformations', {})
+                    field_meta.transformations = {
+                        k: v for k, v in all_transformations.items() 
+                        if k.startswith('as_')
+                    }
+                    # Match rules are also stored in transformations for parallel processing
+                    # but we keep them separate in match_rules for backward compatibility
+                    for k, v in all_transformations.items():
+                        if not k.startswith('as_') and k not in field_meta.match_rules:
+                            field_meta.match_rules[k] = v
                 # Legacy must/reject rules (for backward compatibility)
                 if hasattr(attr_obj, '_chatfield_must_rules'):
                     field_meta.must_rules = getattr(attr_obj, '_chatfield_must_rules', [])

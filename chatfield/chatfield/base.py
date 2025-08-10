@@ -21,6 +21,23 @@ class Dialogue:
             def tried(): "What have you tried?"
     """
     
+    def __init__(self):
+        """Initialize the dialogue with all fields set to None."""
+        # Get metadata for this class
+        meta = self._get_meta()
+        
+        # Store metadata reference for instance use (must be before field init)
+        # Use object.__setattr__ to bypass our custom __setattr__
+        object.__setattr__(self, '_meta', meta)
+        object.__setattr__(self, '_collected_data', {})
+        object.__setattr__(self, '_match_evaluations', {})
+        object.__setattr__(self, '_transformations', {})
+        object.__setattr__(self, '_field_values', {})
+        
+        # Initialize all fields to None
+        for field_name in meta.fields:
+            self._field_values[field_name] = None
+    
     @classmethod
     def _get_meta(cls) -> SocratesMeta:
         """Get metadata, creating it if needed."""
@@ -52,7 +69,101 @@ class Dialogue:
         """Access to the processed metadata."""
         return cls._get_meta()
     
-    done = False # TODO: Should be a getter that checks whether all fields are valid.
+    def __getattribute__(self, name: str):
+        """Get field values or other attributes.
+        
+        For defined fields, returns either None or a FieldValueProxy.
+        Overrides the method access to return field values instead.
+        """
+        # First check if we have _meta initialized (during __init__)
+        try:
+            meta = object.__getattribute__(self, '_meta')
+            field_values = object.__getattribute__(self, '_field_values')
+        except AttributeError:
+            # Not initialized yet, use default behavior
+            return object.__getattribute__(self, name)
+        
+        # Check if this is a known field
+        if name in meta.fields:
+            return field_values.get(name)
+        
+        # Not a field, use normal attribute access
+        return object.__getattribute__(self, name)
+    
+    def __setattr__(self, name: str, value):
+        """Set attributes with field protection.
+        
+        Fields defined in the dialogue are read-only and cannot be set directly.
+        """
+        # Allow setting of private attributes
+        if name.startswith('_'):
+            object.__setattr__(self, name, value)
+            return
+        
+        # Check if this is a field - if so, it's read-only
+        if hasattr(self, '_meta') and name in self._meta.fields:
+            raise AttributeError(
+                f"Cannot set field '{name}' directly - fields are read-only. "
+                f"Fields should only be populated through the dialogue process."
+            )
+        
+        # Allow setting other attributes normally
+        object.__setattr__(self, name, value)
+    
+    def _set_field_value(self, field_name: str, value, evaluations=None, transformations=None):
+        """Internal method to set field values with FieldValueProxy.
+        
+        This is used internally by the dialogue system to populate fields.
+        """
+        if field_name not in self._meta.fields:
+            raise ValueError(f"Unknown field: {field_name}")
+        
+        if value is None:
+            self._field_values[field_name] = None
+        else:
+            # Import here to avoid circular dependency
+            from .field_proxy import FieldValueProxy
+            
+            field_meta = self._meta.get_field(field_name)
+            field_evaluations = evaluations or {}
+            field_transformations = transformations or {}
+            
+            proxy = FieldValueProxy(
+                value,
+                field_meta,
+                field_evaluations,
+                field_transformations
+            )
+            self._field_values[field_name] = proxy
+            
+            # Also update internal tracking
+            self._collected_data[field_name] = value
+            if evaluations:
+                self._match_evaluations[field_name] = evaluations
+            if transformations:
+                self._transformations[field_name] = transformations
+    
+    @property
+    def done(self):
+        """Check if all required fields have been collected."""
+        # TODO: Implement logic to check if all fields are valid
+        # For now, check if all fields have been collected (not None)
+        if not hasattr(self, '_meta'):
+            return False
+        return all(
+            self._field_values.get(field_name) is not None 
+            for field_name in self._meta.fields
+        )
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} >' #  {self._chatfield_meta.name}>'
+        if hasattr(self, '_meta'):
+            field_status = []
+            for field_name in self._meta.fields:
+                value = self._field_values.get(field_name)
+                if value is None:
+                    field_status.append(f"{field_name}=None")
+                else:
+                    field_status.append(f"{field_name}=<set>")
+            fields_str = ", ".join(field_status)
+            return f'<{self.__class__.__name__} {fields_str}>'
+        return f'<{self.__class__.__name__}>'
