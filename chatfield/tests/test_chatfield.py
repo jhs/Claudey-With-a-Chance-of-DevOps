@@ -5,7 +5,7 @@ import pytest
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 from chatfield.agent import ChatfieldAgent, ConversationState, ValidationResult
-from chatfield.conversation import Conversation
+# from chatfield.conversation import Conversation  # Temporarily disabled - execution model being redesigned
 from chatfield.socrates import SocratesMeta, FieldMeta
 from chatfield import Dialogue, must, reject, hint, user, agent
 
@@ -106,33 +106,34 @@ class TestChatfieldAgent:
         assert uncollected == ["email", "phone"]
 
 
-@pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
-class TestConversation:
-    """Test the Conversation class with real API."""
-    
-    def test_conversation_initialization(self):
-        """Test conversation initialization."""
-        meta = SocratesMeta()
-        meta.add_field("name", "What is your name?")
-        
-        conversation = Conversation(meta)
-        
-        assert conversation.meta == meta
-        assert conversation.collected_data == {}
-        assert conversation.conversation_history == []
-    
-    def test_conversation_with_simple_dialogue(self):
-        """Test a simple conversation flow with real API."""
-        class SimpleDialogue(Dialogue):
-            """A simple dialogue for testing."""
-            
-            def name():
-                """What is your name"""
-        
-        # This test would require actual user input or mocking
-        # For now, we just test that the class was properly decorated
-        assert hasattr(SimpleDialogue, 'gather')
-        assert callable(SimpleDialogue.gather)
+# Temporarily disabled - Conversation class removed while execution model is being redesigned
+# @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
+# class TestConversation:
+#     """Test the Conversation class with real API."""
+#     
+#     def test_conversation_initialization(self):
+#         """Test conversation initialization."""
+#         meta = SocratesMeta()
+#         meta.add_field("name", "What is your name?")
+#         
+#         conversation = Conversation(meta)
+#         
+#         assert conversation.meta == meta
+#         assert conversation.collected_data == {}
+#         assert conversation.conversation_history == []
+#     
+#     def test_conversation_with_simple_dialogue(self):
+#         """Test a simple conversation flow with real API."""
+#         class SimpleDialogue(Dialogue):
+#             """A simple dialogue for testing."""
+#             
+#             def name():
+#                 """What is your name"""
+#         
+#         # This test would require actual user input or mocking
+#         # For now, we just test that the class was properly decorated
+#         assert hasattr(SimpleDialogue, 'gather')
+#         assert callable(SimpleDialogue.gather)
 
 
 @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")

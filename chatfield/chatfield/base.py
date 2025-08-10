@@ -2,7 +2,6 @@
 
 from typing import Type, TypeVar, Dict, Optional
 from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
-from .conversation import Conversation
 
 T = TypeVar('T', bound='Dialogue')
 
@@ -40,11 +39,11 @@ class Dialogue:
         Returns:
             SocratesInstance with collected data accessible as attributes.
         """
-        meta = cls._get_meta()
-        conversation = Conversation(meta, **kwargs)
-        collected_data = conversation.conduct_conversation()
-        # Use create_instance to properly include match evaluations
-        return conversation.create_instance()
+        raise NotImplementedError(
+            "The execution model for Dialogue.gather() has not been implemented yet. "
+            "The conversation system is being redesigned. "
+            "For now, use ChatfieldAgent directly if you need the underlying functionality."
+        )
     
     # Property to expose metadata for advanced usage
     @classmethod
