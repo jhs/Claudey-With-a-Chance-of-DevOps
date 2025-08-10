@@ -280,6 +280,7 @@ Testing
   - AI NPC such as [FluidHTN](https://github.com/ptrefall/fluid-hierarchical-task-network) or something LLM or NVIDIA. E.g. an open source game but "patched" with Lua, etc. script:
     - Custom trash talk from the LLM.
     - To use AI to generate new random patterns for Bald Bull every time you play.
+- GraphQL service hosting Chatfield
 
 ## Experiments
 
