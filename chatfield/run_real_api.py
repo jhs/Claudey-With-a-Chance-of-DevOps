@@ -3,17 +3,17 @@
 
 import os
 import sys
-from chatfield import Dialogue, user, agent, hint, must, reject, alice, bob
-from chatfield import Evaluator
+from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_bool
+from chatfield import Interviewer
 
 import dotenv
 
-@bob("Product Owner")
-@bob.desc("Not deep technical, but has a clear vision of what they want")
-@alice("Expert Tech Assistant")
-@alice.desc("Technology partner for the Product Owner")
-@alice.desc("Needs to understand the request in detail to implement correctly")
-class UserRequest(Dialogue):
+@bob("product owner")
+@bob.trait("Not deep technical, but has a clear vision of what they want")
+@alice("Expert Technology Consultant")
+@alice.trait("Technology partner for the Product Owner")
+@alice.trait("Needs to understand the request in detail to implement correctly")
+class UserRequest(Interview):
     """Product Owner's request for technical work"""
     
     @hint("A specific thing you want to build")
@@ -21,6 +21,13 @@ class UserRequest(Dialogue):
     @reject("data regulation environments HIPAA or SOC2")
     def scope():
         "Scope of Work"
+    
+    def optional_notes():
+        """Optional extra notes or context for the request."""
+
+    @as_bool
+    def enthusiasm():
+        "What is your enthusiasm level for this project"
 
     @hint("What assets you have to work with, or what you already built, if any")
     def current_status():
@@ -30,21 +37,28 @@ class UserRequest(Dialogue):
     def constraints():
         "Project constraints, e.g. timeline, resources (excluding budget)"
 
+    @as_int
+    def number_of_users():
+        "Estimated number of users for the project"
+
     @must("specific amount of money")
     @must("a specific time frequency, e.g. monthly, yearly")
+    @as_int("USD of project budget or -1 if unlimited budget")
     def budget():
         "Project budget"
 
 def main():
     dotenv.load_dotenv(override=True)
-    print("Test Real OpenAI API with Product Owner Request Model ===")
+    # print("Test Real OpenAI API with Product Owner Request Model ===")
 
     user_request = UserRequest()
-    evaluator = Evaluator(user_request)
+    print(f'{user_request}')
+    return
+    evaluator = Interviewer(user_request)
     while True:
         print(f'In my loop; request done={user_request.done}')
         res = evaluator.go()
-        print(f'Evaluator.go returned {type(res)} {res!r}. User request is done={user_request.done}')
+        print(f'Interviewer.go returned {type(res)} {res!r}. User request is done={user_request.done}')
 
         if user_request.done:
             print(f'Hooray! User request is done.')
@@ -52,7 +66,7 @@ def main():
 
         # This would be really cool: change the data model and/or change the evaluator easily.
         # different_request = some_dynamic_build_of_a_different_request(user_request)
-        # new_evaluator = Evaluator(different_request) # Or somehow "fork" off
+        # new_evaluator = Interviewer(different_request) # Or somehow "fork" off
         # user_request, evaluator = different_request, new_evaluator
         # continue
 
