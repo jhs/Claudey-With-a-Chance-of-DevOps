@@ -640,3 +640,12 @@ UserRequest:
 @as_quote
 - System prompt
   - "in no particular order" i.e. the LLM should decide the priority, the next thing to discuss, etc.
+
+- Maybe in dev mode or in tracing mode, or a "check" command, to use the LLM to advise/warn the developer of better prompts:
+  - Something more brief with identical information content
+  - Wrong "part of speech" or phrasing, e.g
+    - Fields docstring is a prompt or question rather than describing the field: `def happiness(): "What is your happiness level?"` should be "your happiness level"
+    - Consistent capitalization and punctuation (maybe project norm is always lower case, never end punctuate)
+    - Did not name the role, i.e. @alice("...") and @bob('...') or @alice.trait('...'), etc.
+    - Imperfect or vague @reject and @must
+- Test with GPT-5 via OpenAI API
