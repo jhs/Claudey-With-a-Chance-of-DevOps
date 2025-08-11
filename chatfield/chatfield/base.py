@@ -1,15 +1,11 @@
 """Base class for Chatfield gatherers."""
 
-import json
-import textwrap
-from typing import Type, TypeVar, Dict, Any
+# import json
+# import textwrap
+from typing import Type, TypeVar, List, Dict, Any
 # from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 
 T = TypeVar('T', bound='Interview')
-
-# Global cache for metadata by class
-# _metadata_cache: Dict[type, SocratesMeta] = {}
-
 
 class Interview:
     """Base class for creating Socratic dialogue interfaces.
@@ -30,23 +26,34 @@ class Interview:
     # }
 
     def __init__(self):
-        """Initialize the dialogue with all fields set to None."""
-        # print(f'Initialize {self.__class__.__name__}')
-        # print(str(self))
-        # Get metadata for this class
-        # meta = self._get_meta()
+        pass
+    
+    def _asdict(self) -> Dict[str, Any]:
+        type_name = self.__class__.__name__
+        roles = getattr(self, '_roles', None)
+
+        # desc = textwrap.dedent(self.__doc__).strip() if self.__doc__ else None
+        desc = self.__doc__ if self.__doc__ else None
+
+        fields = {}
+        for field_name in self._fields():
+            field = object.__getattribute__(self, field_name)
+            chatfield = getattr(field, '_chatfield', {})
+            if field.__doc__:
+                chatfield['desc'] = field.__doc__
+            fields[field_name] = chatfield
         
-        # Store metadata reference for instance use (must be before field init)
-        # Use object.__setattr__ to bypass our custom __setattr__
-        # object.__setattr__(self, '_meta', meta)
-        # object.__setattr__(self, '_collected_data', {})
-        # object.__setattr__(self, '_match_evaluations', {})
-        # object.__setattr__(self, '_transformations', {})
-        # object.__setattr__(self, '_field_values', {})
-        
-        # Initialize all fields to None
-        # for field_name in meta.fields:
-        #     self._field_values[field_name] = None
+        return dict(type=type_name, desc=desc, roles=roles, fields=fields)
+    
+    def _fields(self) -> List[str]:
+        """Return a list of field names defined in this interview."""
+        result = []
+        for attr_name in dir(self):
+            if not attr_name.startswith('_'):
+                attr = object.__getattribute__(self, attr_name)
+                if callable(attr):
+                    result.append(attr_name)
+        return result
     
     # @classmethod
     # def _get_meta(cls) -> SocratesMeta:
@@ -87,8 +94,12 @@ class Interview:
         """
         # First check if we have _meta initialized (during __init__)
         # print(f'__getattribute__: {name!r}')
-        return object.__getattribute__(self, name)
-        raise Exception(f'XXX getattribute for {name}')
+        val = object.__getattribute__(self, name)
+        if callable(val) and not name.startswith('_'):
+            return None
+        return val
+
+        # return object.__getattribute__(self, name)
         try:
             meta = object.__getattribute__(self, '_meta')
             field_values = object.__getattribute__(self, '_field_values')
@@ -174,64 +185,5 @@ class Interview:
         )
 
     def __repr__(self):
-        if hasattr(self, '_meta'):
-            field_status = []
-            for field_name in self._meta.fields:
-                value = self._field_values.get(field_name)
-                if value is None:
-                    field_status.append(f"{field_name}=None")
-                else:
-                    field_status.append(f"{field_name}=<set>")
-            fields_str = ", ".join(field_status)
-            return f'<{self.__class__.__name__} {fields_str}>'
-        return f'<{self.__class__.__name__}>'
-    
-    def __str__(self):
-        """String representation of the dialogue.
-
-        Show as indented JSON:
-        - "_roles" - Any class ._roles or None
-        - For each field (actually a method defined on the class), it has a key mapping to:
-          - If no ._chatfield for that method -> None
-          - Otherwise, the value of that ._chatfield dictionary
-        """
-        type_name = self.__class__.__name__
-        roles = getattr(self, '_roles', None)
-        fields = {}
-
-        desc = textwrap.dedent(self.__doc__).strip() if self.__doc__ else None
-
-        for attr_name in dir(self):
-            if attr_name.startswith('_'):
-                continue
-            attr = getattr(self, attr_name)
-            if callable(attr):
-                chatfield = getattr(attr, '_chatfield', None)
-                fields[attr_name] = chatfield
-        
-        return json.dumps(dict(type=type_name, desc=desc, roles=roles, fields=fields), indent=2)
-    
-    # def to_msgpack_dict(self) -> Dict[str, Any]:
-    #     """Convert this Interview instance to a msgpack-compatible dictionary.
-        
-    #     This captures both the class definition metadata and current field values
-    #     with their evaluations and transformations.
-        
-    #     Returns:
-    #         A dictionary containing only msgpack-serializable types
-    #     """
-    #     from .serialization import dialogue_to_msgpack_dict
-    #     return dialogue_to_msgpack_dict(self)
-    
-    # @classmethod
-    # def from_msgpack_dict(cls, data: Dict[str, Any]) -> 'Interview':
-    #     """Reconstruct a Interview instance from a msgpack dictionary.
-        
-    #     Args:
-    #         data: Dictionary created by to_msgpack_dict()
-            
-    #     Returns:
-    #         A reconstructed Interview instance with all field values
-    #     """
-    #     from .serialization import msgpack_dict_to_dialogue
-    #     return msgpack_dict_to_dialogue(data, dialogue_class=cls)
+        as_dict = self._asdict()
+        return repr(as_dict)

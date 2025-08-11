@@ -139,7 +139,7 @@ class InterviewDecorator:
         @alice("Personal Assistant")
         """
 
-        print(f'Call InterviewDecorator> {self.name!r} with {callable_or_role!r}', file=sys.stderr)
+        # print(f'Call InterviewDecorator> {self.name!r} with {callable_or_role!r}', file=sys.stderr)
         if callable(callable_or_role):
             return callable_or_role
 
@@ -201,7 +201,7 @@ class FieldCastDecorator:
             raise ValueError(f"Bad primitive type: {primitive_type!r}; must be one of {ok_primitive_types!r}")
     
     def __call__(self, callable_or_prompt: Union[Callable, str]) -> Callable:
-        print(f'FieldCastDecorator> {self.name!r} with prompt {callable_or_prompt!r}', file=sys.stderr)
+        # print(f'FieldCastDecorator> {self.name!r} with prompt {callable_or_prompt!r}', file=sys.stderr)
         if callable(callable_or_prompt):
             target = callable_or_prompt
             override_prompt = None
