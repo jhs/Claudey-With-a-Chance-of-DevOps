@@ -3,12 +3,13 @@
 
 import os
 import sys
+import json
 from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_bool
 from chatfield import Interviewer
 
 import dotenv
 
-@bob("product owner")
+@bob("Product Owner")
 @bob.trait("Not deep technical, but has a clear vision of what they want")
 @alice("Expert Technology Consultant")
 @alice.trait("Technology partner for the Product Owner")
@@ -52,13 +53,12 @@ def main():
     # print("Test Real OpenAI API with Product Owner Request Model ===")
 
     user_request = UserRequest()
-    print(f'{user_request}')
-    return
+    print(json.dumps(user_request._asdict(), indent=2))
     evaluator = Interviewer(user_request)
     while True:
         print(f'In my loop; request done={user_request.done}')
-        res = evaluator.go()
-        print(f'Interviewer.go returned {type(res)} {res!r}. User request is done={user_request.done}')
+        request = evaluator.go()
+        print(f'Interviewer.go returned {type(request)} {request!r}')
 
         if user_request.done:
             print(f'Hooray! User request is done.')
@@ -74,11 +74,11 @@ def main():
         # print(len(list(evaluator.checkpointer.list(evaluator.config))))
 
         # Get the messages to render them in the "UI"
-        print(f'---------------------------')
-        print(f'Messages: {len(evaluator.state["messages"])}')
-        for i, msg in enumerate(evaluator.state["messages"]):
-            print(f'  {i:>3}: {msg!r}')
-        print(f'---------------------------')
+        # print(f'---------------------------')
+        # print(f'Messages: {len(evaluator.state["messages"])}')
+        # for i, msg in enumerate(evaluator.state["messages"]):
+        #     print(f'  {i:>3}: {msg!r}')
+        # print(f'---------------------------')
     
         print(f"I'm bored")
         break
