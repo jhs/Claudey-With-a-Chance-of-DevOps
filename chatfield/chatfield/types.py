@@ -280,6 +280,36 @@ def as_timezone(func: Callable) -> Callable:
     return decorator(func)
 
 
+# Language/Format Type Transformation
+
+def as_lang(language: str) -> Callable:
+    """Track the language or format of the field value for later processing.
+    
+    Args:
+        language: Any string describing the language or format (e.g., "python", "sql", 
+                 "natural language", "markdown", "json", etc.)
+    
+    Examples:
+        @as_lang("python")
+        def code(): return "Your Python code"
+        
+        @as_lang("natural language")  
+        def description(): return "Describe in plain English"
+        
+        @as_lang("sql")
+        def query(): return "Your database query"
+    """
+    def decorator(func: Callable) -> Callable:
+        decorator_obj = TypeDecorator(
+            'as_lang',
+            f'Track as {language} for processing',
+            language=language
+        )
+        return decorator_obj(func)
+    
+    return decorator
+
+
 # Helper function to collect all transformations from a field
 def get_field_transformations(field_func: Callable) -> dict:
     """Get all transformation requests from a field.
@@ -339,7 +369,8 @@ def build_transformation_prompt(
         'as_choice': '"selected_choice"',
         'as_date': '"2024-01-15"',
         'as_duration': '7200',
-        'as_timezone': '"America/New_York"'
+        'as_timezone': '"America/New_York"',
+        'as_lang': '"<content in specified language>"'
     }
     
     for name in transformations:

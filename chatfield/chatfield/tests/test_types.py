@@ -5,7 +5,7 @@ from chatfield.types import (
     as_int, as_float, as_percent,
     as_list, as_set, as_dict,
     as_choice, as_choose_one, as_choose_many,
-    as_date, as_duration, as_timezone,
+    as_date, as_duration, as_timezone, as_lang,
     get_field_transformations, build_transformation_prompt
 )
 
@@ -220,6 +220,64 @@ class TestTimeDateDecorators:
         transformations = get_field_transformations(tz)
         assert 'as_timezone' in transformations
         assert 'IANA timezone' in transformations['as_timezone']['description']
+
+
+class TestLanguageDecorator:
+    """Test language/format tracking decorator."""
+    
+    def test_as_lang_python(self):
+        """Test @as_lang with Python language."""
+        @as_lang("python")
+        def code():
+            return "Your Python code"
+        
+        transformations = get_field_transformations(code)
+        assert 'as_lang' in transformations
+        assert transformations['as_lang']['language'] == "python"
+        assert 'Track as python' in transformations['as_lang']['description']
+    
+    def test_as_lang_natural_language(self):
+        """Test @as_lang with natural language."""
+        @as_lang("natural language")
+        def description():
+            return "Describe your problem"
+        
+        transformations = get_field_transformations(description)
+        assert 'as_lang' in transformations
+        assert transformations['as_lang']['language'] == "natural language"
+        assert 'Track as natural language' in transformations['as_lang']['description']
+    
+    def test_as_lang_sql(self):
+        """Test @as_lang with SQL."""
+        @as_lang("sql")
+        def query():
+            return "Your database query"
+        
+        transformations = get_field_transformations(query)
+        assert 'as_lang' in transformations
+        assert transformations['as_lang']['language'] == "sql"
+    
+    def test_as_lang_any_string(self):
+        """Test @as_lang accepts any string."""
+        @as_lang("custom-dsl-v2.3")
+        def dsl_code():
+            return "Your DSL code"
+        
+        transformations = get_field_transformations(dsl_code)
+        assert 'as_lang' in transformations
+        assert transformations['as_lang']['language'] == "custom-dsl-v2.3"
+    
+    def test_as_lang_with_other_decorators(self):
+        """Test @as_lang combines with other decorators."""
+        @as_lang("markdown")
+        @as_list(of=str)
+        def sections():
+            return "Document sections"
+        
+        transformations = get_field_transformations(sections)
+        assert 'as_lang' in transformations
+        assert 'as_list' in transformations
+        assert transformations['as_lang']['language'] == "markdown"
 
 
 class TestCombinedDecorators:

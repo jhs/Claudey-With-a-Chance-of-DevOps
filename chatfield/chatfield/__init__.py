@@ -12,7 +12,7 @@ from .types import (
     as_int, as_float, as_percent,
     as_list, as_set, as_dict,
     as_choice, as_choose_one, as_choose_many,
-    as_date, as_duration, as_timezone,
+    as_date, as_duration, as_timezone, as_lang,
     get_field_transformations, build_transformation_prompt
 )
 from .presets import patient_teacher, quick_diagnosis, friendly_expert
@@ -49,6 +49,7 @@ __all__ = [
     "as_date",
     "as_duration",
     "as_timezone",
+    "as_lang",
     "get_field_transformations",
     "build_transformation_prompt",
     # Presets
