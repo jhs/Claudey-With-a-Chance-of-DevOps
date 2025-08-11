@@ -1,73 +1,83 @@
 """Base class for Chatfield gatherers."""
 
+import json
+import textwrap
 from typing import Type, TypeVar, Dict, Any
-from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
+# from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 
-T = TypeVar('T', bound='Dialogue')
+T = TypeVar('T', bound='Interview')
 
 # Global cache for metadata by class
-_metadata_cache: Dict[type, SocratesMeta] = {}
+# _metadata_cache: Dict[type, SocratesMeta] = {}
 
 
-class Dialogue:
+class Interview:
     """Base class for creating Socratic dialogue interfaces.
     
     Inherit from this class to create a dialogue that conducts
     conversations to collect information from users.
     
     Example:
-        class TechHelp(Dialogue):
+        class TechHelp(Interview):
             def problem(): "What's not working?"
             def tried(): "What have you tried?"
     """
-    
+
+    # This will be built by any @alice or @bob decorators.
+    # _roles: Dict[str, Dict[str, Any]] = {
+    #     'alice': {'role': None, 'traits': []},
+    #     'bob'  : {'role': None, 'traits': []},
+    # }
+
     def __init__(self):
         """Initialize the dialogue with all fields set to None."""
+        # print(f'Initialize {self.__class__.__name__}')
+        # print(str(self))
         # Get metadata for this class
-        meta = self._get_meta()
+        # meta = self._get_meta()
         
         # Store metadata reference for instance use (must be before field init)
         # Use object.__setattr__ to bypass our custom __setattr__
-        object.__setattr__(self, '_meta', meta)
-        object.__setattr__(self, '_collected_data', {})
-        object.__setattr__(self, '_match_evaluations', {})
-        object.__setattr__(self, '_transformations', {})
-        object.__setattr__(self, '_field_values', {})
+        # object.__setattr__(self, '_meta', meta)
+        # object.__setattr__(self, '_collected_data', {})
+        # object.__setattr__(self, '_match_evaluations', {})
+        # object.__setattr__(self, '_transformations', {})
+        # object.__setattr__(self, '_field_values', {})
         
         # Initialize all fields to None
-        for field_name in meta.fields:
-            self._field_values[field_name] = None
+        # for field_name in meta.fields:
+        #     self._field_values[field_name] = None
     
-    @classmethod
-    def _get_meta(cls) -> SocratesMeta:
-        """Get metadata, creating it if needed."""
-        # Use the class itself as the cache key to handle inheritance properly
-        if cls not in _metadata_cache:
-            _metadata_cache[cls] = process_socrates_class(cls)
-        return _metadata_cache[cls]
+    # @classmethod
+    # def _get_meta(cls) -> SocratesMeta:
+    #     """Get metadata, creating it if needed."""
+    #     # Use the class itself as the cache key to handle inheritance properly
+    #     if cls not in _metadata_cache:
+    #         _metadata_cache[cls] = process_socrates_class(cls)
+    #     return _metadata_cache[cls]
     
-    @classmethod
-    def gather(cls: Type[T], **kwargs) -> SocratesInstance:
-        """Conduct a Socratic dialogue to gather data.
+    # @classmethod
+    # def gather(cls: Type[T], **kwargs) -> SocratesInstance:
+    #     """Conduct a Socratic dialogue to gather data.
         
-        Args:
-            **kwargs: Additional arguments passed to the conversation handler.
+    #     Args:
+    #         **kwargs: Additional arguments passed to the conversation handler.
             
-        Returns:
-            SocratesInstance with collected data accessible as attributes.
-        """
-        raise NotImplementedError(
-            "The execution model for Dialogue.gather() has not been implemented yet. "
-            "The conversation system is being redesigned. "
-            "For now, use ChatfieldAgent directly if you need the underlying functionality."
-        )
+    #     Returns:
+    #         SocratesInstance with collected data accessible as attributes.
+    #     """
+    #     raise NotImplementedError(
+    #         "The execution model for Interview.gather() has not been implemented yet. "
+    #         "The conversation system is being redesigned. "
+    #         "For now, use ChatfieldAgent directly if you need the underlying functionality."
+    #     )
     
     # Property to expose metadata for advanced usage
-    @classmethod
-    @property
-    def _chatfield_meta(cls) -> SocratesMeta:
-        """Access to the processed metadata."""
-        return cls._get_meta()
+    # @classmethod
+    # @property
+    # def _chatfield_meta(cls) -> SocratesMeta:
+    #     """Access to the processed metadata."""
+    #     return cls._get_meta()
     
     def __getattribute__(self, name: str):
         """Get field values or other attributes.
@@ -76,6 +86,9 @@ class Dialogue:
         Overrides the method access to return field values instead.
         """
         # First check if we have _meta initialized (during __init__)
+        # print(f'__getattribute__: {name!r}')
+        return object.__getattribute__(self, name)
+        raise Exception(f'XXX getattribute for {name}')
         try:
             meta = object.__getattribute__(self, '_meta')
             field_values = object.__getattribute__(self, '_field_values')
@@ -95,6 +108,7 @@ class Dialogue:
         
         Fields defined in the dialogue are read-only and cannot be set directly.
         """
+        raise Exception(f'XXX')
         # Allow setting of private attributes
         if name.startswith('_'):
             object.__setattr__(self, name, value)
@@ -115,6 +129,7 @@ class Dialogue:
         
         This is used internally by the dialogue system to populate fields.
         """
+        raise Exception(f'XXX')
         if field_name not in self._meta.fields:
             raise ValueError(f"Unknown field: {field_name}")
         
@@ -171,27 +186,52 @@ class Dialogue:
             return f'<{self.__class__.__name__} {fields_str}>'
         return f'<{self.__class__.__name__}>'
     
-    def to_msgpack_dict(self) -> Dict[str, Any]:
-        """Convert this Dialogue instance to a msgpack-compatible dictionary.
-        
-        This captures both the class definition metadata and current field values
-        with their evaluations and transformations.
-        
-        Returns:
-            A dictionary containing only msgpack-serializable types
+    def __str__(self):
+        """String representation of the dialogue.
+
+        Show as indented JSON:
+        - "_roles" - Any class ._roles or None
+        - For each field (actually a method defined on the class), it has a key mapping to:
+          - If no ._chatfield for that method -> None
+          - Otherwise, the value of that ._chatfield dictionary
         """
-        from .serialization import dialogue_to_msgpack_dict
-        return dialogue_to_msgpack_dict(self)
+        type_name = self.__class__.__name__
+        roles = getattr(self, '_roles', None)
+        fields = {}
+
+        desc = textwrap.dedent(self.__doc__).strip() if self.__doc__ else None
+
+        for attr_name in dir(self):
+            if attr_name.startswith('_'):
+                continue
+            attr = getattr(self, attr_name)
+            if callable(attr):
+                chatfield = getattr(attr, '_chatfield', None)
+                fields[attr_name] = chatfield
+        
+        return json.dumps(dict(type=type_name, desc=desc, roles=roles, fields=fields), indent=2)
     
-    @classmethod
-    def from_msgpack_dict(cls, data: Dict[str, Any]) -> 'Dialogue':
-        """Reconstruct a Dialogue instance from a msgpack dictionary.
+    # def to_msgpack_dict(self) -> Dict[str, Any]:
+    #     """Convert this Interview instance to a msgpack-compatible dictionary.
         
-        Args:
-            data: Dictionary created by to_msgpack_dict()
+    #     This captures both the class definition metadata and current field values
+    #     with their evaluations and transformations.
+        
+    #     Returns:
+    #         A dictionary containing only msgpack-serializable types
+    #     """
+    #     from .serialization import dialogue_to_msgpack_dict
+    #     return dialogue_to_msgpack_dict(self)
+    
+    # @classmethod
+    # def from_msgpack_dict(cls, data: Dict[str, Any]) -> 'Interview':
+    #     """Reconstruct a Interview instance from a msgpack dictionary.
+        
+    #     Args:
+    #         data: Dictionary created by to_msgpack_dict()
             
-        Returns:
-            A reconstructed Dialogue instance with all field values
-        """
-        from .serialization import msgpack_dict_to_dialogue
-        return msgpack_dict_to_dialogue(data, dialogue_class=cls)
+    #     Returns:
+    #         A reconstructed Interview instance with all field values
+    #     """
+    #     from .serialization import msgpack_dict_to_dialogue
+    #     return msgpack_dict_to_dialogue(data, dialogue_class=cls)

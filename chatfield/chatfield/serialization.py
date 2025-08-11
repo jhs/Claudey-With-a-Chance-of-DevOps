@@ -1,24 +1,24 @@
-"""Serialization support for Chatfield Dialogue objects.
+"""Serialization support for Chatfield Interview objects.
 
-This module provides functions to serialize and deserialize Dialogue instances
+This module provides functions to serialize and deserialize Interview instances
 to/from msgpack-compatible dictionaries, preserving all metadata and field values.
 """
 
 from typing import Dict, Any, List, Optional, Type
 import inspect
-from .base import Dialogue
+from .base import Interview
 from .socrates import SocratesMeta, FieldMeta
 
 
-def dialogue_to_msgpack_dict(dialogue: Dialogue) -> Dict[str, Any]:
-    """Convert a Dialogue instance to a msgpack-compatible dictionary.
+def dialogue_to_msgpack_dict(dialogue: Interview) -> Dict[str, Any]:
+    """Convert a Interview instance to a msgpack-compatible dictionary.
     
     This captures:
     1. The complete class definition metadata (decorators, fields, etc.)
     2. Current field values with their evaluations and transformations
     
     Args:
-        dialogue: The Dialogue instance to serialize
+        dialogue: The Interview instance to serialize
         
     Returns:
         A dictionary containing only msgpack-serializable types
@@ -127,8 +127,8 @@ def dialogue_to_msgpack_dict(dialogue: Dialogue) -> Dict[str, Any]:
     return result
 
 
-def msgpack_dict_to_dialogue(data: Dict[str, Any], dialogue_class: Optional[Type[Dialogue]] = None) -> Dialogue:
-    """Reconstruct a Dialogue instance from a msgpack dictionary.
+def msgpack_dict_to_dialogue(data: Dict[str, Any], dialogue_class: Optional[Type[Interview]] = None) -> Interview:
+    """Reconstruct a Interview instance from a msgpack dictionary.
     
     Args:
         data: The msgpack-compatible dictionary created by dialogue_to_msgpack_dict
@@ -136,7 +136,7 @@ def msgpack_dict_to_dialogue(data: Dict[str, Any], dialogue_class: Optional[Type
                        dynamically recreate the class from metadata.
         
     Returns:
-        A reconstructed Dialogue instance with all field values and evaluations
+        A reconstructed Interview instance with all field values and evaluations
     """
     # If no class provided, try to find it or create it dynamically
     if dialogue_class is None:
@@ -181,8 +181,8 @@ def msgpack_dict_to_dialogue(data: Dict[str, Any], dialogue_class: Optional[Type
     return instance
 
 
-def _recreate_dialogue_class(data: Dict[str, Any]) -> Type[Dialogue]:
-    """Dynamically recreate a Dialogue class from serialized metadata.
+def _recreate_dialogue_class(data: Dict[str, Any]) -> Type[Interview]:
+    """Dynamically recreate a Interview class from serialized metadata.
     
     This is used when the original class is not available for import.
     
@@ -190,7 +190,7 @@ def _recreate_dialogue_class(data: Dict[str, Any]) -> Type[Dialogue]:
         data: The serialized class metadata
         
     Returns:
-        A dynamically created Dialogue class with all decorators applied
+        A dynamically created Interview class with all decorators applied
     """
     from . import decorators, match, types
     
@@ -252,8 +252,8 @@ def _recreate_dialogue_class(data: Dict[str, Any]) -> Type[Dialogue]:
         class_attrs[field_def["name"]] = field_func
     
     # Create the class dynamically
-    class_name = data.get("class_name", "RestoredDialogue")
-    dialogue_class = type(class_name, (Dialogue,), class_attrs)
+    class_name = data.get("class_name", "RestoredInterview")
+    dialogue_class = type(class_name, (Interview,), class_attrs)
     
     # Apply class-level decorators
     for context in data.get("user_context", []):

@@ -10,7 +10,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langchain.chat_models import init_chat_model
 
 
-from .base import Dialogue
+from .base import Interview
 
 
 class State(TypedDict):
@@ -18,17 +18,18 @@ class State(TypedDict):
     dialogue_data: Dict[str, Any]  # Serialized dialogue data (msgpack-compatible)
 
 
-class Evaluator:
+class Interviewer:
     """
-    Evaluator that manages conversation flow.
+    Interviewer that manages conversation flow.
     """
     
-    def __init__(self, dialogue: Dialogue):
+    def __init__(self, dialogue: Interview):
         self.dialogue = dialogue
         self.checkpointer = InMemorySaver()
         self.graph = self._build_graph()
         self.thread_id = str(uuid.uuid4())
-        self.llm = init_chat_model("openai:gpt-4.1")
+        # self.llm = init_chat_model("openai:gpt-4.1")
+        self.llm = init_chat_model("openai:gpt-5")
 
         self.state = State(
             messages=[], 

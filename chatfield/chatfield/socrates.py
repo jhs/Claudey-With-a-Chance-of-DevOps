@@ -49,61 +49,60 @@ class FieldMeta:
         return bool(self.match_rules or self.must_rules or self.reject_rules)
 
 
-@dataclass
-class SocratesMeta:
-    """Metadata for a Socratic dialogue class."""
+# @dataclass
+# class SocratesMeta:
+#     """Metadata for a Socratic dialogue class."""
     
-    user_context: List[str] = field(default_factory=list)
-    agent_context: List[str] = field(default_factory=list)
-    docstring: str = ""
-    fields: Dict[str, FieldMeta] = field(default_factory=dict)
+#     user_context: List[str] = field(default_factory=list)
+#     agent_context: List[str] = field(default_factory=list)
+#     docstring: str = ""
+#     fields: Dict[str, FieldMeta] = field(default_factory=dict)
     
-    def add_user_context(self, context: str) -> None:
-        """Add user context information."""
-        self.user_context.append(context)
+#     def add_user_context(self, context: str) -> None:
+#         """Add user context information."""
+#         self.user_context.append(context)
     
-    def add_agent_context(self, context: str) -> None:
-        """Add agent behavior context."""
-        self.agent_context.append(context)
+#     def add_agent_context(self, context: str) -> None:
+#         """Add agent behavior context."""
+#         self.agent_context.append(context)
     
-    def set_docstring(self, docstring: str) -> None:
-        """Set the class docstring."""
-        self.docstring = docstring.strip() if docstring else ""
+#     def set_docstring(self, docstring: str) -> None:
+#         """Set the class docstring."""
+#         self.docstring = docstring.strip() if docstring else ""
     
-    def add_field(self, name: str, description: str) -> FieldMeta:
-        """Add a field and return its metadata object."""
-        field_meta = FieldMeta(name=name, description=description)
-        self.fields[name] = field_meta
-        return field_meta
+#     def add_field(self, name: str, description: str) -> FieldMeta:
+#         """Add a field and return its metadata object."""
+#         field_meta = FieldMeta(name=name, description=description)
+#         self.fields[name] = field_meta
+#         return field_meta
     
-    def get_field(self, name: str) -> Optional[FieldMeta]:
-        """Get field metadata by name."""
-        return self.fields.get(name)
+#     def get_field(self, name: str) -> Optional[FieldMeta]:
+#         """Get field metadata by name."""
+#         return self.fields.get(name)
     
-    def get_field_names(self) -> List[str]:
-        """Get all field names in order."""
-        return list(self.fields.keys())
+#     def get_field_names(self) -> List[str]:
+#         """Get all field names in order."""
+#         return list(self.fields.keys())
     
-    def has_context(self) -> bool:
-        """Check if this gatherer has any context information."""
-        return bool(self.user_context or self.agent_context or self.docstring)
+#     def has_context(self) -> bool:
+#         """Check if this gatherer has any context information."""
+#         return bool(self.user_context or self.agent_context or self.docstring)
 
 
 class SocratesInstance:
     """Instance created after completing a Socratic dialogue conversation."""
     
-    def __init__(self, meta: SocratesMeta, collected_data: Dict[str, str], 
+    def __init__(self, collected_data: Dict[str, str], 
                  match_evaluations: Optional[Dict[str, Dict[str, Optional[bool]]]] = None,
                  transformations: Optional[Dict[str, Dict[str, Any]]] = None):
         """Initialize the instance with collected data, match evaluations, and transformations.
         
         Args:
-            meta: The metadata for the Socratic dialogue
             collected_data: Dictionary of field names to collected string values
             match_evaluations: Dictionary of field names to match evaluation results
             transformations: Dictionary of field names to transformation results
         """
-        self._meta = meta
+        self._meta = None
         self._data = collected_data.copy()
         self._match_evaluations = match_evaluations or {}
         self._transformations = transformations or {}
