@@ -620,3 +620,23 @@ Features
 - @as_percent, @as_float, etc. ideally can do both:
   - @as_percent as a plain decorator, just uses some default prompt
   - @as_float("Some string here") allows the developer to hint, e.g. "Either pi or tao"
+- All fields have .at with a datetime, maybe with pytz
+- All fields have .quote which is '''When discussing: <topic summary>\n\n<UserClassName> said: <direct quote with elipsis, [this thing], [sic], etc.>
+- Maybe a generic .as.southern("Antebellum southern gentleman"), @as.dad("some sentences end with a dad joke relevant to the topic")
+- test a bunch of stuff like @user("First name is Bob")
+- "unasked" fields where if the user says it, capture it, but otherwise don't ask
+- A @as_lang("any string here")
+  - If it's a valid language ID ("en", "th", "fr_CA") say that in the prompt
+  - Otherwise prompt like "In the language: <any string here goes here>"
+- All fields need a .llm_state or something which is either "Not yet discussed", or "Done: <summary here>" or "Incomplete: <summary here>"
+
+UserRequest:
+
+- scope of work: Done: Blah blah some scope here
+- budget: Not yet discussed
+- user base: Incomplete: Requested free user tier but only paid users are allowed
+
+@at
+@as_quote
+- System prompt
+  - "in no particular order" i.e. the LLM should decide the priority, the next thing to discuss, etc.

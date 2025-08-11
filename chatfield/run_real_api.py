@@ -3,15 +3,16 @@
 
 import os
 import sys
-from chatfield import Dialogue, user, agent, hint, must, reject
+from chatfield import Dialogue, user, agent, hint, must, reject, alice, bob
 from chatfield import Evaluator
 
 import dotenv
 
-@user("Product Owner")
-@user("Not deep technical, but has a clear vision of what they want")
-@agent("Technology partner for the Product Owner")
-@agent("Needs to understand the request in detail to implement correctly")
+@bob("Product Owner")
+@bob.desc("Not deep technical, but has a clear vision of what they want")
+@alice("Expert Tech Assistant")
+@alice.desc("Technology partner for the Product Owner")
+@alice.desc("Needs to understand the request in detail to implement correctly")
 class UserRequest(Dialogue):
     """Product Owner's request for technical work"""
     
@@ -39,15 +40,31 @@ def main():
     print("Test Real OpenAI API with Product Owner Request Model ===")
 
     user_request = UserRequest()
-
     evaluator = Evaluator(user_request)
     while True:
         print(f'In my loop; request done={user_request.done}')
         res = evaluator.go()
-        print(f'Evaluator.go returned {res!r}. User request is done={user_request.done}')
+        print(f'Evaluator.go returned {type(res)} {res!r}. User request is done={user_request.done}')
 
         if user_request.done:
+            print(f'Hooray! User request is done.')
             break
+
+        # This would be really cool: change the data model and/or change the evaluator easily.
+        # different_request = some_dynamic_build_of_a_different_request(user_request)
+        # new_evaluator = Evaluator(different_request) # Or somehow "fork" off
+        # user_request, evaluator = different_request, new_evaluator
+        # continue
+
+        # print(f'Checkpointer: {evaluator.checkpointer}')
+        # print(len(list(evaluator.checkpointer.list(evaluator.config))))
+
+        # Get the messages to render them in the "UI"
+        print(f'---------------------------')
+        print(f'Messages: {len(evaluator.state["messages"])}')
+        for i, msg in enumerate(evaluator.state["messages"]):
+            print(f'  {i:>3}: {msg!r}')
+        print(f'---------------------------')
     
         print(f"I'm bored")
         break
