@@ -649,3 +649,7 @@ UserRequest:
     - Did not name the role, i.e. @alice("...") and @bob('...') or @alice.trait('...'), etc.
     - Imperfect or vague @reject and @must
 - Test with GPT-5 via OpenAI API
+- DM character creator
+- Two new batch op modes:
+    1. Batch mode reading transcripts from help desk calls
+    2. Email mode goes through email conversations, instead of asking it what to say next, that is given by the email
