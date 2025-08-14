@@ -14,7 +14,8 @@ import dotenv
 @alice("Expert Technology Consultant")
 @alice.trait("Technology partner for the Product Owner")
 @alice.trait("Needs to understand the request in detail to implement correctly")
-class UserRequest(Interview):
+@alice.trait("Keeps things simple and focused without overwhelming the Product Owner")
+class TechWorkRequest(Interview):
     """Product Owner's request for technical work"""
     
     @hint("A specific thing you want to build")
@@ -50,24 +51,38 @@ class UserRequest(Interview):
 
 def main():
     dotenv.load_dotenv(override=True)
-    # print("Test Real OpenAI API with Product Owner Request Model ===")
+    interview_loop()
 
-    user_request = UserRequest()
-    print(json.dumps(user_request._asdict(), indent=2))
-    evaluator = Interviewer(user_request)
+def interview_loop():
+    user_request = TechWorkRequest()
+    # print(f'The user request:\n{json.dumps(user_request._asdict(), indent=2)}\n---------\n')
+    thread_id = str(os.getpid())
+    print(f'Thread ID: {thread_id}')
+    interviewer = Interviewer(user_request, thread_id=thread_id)
+
+    user_input = None
     while True:
         print(f'In my loop; request done={user_request.done}')
-        request = evaluator.go()
-        print(f'Interviewer.go returned {type(request)} {request!r}')
+        result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
+        # print(f'Interviewer.go returned {type(result)} {result!r}')
+        print(f'----\n{result["messages"][-1].content}\n----')
 
         if user_request.done:
             print(f'Hooray! User request is done.')
             break
 
-        # This would be really cool: change the data model and/or change the evaluator easily.
+        try:
+            user_input = input(f'> ')
+        except (KeyboardInterrupt, EOFError):
+            print(f'Exit')
+            break
+    
+        user_input = user_input.strip()
+
+        # This would be really cool: change the data model and/or change the interviewer easily.
         # different_request = some_dynamic_build_of_a_different_request(user_request)
-        # new_evaluator = Interviewer(different_request) # Or somehow "fork" off
-        # user_request, evaluator = different_request, new_evaluator
+        # new_interviewer = Interviewer(different_request) # Or somehow "fork" off
+        # user_request, interviewer = different_request, new_evaluator
         # continue
 
         # print(f'Checkpointer: {evaluator.checkpointer}')
@@ -79,9 +94,6 @@ def main():
         # for i, msg in enumerate(evaluator.state["messages"]):
         #     print(f'  {i:>3}: {msg!r}')
         # print(f'---------------------------')
-    
-        print(f"I'm bored")
-        break
 
     print(f"Dialogue finished. Final Request object is done={user_request.done}:")
     print(f"Scope of work: {user_request.scope}")
