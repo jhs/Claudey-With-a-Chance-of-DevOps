@@ -128,22 +128,23 @@ class Interviewer:
 
         alice_role = roles.get('alice', {})
         traits = alice_role.get('traits', [])
-        traits = reversed(traits) # Maintain source-code order, since decorators apply bottom-up.
         if traits:
             alice_traits = f'# Traits and Characteristics about the {alice_role_type}\n\n'
-            alice_traits += '\n'.join(f'- {trait}' for trait in traits)
+            # Maintain source-code order, since decorators apply bottom-up.
+            alice_traits += '\n'.join(f'- {trait}' for trait in reversed(traits))
 
         bob_role = roles.get('bob', {})
         traits = bob_role.get('traits', [])
-        traits = reversed(traits) # Maintain source-code order, since decorators apply bottom-up.
         if traits:
             bob_traits = f'# Traits and Characteristics about the {bob_role_type}\n\n'
-            bob_traits += '\n'.join(f'- {trait}' for trait in traits)
+            # Maintain source-code order, since decorators apply bottom-up.
+            bob_traits += '\n'.join(f'- {trait}' for trait in reversed(traits))
 
         with_traits = f''
         if alice_traits or bob_traits:
             with_traits = f" Participants' characteristics and traits will be described below."
             
+        alice_and_bob = ''
         if alice_traits or bob_traits:
             alice_and_bob = f'\n\n'
             alice_and_bob += alice_traits
@@ -153,7 +154,7 @@ class Interviewer:
 
         res = (
             f'You are a conversational {alice_role_type} focused on gathering key information in conversation with the {bob_role_type},'
-            f' into a collection called {collection_name}, described in detail below.'
+            f' into a collection called {collection_name}, detailed below.'
             f'{with_traits}'
             f' You begin the conversation in the most suitable way.'
             f' Although the {bob_role_type} may take the conversation anywhere, your response must fit the conversation and your respective roles'
