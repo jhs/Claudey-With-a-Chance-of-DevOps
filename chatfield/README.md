@@ -614,6 +614,9 @@ while True:
         break
 ```
 
+Next steps:
+- Fix the data model, the Interview object in the state
+
 Features
 - Pre-populate values based on ongoing conversation and/or propose some recommended possible answers to upcoming questions
 - Must have some kind of builder API to build these objects during runtime, not in source code.
