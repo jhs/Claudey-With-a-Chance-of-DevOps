@@ -49,25 +49,41 @@ class TechWorkRequest(Interview):
     def budget():
         "Project budget"
 
+@alice('Kindergarten Teacher')
+class FavoriteNumber(Interview):
+    """Your favorite number interview."""
+
+    @must("a number between 1 and 100")
+    @as_int("favorite number")
+    def favorite_number():
+        "What is your favorite number?"
+
 def main():
     dotenv.load_dotenv(override=True)
     interview_loop()
 
 def interview_loop():
-    user_request = TechWorkRequest()
-    # print(f'The user request:\n{json.dumps(user_request._asdict(), indent=2)}\n---------\n')
+    # interview = TechWorkRequest()
+    interview = FavoriteNumber()
+
     thread_id = str(os.getpid())
     print(f'Thread ID: {thread_id}')
-    interviewer = Interviewer(user_request, thread_id=thread_id)
+    interviewer = Interviewer(interview, thread_id=thread_id)
 
     user_input = None
     while True:
-        print(f'In my loop; request done={user_request.done}')
+        print(f'In my loop; request done={interview.done}')
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
-        # print(f'Interviewer.go returned {type(result)} {result!r}')
-        print(f'----\n{result["messages"][-1].content}\n----')
+        print(f'Interviewer returned {type(result)} {result!r}')
 
-        if user_request.done:
+        print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+        for msg in result['messages']:
+            # print(f'{msg["role"]:>20}: {msg["content"]}')
+            print(f'{msg.__class__.__name__:>30}: {msg.content}')
+            # print(f'{msg!r}')
+            print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+
+        if interview.done:
             print(f'Hooray! User request is done.')
             break
 
@@ -79,15 +95,6 @@ def interview_loop():
     
         user_input = user_input.strip()
 
-        # This would be really cool: change the data model and/or change the interviewer easily.
-        # different_request = some_dynamic_build_of_a_different_request(user_request)
-        # new_interviewer = Interviewer(different_request) # Or somehow "fork" off
-        # user_request, interviewer = different_request, new_evaluator
-        # continue
-
-        # print(f'Checkpointer: {evaluator.checkpointer}')
-        # print(len(list(evaluator.checkpointer.list(evaluator.config))))
-
         # Get the messages to render them in the "UI"
         # print(f'---------------------------')
         # print(f'Messages: {len(evaluator.state["messages"])}')
@@ -95,11 +102,11 @@ def interview_loop():
         #     print(f'  {i:>3}: {msg!r}')
         # print(f'---------------------------')
 
-    print(f"Dialogue finished. Final Request object is done={user_request.done}:")
-    print(f"Scope of work: {user_request.scope}")
-    print(f"Current status: {user_request.current_status}")
-    print(f"Constraints: {user_request.constraints}")
-    print(f"Budget: {user_request.budget}")
+    print(f"Dialogue finished. Final Request object is done={interview.done}:")
+    # print(f"Scope of work: {interview.scope}")
+    # print(f"Current status: {interview.current_status}")
+    # print(f"Constraints: {interview.constraints}")
+    # print(f"Budget: {interview.budget}")
 
 if __name__ == "__main__":
     main()
