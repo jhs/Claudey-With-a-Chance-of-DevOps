@@ -4,7 +4,7 @@
 import os
 import sys
 import json
-from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_bool
+from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_float, as_bool
 from chatfield import Interviewer
 
 import dotenv
@@ -49,14 +49,21 @@ class TechWorkRequest(Interview):
     def budget():
         "Project budget"
 
+# @alice('Cliche Apple ][ Program')
 @alice('Kindergarten Teacher')
-class FavoriteNumber(Interview):
-    """Your favorite number interview."""
+class NotableNumbers(Interview):
+    """Numbers important to you"""
 
     @as_int
+    @as_float(f'Pi if the number is 3; otherwise Tau')
     @must("a number between 1 and 100")
-    def favorite_number():
+    def favorite():
         "What is your favorite number?"
+    
+    @as_int(f'The negation, e.g. given 13 results is -13')
+    @as_float(f'The reciprocal')
+    def least_favorite():
+        "What is your least favorite number?"
 
 def main():
     dotenv.load_dotenv(override=True)
@@ -64,7 +71,7 @@ def main():
 
 def interview_loop():
     # interview = TechWorkRequest()
-    interview = FavoriteNumber()
+    interview = NotableNumbers()
     print(f'The main interview object: {interview!r}')
 
     thread_id = str(os.getpid())
