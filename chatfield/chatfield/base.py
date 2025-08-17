@@ -1,9 +1,8 @@
 """Base class for Chatfield gatherers."""
 
-# import json
+import json
 # import textwrap
 from typing import Type, TypeVar, List, Dict, Any
-# from .socrates import process_socrates_class, SocratesInstance, SocratesMeta
 
 T = TypeVar('T', bound='Interview')
 
@@ -25,8 +24,8 @@ class Interview:
     #     'bob'  : {'role': None, 'traits': []},
     # }
 
-    def __init__(self):
-        pass
+    # def __init__(self):
+        # pass
     
     def _asdict(self) -> Dict[str, Any]:
         type_name = self.__class__.__name__
@@ -41,51 +40,65 @@ class Interview:
             chatfield = getattr(field, '_chatfield', {})
             if field.__doc__:
                 chatfield['desc'] = field.__doc__
+            else:
+                chatfield['desc'] = field.__name__
             fields[field_name] = chatfield
         
         return dict(type=type_name, desc=desc, roles=roles, fields=fields)
+    
+    @classmethod
+    def _fromdict(cls: Type[T], data: Dict[str, Any]) -> T:
+        """Reconstruct an Interview object from a dictionary.
+        
+        Args:
+            data: Dictionary as returned by _asdict(), containing:
+                - type: The class name
+                - desc: The class docstring
+                - roles: Role definitions (if any)
+                - fields: Field definitions with their metadata
+        Returns:
+            A new instance of the Interview subclass with the given structure.
+        
+        Raises:
+            ValueError: If the type name doesn't match the class name.
+        """
+        # Validate type matches
+        if data.get('type') != cls.__name__:
+            raise ValueError(f"Type mismatch: expected {cls.__name__}, got {data.get('type')}")
+        
+        # Create new instance - it already has all methods from class definition
+        instance = cls()
+        
+        # Restore instance state if provided
+        # if state:
+        #     # Store field values in _state or wherever the instance keeps them
+        #     if not hasattr(instance, '_state'):
+        #         instance._state = {}
+        #     instance._state.update(state)
+        
+        # Note: We don't need to recreate methods or set _roles since
+        # those are already part of the class definition that cls() uses
+        
+        return instance
     
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
         result = []
         for attr_name in dir(self):
-            if not attr_name.startswith('_'):
+            if not attr_name.startswith('_') and attr_name not in ('dumps_typed', 'loads_typed'):
                 attr = object.__getattribute__(self, attr_name)
                 if callable(attr):
                     result.append(attr_name)
         return result
     
-    # @classmethod
-    # def _get_meta(cls) -> SocratesMeta:
-    #     """Get metadata, creating it if needed."""
-    #     # Use the class itself as the cache key to handle inheritance properly
-    #     if cls not in _metadata_cache:
-    #         _metadata_cache[cls] = process_socrates_class(cls)
-    #     return _metadata_cache[cls]
-    
-    # @classmethod
-    # def gather(cls: Type[T], **kwargs) -> SocratesInstance:
-    #     """Conduct a Socratic dialogue to gather data.
-        
-    #     Args:
-    #         **kwargs: Additional arguments passed to the conversation handler.
-            
-    #     Returns:
-    #         SocratesInstance with collected data accessible as attributes.
-    #     """
-    #     raise NotImplementedError(
-    #         "The execution model for Interview.gather() has not been implemented yet. "
-    #         "The conversation system is being redesigned. "
-    #         "For now, use ChatfieldAgent directly if you need the underlying functionality."
-    #     )
-    
-    # Property to expose metadata for advanced usage
-    # @classmethod
-    # @property
-    # def _chatfield_meta(cls) -> SocratesMeta:
-    #     """Access to the processed metadata."""
-    #     return cls._get_meta()
-    
+    # def dumps_typed(self, obj: Any) -> tuple[str, bytes]:
+    #     print(f'XXX is this working?')
+    #     return type(obj).__name__, self.serde.dumps(obj)
+
+    # def loads_typed(self, data: tuple[str, bytes]) -> Any:
+    #     print(f'XXX is this working?')
+    #     return self.serde.loads(data[1])
+
     def __getattribute__(self, name: str):
         """Get field values or other attributes.
         
@@ -93,10 +106,22 @@ class Interview:
         Overrides the method access to return field values instead.
         """
         # First check if we have _meta initialized (during __init__)
+        __class = object.__getattribute__(self, '__class__')
+        __name = __class.__name__
+        # print(f'__getattribute__: {__name}.{name!r}')
         # print(f'__getattribute__: {name!r}')
+
         val = object.__getattribute__(self, name)
-        if callable(val) and not name.startswith('_'):
-            return None
+        if not name.startswith('_'):
+            if callable(val):
+                print(f'Special field {__name}.{name!r} is callable, returning as is.')
+                if name in ('dumps_typed', 'loads_typed'):
+                    # These methods are special and should not be treated as fields
+                    print(f'  > Returning method {__name}.{name!r} as is.')
+                    return val
+                else:
+                    print(f'  > Override None for callable {__name}.{name!r}.')
+                    return None
         return val
 
         # return object.__getattribute__(self, name)
@@ -170,20 +195,25 @@ class Interview:
                 self._transformations[field_name] = transformations
     
     @property
-    def done(self):
+    def _done(self):
         """Check if all required fields have been collected.
         
         Returns True when all fields have been populated with values.
         Fields are only populated when they pass validation, so checking
         for non-None values is sufficient.
         """
-        if not hasattr(self, '_meta'):
-            return False
-        return all(
-            self._field_values.get(field_name) is not None 
-            for field_name in self._meta.fields
-        )
+        states = []
+        for field_name in self._fields():
+            field = getattr(self, field_name, None)
+            states.append(field is not None)
+            # field = object.__getattribute__(self, field_name)
+            # chatfield = field and getattr(field, '_chatfield', None)
+        return all(states)
 
-    def __repr__(self):
-        as_dict = self._asdict()
-        return repr(as_dict)
+    # def __repr__(self):
+    #     as_dict = self._asdict()
+    #     return repr(as_dict)
+    
+    # def __str__(self) -> str:
+    #     as_dict = self._asdict()
+    #     return json.dumps(as_dict)
