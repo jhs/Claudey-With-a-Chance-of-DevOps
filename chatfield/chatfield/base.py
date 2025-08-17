@@ -38,7 +38,7 @@ class Interview:
     
     # This must take kwargs to support langsmith calling it.
     def model_dump(self, **kwargs) -> Dict[str, Any]:
-        print(f'Interview model_dump called: kwargs={kwargs!r}')
+        # print(f'model_dump: kwargs={kwargs!r}')
         type_name = self.__class__.__name__
         roles = getattr(self, '_roles', None)
 
