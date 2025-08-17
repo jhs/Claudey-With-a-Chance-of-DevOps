@@ -65,27 +65,31 @@ def main():
 def interview_loop():
     # interview = TechWorkRequest()
     interview = FavoriteNumber()
+    print(f'The main interview object: {interview!r}')
 
     thread_id = str(os.getpid())
     print(f'Thread ID: {thread_id}')
+    trace_url = """https://smith.langchain.com/o/92e94533-dd45-4b1d-bc4f-4fd9476bb1e4/projects/p/1991a1b2-6dad-4d39-8a19-bbc3be33a8b6?searchModel=%7B%22filter%22%3A%22and%28eq%28metadata_key%2C+%5C%22thread_id%5C%22%29%2C+eq%28metadata_value%2C+%5C%22{thread_id}%5C%22%29%29%22%7D&runtab=0&timeModel=%7B%22duration%22%3A%227d%22%7D&peek=0b7068bb-e9c6-4637-b5ca-b7f35d0689a7&peeked_trace=4d1b16a3-171c-4c08-99a9-d54d6a2e17bf"""
+    trace_url = trace_url.format(thread_id=thread_id)
+    print(f'Trace: {trace_url}')
     interviewer = Interviewer(interview, thread_id=thread_id)
 
     user_input = None
     while True:
-        print(f'In my loop; request done={interview.done}')
+        # print(f'In my loop; request done={interview._done}')
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
         print(f'Interviewer returned {type(result)} {result!r}')
 
         print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
         for msg in result['messages']:
             # print(f'{msg["role"]:>20}: {msg["content"]}')
-            print(f'{msg.__class__.__name__:>30}: {msg.content}')
+            print(f'{msg.__class__.__name__:<20}: {msg.content}')
             # print(f'{msg!r}')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
-        if interview.done:
-            print(f'Hooray! User request is done.')
-            break
+        # if interview._done:
+        #     print(f'Hooray! User request is done.')
+        #     break
 
         try:
             user_input = input(f'> ')
@@ -102,7 +106,9 @@ def interview_loop():
         #     print(f'  {i:>3}: {msg!r}')
         # print(f'---------------------------')
 
-    print(f"Dialogue finished. Final Request object is done={interview.done}:")
+    print(f"Dialogue finished.")
+    # print(f"Final Request object is done={interview._done}:")
+
     # print(f"Scope of work: {interview.scope}")
     # print(f"Current status: {interview.current_status}")
     # print(f"Constraints: {interview.constraints}")
