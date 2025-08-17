@@ -8,21 +8,22 @@ import uuid
 from pydantic import BaseModel, Field
 
 from typing import Annotated, Any, Dict, Optional, TypedDict, List
-from langchain_core.tools import tool
+from langchain_core.tools import tool, InjectedToolCallId
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.types import Command, interrupt, Interrupt #, RunnableConfig
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.types import Command, interrupt, Interrupt
+from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
-from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import InMemorySaver
-from mcp import Tool
+
+# from mcp import Tool
 
 
 from .base import Interview
 
 
 class State(TypedDict):
-    messages: Annotated[list, add_messages]
+    messages: List[Any]
     interview: Interview
 
 
@@ -39,7 +40,7 @@ class Interviewer:
 
         # tool_id = 'openai:gpt-5'
         tool_id = 'openai:gpt-4.1'
-        self.raw_llm = init_chat_model(tool_id)
+        self.llm = init_chat_model(tool_id)
 
         # Define the tools used in the graph.
         tool_name = f'update_{self.interview.__class__.__name__}'
@@ -47,6 +48,9 @@ class Interviewer:
 
         # Use a Pydantic model to define the tool arguments.
         class ToolArgs(BaseModel):
+            state: Annotated[dict, InjectedState]
+            tool_call_id: Annotated[str, InjectedToolCallId]
+
             value: str = Field(description='The value to update the interview with.')
             as_int: int = Field(description='Cast the value as an integer.')
             as_float: float = Field(description='Cast the value as a float.')
@@ -55,20 +59,22 @@ class Interviewer:
             as_longhand_french: str = Field(description='Cast the value as a longhand string in French.')
             # as_quote: Optional[str] = Field(None, description='Cast the value as a quote.')
 
+        # XXX
         # Maybe 1 tool for storing validated fields and a second tool for updates but it's not yet valid.
 
         @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
-        # def tool_wrapper(favorite_number: str) -> str:
-        def tool_wrapper(*args, **kwargs) -> str:
-            print(f'tool_wrapper: args={args!r}, kwargs={kwargs!r}')
-            print(json.dumps(kwargs, indent=2))
-            # self.update_interview(favorite_number)
-            # return f'Interview updated with favorite number: {favorite_number}'
-            # return {'ok':True, 'from':f'tool wrapper with favorite_number={favorite_number!r}'}
-            return f'Success'
+        def tool_wrapper(state, tool_call_id, **kwargs):
+            print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
+            print(f'---- Yay got this from the LLM:\n' + json.dumps(kwargs, indent=2))
+
+            tool_msg = ToolMessage(f'Success', tool_call_id=tool_call_id)
+            state_update = {
+                "messages": state['messages'] + [tool_msg],
+            }
+            return Command(update=state_update)
 
         tools_avilable = [tool_wrapper]
-        self.llm = self.raw_llm.bind_tools(tools_avilable)
+        self.llm_with_tools = self.llm.bind_tools(tools_avilable)
         tool_node = ToolNode(tools=tools_avilable) # , name='update_interview')
 
         builder = StateGraph(State)
@@ -87,37 +93,30 @@ class Interviewer:
         self.graph = builder.compile(checkpointer=self.checkpointer)
         
     def initialize(self, state:State) -> State:
-        print(f'Node> Initialize')
-        # print(f'State: {type(state)} {state!r}')
-        print(f'>>>  Interview: {state["interview"].__class__.__name__}')
-        if not isinstance(state["interview"], Interview):
-            raise TypeError(f'Expected interview to be an instance of Interview, got {type(state["interview"])}') # I think this is fine now?
-        # print(f'  Data model: {self.dialogue!r}')
-        # Update state with current dialogue data
-        # state["dialogue_data"] = self.dialogue.to_msgpack_dict()
+        print(f'Initialize: {state["interview"].__class__.__name__}')
         return state
         
     def think(self, state: State) -> State:
-        print(f'Node> Think')
-        print(f'>>>  Interview: {state["interview"].__class__.__name__}')
-        if not isinstance(state["interview"], Interview):
-            raise TypeError(f'Expected interview to be an instance of Interview, got {type(state["interview"])}')
-        # print(f'{state["interview"]}')
-        messages = state['messages']
+        print(f'Think: {state["interview"].__class__.__name__}')
         
-        # TODO: There is probably a bug where the first exection begins with a valid user message.
-        if len(messages) == 0:
-            print(f'  No messages yet, starting with a system message.')
-            system_prompt = self.mk_system_prompt(state)
-            messages.append({"role": "system", "content": system_prompt})
-            # print(f'----\n{system_prompt}\n----')
+        if state['messages']:
+            # I think ultimately the tools will be defined and the llm bound at this time.
+            print(f'Messages already exist; continue conversation.')
+            llm = self.llm_with_tools
         else:
-            print(f'  Messages already exist, continuing conversation.')
-            pass
+            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
+            llm = self.llm
 
-        new_message = self.llm.invoke(messages)
-        print(f'  New message: {new_message!r}')
-        state['messages'] = [new_message] # Only need the latest message
+            system_prompt = self.mk_system_prompt(state)
+            # print(f'----\n{system_msg.content}\n----')
+
+            system_msg = SystemMessage(content=system_prompt)
+            state['messages'].append(system_msg)
+
+        llm_response_message = llm.invoke(state['messages'])
+        # print(f'New message: {llm_response_message!r}')
+        state['messages'].append(llm_response_message)
+
         return state
     
     def update_interview(self, query:str) -> str:
@@ -227,51 +226,42 @@ class Interviewer:
         return res
     
     def route_think(self, state: State, *args, **kwargs) -> str:
-        print(f'Edge> Route think')
-        print(f'>>>  Interview: {state["interview"].__class__.__name__}')
-        if not isinstance(state["interview"], Interview):
-            raise TypeError(f'Expected interview to be an instance of Interview, got {type(state["interview"])}')
-        # print(f'    > Args: {args!r}')
-        # print(f'    > Kwargs: {kwargs!r}')
-        # print(f'    > State: {state!r}')
-        result = tools_condition(state)
+        print(f'Route think edge: {state["interview"].__class__.__name__}')
+
+        # TODO get rid of this
+        if args or kwargs:
+            print(f'  - args={args!r} kwargs={kwargs!r}')
+
+        result = tools_condition(dict(state))
         if result == 'tools':
+            print(f'Route: to tools')
             return 'tools'
         return 'listen'
         
     def listen(self, state: State) -> State:
-        print(f'Node> Listen')
-        print(f'>>>  Interview: {state["interview"].__class__.__name__}')
-        if not isinstance(state["interview"], Interview):
-            raise TypeError(f'Expected interview to be an instance of Interview, got {type(state["interview"])}')
-        # print(f'    > All messages in the state:\n{state!r}')
+        print(f'Listen: {state["interview"].__class__.__name__}')
+
         feedback = {'messages': state['messages']}
         update = interrupt(feedback)
 
-        print(f'    > Interrupt result is type {type(update)}: {update!r}')
+        print(f'Interrupt result: {update!r}')
         user_input = update["user_input"]
-        state['messages'] = [{"role": "user", "content": user_input}]
+        user_msg = HumanMessage(content=user_input)
+        state['messages'].append(user_msg)
         return state
         
     def go(self, user_input: Optional[str] = None):
-        print(f'Go>')
+        print(f'Go: User input: {user_input!r}')
         state = self.graph.get_state(config=self.config)
-        if state.values and not state.values.get('interview'):
-            raise Exception(f'XXX XXX XXX XXXX\nNo interview in state\nXXX XXX XXX XXXX') # This should no longer throw
 
         if state.values and state.values['messages']:
             print(f'Continue conversation: {self.config["configurable"]["thread_id"]}')
-            print(f'State values:\n{state.values!r}\n---------\n')
             graph_input = Command(update={}, resume={'user_input': user_input})
         else:
             print(f'New conversation: {self.config["configurable"]["thread_id"]}')
-            user_messages = [{"role": "user", "content": user_input}] if user_input else []
+            user_message = HumanMessage(content=user_input) if user_input else None
+            user_messages = [user_message] if user_message else []
             graph_input = State(messages=user_messages, interview=self.interview)
-
-        # print(f'XXX state values:\n{state.values!r}\n{json.dumps(state.values, indent=2)}\n---------\n'
-        #   f'Interrupts: {state.interrupts!r}\n'
-        # )
-        # Initialize the state. TODO: Is this the place to call .get_state()?
 
         interrupts = []
         for event in self.graph.stream(graph_input, config=self.config):
@@ -290,6 +280,7 @@ class Interviewer:
         
         if len(interrupts) > 1:
             # TODO: I think this can happen? Because of parallel execution?
+            print(f'XXX Hey there, I got multiple interrupts: {interrupts!r}')
             raise Exception(f'XXX Hey there, I got multiple interrupts: {interrupts!r}')
 
         return interrupts[0]
