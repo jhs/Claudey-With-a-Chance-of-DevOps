@@ -234,5 +234,6 @@ hint = FieldSpecificationDecorator('hint')
 must = FieldSpecificationDecorator('must')
 reject = FieldSpecificationDecorator('reject')
 
-as_int = FieldCastDecorator('as_int', int, 'integer (handle words like "five", abbreviations like "2.5k")')
-as_bool = FieldCastDecorator('as_bool', bool, 'boolean (handle, true/false, yes/no, 1/0, etc.) or use your judgment and interpretation')
+as_int = FieldCastDecorator('as_int', int, 'handle words like "five", abbreviations like "2.5k"')
+as_bool = FieldCastDecorator('as_bool', bool, 'handle true/false, yes/no, 1/0, falsy, or the most suitable interpretation')
+as_float = FieldCastDecorator('as_float', float, 'handle phrases e.g. "five point five", mathematical constants, or the most suitable interpretation')
