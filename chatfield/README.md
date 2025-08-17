@@ -576,9 +576,7 @@ result = MySocraticDialogue.gather(
 ```
 
 Features:
-- Stateful Socratic dialogue management with LangGraph
 - Thoughtful retry logic that guides users to better answers
-- Natural conversational flow following Socratic principles
 - Streaming support (coming soon)
 - Multi-agent capabilities (coming soon)
 
@@ -620,9 +618,6 @@ Next steps:
 Features
 - Pre-populate values based on ongoing conversation and/or propose some recommended possible answers to upcoming questions
 - Must have some kind of builder API to build these objects during runtime, not in source code.
-- @as_percent, @as_float, etc. ideally can do both:
-  - @as_percent as a plain decorator, just uses some default prompt
-  - @as_float("Some string here") allows the developer to hint, e.g. "Either pi or tao"
 - All fields have .at with a datetime, maybe with pytz
 - All fields have .quote which is '''When discussing: <topic summary>\n\n<UserClassName> said: <direct quote with elipsis, [this thing], [sic], etc.>
 - Maybe a generic .as.southern("Antebellum southern gentleman"), @as.dad("some sentences end with a dad joke relevant to the topic")
