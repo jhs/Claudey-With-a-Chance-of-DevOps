@@ -6,6 +6,7 @@ from typing import Type, TypeVar, List, Dict, Any
 
 T = TypeVar('T', bound='Interview')
 
+# class Interview(BaseModel):
 class Interview:
     """Base class for creating Socratic dialogue interfaces.
     
@@ -24,10 +25,20 @@ class Interview:
     #     'bob'  : {'role': None, 'traits': []},
     # }
 
-    # def __init__(self):
+    def __init__(self, *args, **kwargs):
+        print(f'Initializing Interview: {self.__class__.__name__}')
+        if not kwargs:
+            print(f'  - no kwargs')
+        else:
+            print(f'  - kwargs: {kwargs!r}')
+
         # pass
+        # super().__init__(*args, **kwargs)
+        super().__init__()
     
-    def _asdict(self) -> Dict[str, Any]:
+    # This must take kwargs to support langsmith calling it.
+    def model_dump(self, **kwargs) -> Dict[str, Any]:
+        print(f'Interview model_dump called: kwargs={kwargs!r}')
         type_name = self.__class__.__name__
         roles = getattr(self, '_roles', None)
 
@@ -83,9 +94,10 @@ class Interview:
     
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
+        return ['favorite_number']
         result = []
         for attr_name in dir(self):
-            if not attr_name.startswith('_') and attr_name not in ('dumps_typed', 'loads_typed'):
+            if not attr_name.startswith('_') and attr_name not in ('model_dump', 'dumps_typed', 'loads_typed'):
                 attr = object.__getattribute__(self, attr_name)
                 if callable(attr):
                     result.append(attr_name)
@@ -114,13 +126,13 @@ class Interview:
         val = object.__getattribute__(self, name)
         if not name.startswith('_'):
             if callable(val):
-                print(f'Special field {__name}.{name!r} is callable, returning as is.')
-                if name in ('dumps_typed', 'loads_typed'):
+                # print(f'Special field {__name}.{name!r} is callable, returning as is.')
+                if name in ('model_dump', 'dumps_typed', 'loads_typed'):
                     # These methods are special and should not be treated as fields
-                    print(f'  > Returning method {__name}.{name!r} as is.')
+                    # print(f'  > Returning method {__name}.{name!r} as is.')
                     return val
                 else:
-                    print(f'  > Override None for callable {__name}.{name!r}.')
+                    # print(f'  > Override None for callable {__name}.{name!r}.')
                     return None
         return val
 
@@ -215,5 +227,6 @@ class Interview:
     #     return repr(as_dict)
     
     # def __str__(self) -> str:
-    #     as_dict = self._asdict()
-    #     return json.dumps(as_dict)
+    #     return f'Interview: {self.__class__.__name__} - {self._done}'
+    #     # as_dict = self._asdict()
+    #     # return json.dumps(as_dict)
