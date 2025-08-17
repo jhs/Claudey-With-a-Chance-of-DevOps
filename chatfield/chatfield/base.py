@@ -57,41 +57,6 @@ class Interview:
         
         return dict(type=type_name, desc=desc, roles=roles, fields=fields)
     
-    @classmethod
-    def _fromdict(cls: Type[T], data: Dict[str, Any]) -> T:
-        """Reconstruct an Interview object from a dictionary.
-        
-        Args:
-            data: Dictionary as returned by _asdict(), containing:
-                - type: The class name
-                - desc: The class docstring
-                - roles: Role definitions (if any)
-                - fields: Field definitions with their metadata
-        Returns:
-            A new instance of the Interview subclass with the given structure.
-        
-        Raises:
-            ValueError: If the type name doesn't match the class name.
-        """
-        # Validate type matches
-        if data.get('type') != cls.__name__:
-            raise ValueError(f"Type mismatch: expected {cls.__name__}, got {data.get('type')}")
-        
-        # Create new instance - it already has all methods from class definition
-        instance = cls()
-        
-        # Restore instance state if provided
-        # if state:
-        #     # Store field values in _state or wherever the instance keeps them
-        #     if not hasattr(instance, '_state'):
-        #         instance._state = {}
-        #     instance._state.update(state)
-        
-        # Note: We don't need to recreate methods or set _roles since
-        # those are already part of the class definition that cls() uses
-        
-        return instance
-    
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
         return ['favorite_number']
