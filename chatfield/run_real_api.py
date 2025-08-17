@@ -53,8 +53,8 @@ class TechWorkRequest(Interview):
 class FavoriteNumber(Interview):
     """Your favorite number interview."""
 
+    @as_int
     @must("a number between 1 and 100")
-    @as_int("favorite number")
     def favorite_number():
         "What is your favorite number?"
 
