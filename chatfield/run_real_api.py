@@ -78,13 +78,12 @@ def interview_loop():
     while True:
         # print(f'In my loop; request done={interview._done}')
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
-        print(f'Interviewer returned {type(result)} {result!r}')
+        # print(f'Interviewer returned {type(result)} {result!r}')
 
+        print(f'')
         print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
         for msg in result['messages']:
-            # print(f'{msg["role"]:>20}: {msg["content"]}')
-            print(f'{msg.__class__.__name__:<20}: {msg.content}')
-            # print(f'{msg!r}')
+            print(f'{msg.__class__.__name__:<15}: {msg.content}')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
         # if interview._done:
