@@ -21,7 +21,6 @@ from .base import Interview
 class State(TypedDict):
     messages: Annotated[list, add_messages]
     interview: Interview
-    # interview: Dict[str, Any]  # Use Dict to represent the interview as a dictionary
 
 
 class Interviewer:
