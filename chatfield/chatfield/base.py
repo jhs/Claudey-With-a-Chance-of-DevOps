@@ -25,7 +25,13 @@ class Interview:
     #     'bob'  : {'role': None, 'traits': []},
     # }
 
-    def __init__(self, *args, **kwargs):
+    # At this time, .model_dump() is needed by langgraph's checkpointer serializer.
+    # Just explicitly track it. For now it's not defined what happens if the caller
+    # defines a field that collides with these names.
+    # - Jason Sun Aug 17 03:19:08 PM CDT 2025
+    not_field_names = {'model_dump'}
+
+    def __init__(self, **kwargs): # TODO: Bring back *args if any serialization or tracing errors happen.
         print(f'Initializing Interview: {self.__class__.__name__}')
         if not kwargs:
             print(f'  - no kwargs')
@@ -47,34 +53,54 @@ class Interview:
 
         fields = {}
         for field_name in self._fields():
-            field = object.__getattribute__(self, field_name)
-            chatfield = getattr(field, '_chatfield', {})
-            if field.__doc__:
-                chatfield['desc'] = field.__doc__
+            method = object.__getattribute__(self, field_name)
+            # TODO: Maybe it is sloppy to modify the state of method._chatfield
+            chatfield = getattr(method, '_chatfield', {})
+            if method.__doc__:
+                chatfield['desc'] = method.__doc__
             else:
-                chatfield['desc'] = field.__name__
+                chatfield['desc'] = method.__name__
             fields[field_name] = chatfield
         
         return dict(type=type_name, desc=desc, roles=roles, fields=fields)
     
+    def _name(self) -> str:
+        """Return a human-readable label representing this interview data type"""
+        return self.__class__.__name__
+    
+    def _alice_role(self):
+        return self._get_role('alice')
+    
+    def _bob_role(self):
+        return self._get_role('bob')
+
+    def _alice_role_name(self) -> str:
+        return self._get_role_name(f'alice', f'Agent')
+    
+    def _bob_role_name(self) -> str:
+        return self._get_role_name(f'bob', f'User')
+    
+    def _get_role_name(self, role_name: str, default: str) -> str:
+        role = self._get_role(role_name)
+        role_type = role.get('type', default)
+        return role_type
+    
+    def _get_role(self, role_name: str):
+        roles = getattr(self, '_roles', {})
+        role = roles.get(role_name, {})
+        return role
+
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
-        return ['favorite_number']
         result = []
-        for attr_name in dir(self):
-            if not attr_name.startswith('_') and attr_name not in ('model_dump', 'dumps_typed', 'loads_typed'):
-                attr = object.__getattribute__(self, attr_name)
-                if callable(attr):
-                    result.append(attr_name)
-        return result
-    
-    # def dumps_typed(self, obj: Any) -> tuple[str, bytes]:
-    #     print(f'XXX is this working?')
-    #     return type(obj).__name__, self.serde.dumps(obj)
 
-    # def loads_typed(self, data: tuple[str, bytes]) -> Any:
-    #     print(f'XXX is this working?')
-    #     return self.serde.loads(data[1])
+        for attr_name in dir(self):
+            if not attr_name.startswith('_'):
+                if attr_name not in self.not_field_names:
+                    attr = object.__getattribute__(self, attr_name)
+                    if callable(attr):
+                        result.append(attr_name) # All methods are fields.
+        return result
 
     def __getattribute__(self, name: str):
         """Get field values or other attributes.
@@ -82,39 +108,16 @@ class Interview:
         For defined fields, returns either None or a FieldValueProxy.
         Overrides the method access to return field values instead.
         """
-        # First check if we have _meta initialized (during __init__)
-        __class = object.__getattribute__(self, '__class__')
-        __name = __class.__name__
-        # print(f'__getattribute__: {__name}.{name!r}')
-        # print(f'__getattribute__: {name!r}')
+        # __class = object.__getattribute__(self, '__class__')
+        # __name = __class.__name__
 
         val = object.__getattribute__(self, name)
         if not name.startswith('_'):
             if callable(val):
-                # print(f'Special field {__name}.{name!r} is callable, returning as is.')
-                if name in ('model_dump', 'dumps_typed', 'loads_typed'):
-                    # These methods are special and should not be treated as fields
-                    # print(f'  > Returning method {__name}.{name!r} as is.')
-                    return val
-                else:
-                    # print(f'  > Override None for callable {__name}.{name!r}.')
+                if name not in self.not_field_names:
+                    raise NotImplementedError(f'Need to return None or a proxy')
                     return None
         return val
-
-        # return object.__getattribute__(self, name)
-        try:
-            meta = object.__getattribute__(self, '_meta')
-            field_values = object.__getattribute__(self, '_field_values')
-        except AttributeError:
-            # Not initialized yet, use default behavior
-            return object.__getattribute__(self, name)
-        
-        # Check if this is a known field
-        if name in meta.fields:
-            return field_values.get(name)
-        
-        # Not a field, use normal attribute access
-        return object.__getattribute__(self, name)
     
     def __setattr__(self, name: str, value):
         """Set attributes with field protection.

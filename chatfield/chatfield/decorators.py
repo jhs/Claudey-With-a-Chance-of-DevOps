@@ -165,9 +165,12 @@ class InterviewDecorator:
 
 class FieldSpecificationDecorator:
     """Decorator for specifying information about fields in an Interview class."""
-    
+
     def __init__(self, name: str):
         self.name = name
+
+        # TODO: It is not possible to populate the "title" field of the tools schema for the LLM.
+        # It would be nice to pass a value or use a docstring or something.
     
     def __call__(self, description: str) -> Callable:
         def decorator(func: Callable) -> Callable:
@@ -190,6 +193,9 @@ class FieldCastDecorator:
     - primitive_type: The type to cast the value to (e.g. int, float, list)
     - prompt: Default prompt for the cast, if needed
     """
+
+    # TODO: Something nice would be if used as @as_whatever then that is the field for the LLM tool call.
+    # But if the user customizes the prompt, that field name for the tool call should be as_whatever_custom
     
     def __init__(self, name:str, primitive_type: Type[T], prompt: str):
         self.name = name
@@ -212,12 +218,12 @@ class FieldCastDecorator:
         def decorator(func: Callable) -> Callable:
             if not hasattr(func, '_chatfield'):
                 func._chatfield = {}
-            if 'cast' not in func._chatfield:
-                func._chatfield['cast'] = {}
-            if self.name in func._chatfield['cast']:
-                raise ValueError(f"Field {self.name!r} already has a cast defined: {func._chatfield['cast'][self.name]!r}. Cannot redefine it.")
+            if 'casts' not in func._chatfield:
+                func._chatfield['casts'] = {}
+            if self.name in func._chatfield['casts']:
+                raise ValueError(f"Field {self.name!r} already has a cast defined: {func._chatfield['casts'][self.name]!r}. Cannot redefine it.")
             
-            func._chatfield['cast'][self.name] = {
+            func._chatfield['casts'][self.name] = {
                 'type': self.primitive_type.__name__,
                 'prompt': override_prompt or self.prompt,
             }

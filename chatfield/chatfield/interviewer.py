@@ -1,11 +1,11 @@
 """LangGraph-based evaluator for Chatfield conversations."""
 
-from concurrent.futures import thread
 import json
-from logging import config
 import uuid
+import textwrap
+# from logging import config
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 
 from typing import Annotated, Any, Dict, Optional, TypedDict, List
 from langchain_core.tools import tool, InjectedToolCallId
@@ -43,21 +43,74 @@ class Interviewer:
         self.llm = init_chat_model(tool_id)
 
         # Define the tools used in the graph.
-        tool_name = f'update_{self.interview.__class__.__name__}'
-        tool_desc = f'Collect some information about the {self.interview.__class__.__name__}'
+        tool_name = f'update_{self.interview._name()}'
+        tool_desc = f'Record valid information stated by the {self.interview._bob_role_name()} about the {self.interview._name()}'
 
-        # Use a Pydantic model to define the tool arguments.
-        class ToolArgs(BaseModel):
-            state: Annotated[dict, InjectedState]
-            tool_call_id: Annotated[str, InjectedToolCallId]
+        # Each field will take a dict argument pertaining to it.
+        tool_call_args_schema = {}
 
-            value: str = Field(description='The value to update the interview with.')
-            as_int: int = Field(description='Cast the value as an integer.')
-            as_float: float = Field(description='Cast the value as a float.')
-            as_percent: float = Field(description='Cast the value as a percentage from 0.0-1.0.')
-            as_longhand: str = Field(description='Cast the value as a longhand string.')
-            as_longhand_french: str = Field(description='Cast the value as a longhand string in French.')
-            # as_quote: Optional[str] = Field(None, description='Cast the value as a quote.')
+        theAlice = self.interview._alice_role_name()
+        theBob   = self.interview._bob_role_name()
+
+        interview_field_names = self.interview._fields()
+        for field_name in interview_field_names:
+            print(f'Define field formal parameters: {field_name}')
+
+            method = object.__getattribute__(self.interview, field_name)
+            chatfield = getattr(method, '_chatfield', {})
+            # specs = chatfield.get('specs', {})
+            casts = chatfield.get('casts', {})
+
+            casts_definitions = {}
+            ok_primitive_types = dict(int=int, float=float, str=str, bool=bool)
+
+            for cast_name, cast_info in casts.items():
+                cast_type = cast_info['type']
+                cast_type = ok_primitive_types.get(cast_type)
+                if not cast_type:
+                    raise ValueError(f'Cast {cast_name!r} bad type: {cast_info!r}; must be one of {ok_primitive_types.keys()}')
+
+                cast_prompt = cast_info['prompt']
+                cast_definition = (cast_type, Field(description=cast_prompt))
+                casts_definitions[cast_name] = cast_definition
+
+            conv_desc = (
+                f'The conversational context leading up to the {theBob} providing the {field_name},'
+                f' either as a brief summary prose, or else "N/A" if no context is relevant or helpful'
+            )
+
+            quote_desc = (
+                f"A direct quote of the {theBob}'s exact words"
+                # f' "within quotes like this",'
+                f' and if necessary:'
+                f' multiple paragraphs, elipses,'
+                f' [clarifying square brackets], or [sic]'
+            )
+
+            field_docstring = method.__doc__ or method.__name__
+
+            field_definition = create_model(
+                field_name,
+                # title = field_docstring,
+                __doc__= field_docstring,
+
+                # These are always defined and returned by the LLM.
+                value                = (str, Field(title=f'Value', description=f'The most natural representation of a {interview._name()} {field_name}')),
+                conversation_context = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
+                as_quote             = (str, Field(title=f'Direct {theBob} Quotation', description=quote_desc)),
+
+                # These come in via decorators to cast the value in fun ways.
+                **casts_definitions,
+            )
+
+            tool_call_args_schema[field_name] = Optional[field_definition]
+
+        
+        ToolArgs = create_model('ToolArgs',
+            state        = Annotated[dict, InjectedState     ],
+            tool_call_id = Annotated[str , InjectedToolCallId],
+            **tool_call_args_schema,
+        )
 
         # XXX
         # Maybe 1 tool for storing validated fields and a second tool for updates but it's not yet valid.
@@ -65,7 +118,7 @@ class Interviewer:
         @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
         def tool_wrapper(state, tool_call_id, **kwargs):
             print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
-            print(f'---- Yay got this from the LLM:\n' + json.dumps(kwargs, indent=2))
+            # print(f'---- Yay got this from the LLM:\n' + json.dumps(kwargs, indent=2))
 
             tool_msg = ToolMessage(f'Success', tool_call_id=tool_call_id)
             state_update = {
@@ -113,6 +166,20 @@ class Interviewer:
             system_msg = SystemMessage(content=system_prompt)
             state['messages'].append(system_msg)
 
+        # Tools are available by default, but they are omitted following a
+        # system message, or following a "Success" tool response.
+        llm = None
+        latest_message = state['messages'][-1] if state['messages'] else None
+        if isinstance(latest_message, SystemMessage):
+            # print(f'No tools: Latest message is a system message.')
+            llm = self.llm
+        elif isinstance(latest_message, ToolMessage):
+            if latest_message.content == 'Success':
+                # print(f'No tools: Latest message is a tool response')
+                llm = self.llm
+        
+        llm = llm or self.llm_with_tools
+
         llm_response_message = llm.invoke(state['messages'])
         # print(f'New message: {llm_response_message!r}')
         state['messages'].append(llm_response_message)
@@ -130,14 +197,7 @@ class Interviewer:
         interview = state['interview']
         # interview = self.interview._fromdict(interview)  # Reconstruct the interview object from the state
 
-        collection_name = interview.__class__.__name__
-
-        roles = getattr(interview, '_roles', {})
-        alice_role = roles.get('alice', {})
-        bob_role = roles.get('bob', {})
-
-        alice_role_type = alice_role.get('type', 'Agent')
-        bob_role_type = bob_role.get('type', 'User')
+        collection_name = interview._name()
 
         fields = []
         for field_name in interview._fields():
@@ -155,7 +215,7 @@ class Interviewer:
                 for predicate in predicates:
                     specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
             
-            casts = chatfield.get('cast', {})
+            casts = chatfield.get('casts', {})
             casts_prompts = []
             for cast_name, cast_info in casts.items():
                 cast_prompt = cast_info.get('prompt')
@@ -176,17 +236,15 @@ class Interviewer:
         alice_traits = ''
         bob_traits = ''
 
-        alice_role = roles.get('alice', {})
-        traits = alice_role.get('traits', [])
+        traits = interview._alice_role().get('traits', [])
         if traits:
-            alice_traits = f'# Traits and Characteristics about the {alice_role_type}\n\n'
+            alice_traits = f'# Traits and Characteristics about the {interview._alice_role_name()}\n\n'
             # Maintain source-code order, since decorators apply bottom-up.
             alice_traits += '\n'.join(f'- {trait}' for trait in reversed(traits))
 
-        bob_role = roles.get('bob', {})
-        traits = bob_role.get('traits', [])
+        traits = interview._bob_role().get('traits', [])
         if traits:
-            bob_traits = f'# Traits and Characteristics about the {bob_role_type}\n\n'
+            bob_traits = f'# Traits and Characteristics about the {interview._bob_role_name()}\n\n'
             # Maintain source-code order, since decorators apply bottom-up.
             bob_traits += '\n'.join(f'- {trait}' for trait in reversed(traits))
 
@@ -202,21 +260,22 @@ class Interviewer:
                 alice_and_bob += '\n\n'
             alice_and_bob += bob_traits
 
-        tool_name = 'update_interview'
-        use_tools = (
-            f' When you identify valid information to collect,'
-            f' Use the {tool_name} tool, followed by a response to the {bob_role_type}.'
-        )
-        use_tools = '' # TODO finish this
+        # TODO: Is it helpful at all to mention the tools in the system prompt?
+        # tool_name = 'update_interview'
+        # use_tools = (
+        #     f' When you identify valid information to collect,'
+        #     f' Use the {tool_name} tool, followed by a response to the {interview._bob_role_name()}.'
+        # )
+        use_tools = ''
 
         res = (
-            f'You are a conversational {alice_role_type} focused on gathering key information in conversation with the {bob_role_type},'
+            f'You are a the conversational {interview._alice_role_name()} focused on gathering key information in conversation with the {interview._bob_role_name()},'
             f' into a collection called {collection_name}, detailed below.'
             f'{with_traits}'
             f' You begin the conversation in the most suitable way.'
             f'{use_tools}'
-            f' Although the {bob_role_type} may take the conversation anywhere, your response must fit the conversation and your respective roles'
-            f' while refocusing the discussion so that you can gather clear key {collection_name} information from the {bob_role_type}.'
+            f' Although the {interview._bob_role_name()} may take the conversation anywhere, your response must fit the conversation and your respective roles'
+            f' while refocusing the discussion so that you can gather clear key {collection_name} information from the {interview._bob_role_name()}.'
             f'{alice_and_bob}'
             f'\n\n----\n\n'
             f'# Collection: {collection_name}\n'
@@ -242,6 +301,7 @@ class Interviewer:
         print(f'Listen: {state["interview"].__class__.__name__}')
 
         feedback = {'messages': state['messages']}
+        # TODO: Make the LLM possibly set a prompt to the user.
         update = interrupt(feedback)
 
         print(f'Interrupt result: {update!r}')
