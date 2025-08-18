@@ -248,6 +248,9 @@ class Interviewer:
                 cast_prompt = cast_info.get('prompt')
                 if cast_prompt:
                     casts_prompts.append(f'{cast_name.capitalize()}: {cast_prompt}')
+            
+            # Disable casts for the system prompt becauase they are required parameters for the tool call.
+            casts_prompts = []
 
             field_specs = '\n'.join(f'    - {spec}' for spec in specs_prompts) + '\n' if specs_prompts else ''
             field_casts = '\n'.join(f'    - {cast}' for cast in casts_prompts) + '\n' if casts_prompts else ''
