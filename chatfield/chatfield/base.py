@@ -1,8 +1,8 @@
 """Base class for Chatfield gatherers."""
 
-import json
+# import json
 # import textwrap
-from typing import Type, TypeVar, List, Dict, Any
+from typing import Type, TypeVar, List, Dict, Any, Callable
 
 T = TypeVar('T', bound='Interview')
 
@@ -33,10 +33,7 @@ class Interview:
 
     def __init__(self, **kwargs): # TODO: Bring back *args if any serialization or tracing errors happen.
         print(f'Initializing Interview: {self.__class__.__name__}')
-        if not kwargs:
-            print(f'  - no kwargs')
-        else:
-            print(f'  - kwargs: {kwargs!r}')
+        print(f'  - kwargs: {bool(kwargs)}')
 
         # pass
         # super().__init__(*args, **kwargs)
@@ -62,14 +59,8 @@ class Interview:
 
         fields = {}
         for field_name in self._fields():
-            method = object.__getattribute__(self, field_name)
-            # TODO: Maybe it is sloppy to modify the state of method._chatfield
-            chatfield = getattr(method, '_chatfield', {})
-            if method.__doc__:
-                chatfield['desc'] = method.__doc__
-            else:
-                chatfield['desc'] = method.__name__
-            fields[field_name] = chatfield
+            field = self._get_chat_field(field_name)
+            fields[field_name] = field
         
         return dict(type=type_name, desc=desc, roles=roles, fields=fields)
     
@@ -98,6 +89,31 @@ class Interview:
         roles = getattr(self, '_roles', {})
         role = roles.get(role_name, {})
         return role
+    
+    def _get_chat_field(self, field_name: str):
+        """Get the chatfield metadata for a field in this interview."""
+        if field_name.startswith('_'):
+            raise ValueError(f'{self._name()}: Field name must not start with an underscore: {field_name!r}')
+
+        try:
+            attr = object.__getattribute__(self, field_name)
+        except AttributeError:
+            raise ValueError(f'{self._name()}: Field not defined: {field_name!r}')
+
+        if not callable(attr):
+            raise ValueError(f'{self._name()}: Not a field (not callable): {field_name!r}')
+        
+        method = attr
+        if not hasattr(method, '_chatfield'):
+            attr._chatfield = {}
+
+            # TODO: Maybe it is sloppy to modify the state of method._chatfield
+            if method.__doc__:
+                attr._chatfield['desc'] = method.__doc__
+            else:
+                attr._chatfield['desc'] = method.__name__
+        
+        return attr._chatfield
 
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
@@ -124,64 +140,72 @@ class Interview:
         if not name.startswith('_'):
             if callable(val):
                 if name not in self.not_field_names:
-                    raise NotImplementedError(f'Need to return None or a proxy')
-                    return None
+                    chatfield = getattr(val, '_chatfield', {})
+                    value = chatfield.get('value', None)
+                    if not value:
+                        # print(f'Field {name!r} is not yet valid; return None')
+                        return None
+                    
+                    # print(f'Field {name!r} is valid: {value!r}')
+                    primary_value = value['value']
+                    proxy = FieldProxy(primary_value, chatfield)
+                    return proxy
         return val
     
-    def __setattr__(self, name: str, value):
-        """Set attributes with field protection.
+    # def __setattr__(self, name: str, value):
+    #     """Set attributes with field protection.
         
-        Fields defined in the dialogue are read-only and cannot be set directly.
-        """
-        raise Exception(f'XXX')
-        # Allow setting of private attributes
-        if name.startswith('_'):
-            object.__setattr__(self, name, value)
-            return
+    #     Fields defined in the dialogue are read-only and cannot be set directly.
+    #     """
+    #     raise Exception(f'XXX')
+    #     # Allow setting of private attributes
+    #     if name.startswith('_'):
+    #         object.__setattr__(self, name, value)
+    #         return
         
-        # Check if this is a field - if so, it's read-only
-        if hasattr(self, '_meta') and name in self._meta.fields:
-            raise AttributeError(
-                f"Cannot set field '{name}' directly - fields are read-only. "
-                f"Fields should only be populated through the dialogue process."
-            )
+    #     # Check if this is a field - if so, it's read-only
+    #     if hasattr(self, '_meta') and name in self._meta.fields:
+    #         raise AttributeError(
+    #             f"Cannot set field '{name}' directly - fields are read-only. "
+    #             f"Fields should only be populated through the dialogue process."
+    #         )
         
-        # Allow setting other attributes normally
-        object.__setattr__(self, name, value)
+    #     # Allow setting other attributes normally
+    #     object.__setattr__(self, name, value)
     
-    def _set_field_value(self, field_name: str, value, evaluations=None, transformations=None):
-        """Internal method to set field values with FieldValueProxy.
+    # def _set_field_value(self, field_name: str, value, evaluations=None, transformations=None):
+    #     """Internal method to set field values with FieldValueProxy.
         
-        This is used internally by the dialogue system to populate fields.
-        """
-        raise Exception(f'XXX')
-        if field_name not in self._meta.fields:
-            raise ValueError(f"Unknown field: {field_name}")
+    #     This is used internally by the dialogue system to populate fields.
+    #     """
+    #     raise Exception(f'XXX')
+    #     if field_name not in self._meta.fields:
+    #         raise ValueError(f"Unknown field: {field_name}")
         
-        if value is None:
-            self._field_values[field_name] = None
-        else:
-            # Import here to avoid circular dependency
-            from .field_proxy import FieldValueProxy
+    #     if value is None:
+    #         self._field_values[field_name] = None
+    #     else:
+    #         # Import here to avoid circular dependency
+    #         from .field_proxy import FieldValueProxy
             
-            field_meta = self._meta.get_field(field_name)
-            field_evaluations = evaluations or {}
-            field_transformations = transformations or {}
+    #         field_meta = self._meta.get_field(field_name)
+    #         field_evaluations = evaluations or {}
+    #         field_transformations = transformations or {}
             
-            proxy = FieldValueProxy(
-                value,
-                field_meta,
-                field_evaluations,
-                field_transformations
-            )
-            self._field_values[field_name] = proxy
+    #         proxy = FieldValueProxy(
+    #             value,
+    #             field_meta,
+    #             field_evaluations,
+    #             field_transformations
+    #         )
+    #         self._field_values[field_name] = proxy
             
-            # Also update internal tracking
-            self._collected_data[field_name] = value
-            if evaluations:
-                self._match_evaluations[field_name] = evaluations
-            if transformations:
-                self._transformations[field_name] = transformations
+    #         # Also update internal tracking
+    #         self._collected_data[field_name] = value
+    #         if evaluations:
+    #             self._match_evaluations[field_name] = evaluations
+    #         if transformations:
+    #             self._transformations[field_name] = transformations
     
     @property
     def _done(self):
@@ -207,3 +231,73 @@ class Interview:
     #     return f'Interview: {self.__class__.__name__} - {self._done}'
     #     # as_dict = self._asdict()
     #     # return json.dumps(as_dict)
+
+class FieldProxy(str):
+    """Proxy object that provides match attribute access to field values.
+    
+    This proxy allows field values to:
+    1. Behave as a normal string with all string methods
+    2. Access match rule evaluations via attributes (e.g., field.is_personal)
+    3. Access type transformations via as_* attributes (e.g., field.as_int)
+    
+    Example:
+        field = FieldValueProxy("100 dollars", chatfield)
+        field == "100 dollars"  # Direct string comparison
+        field.upper() == "100 DOLLARS"  # String methods work
+        field.is_large == True  # Match evaluation
+        field.as_int == 100  # Type transformation
+    """
+    
+    def __new__(cls, value: str, chatfield: Dict[str, Any]):
+        """Create a new string-based proxy instance.
+        
+        Args:
+            value: The actual string value of the field
+            chatfield: Metadata about the field including match rules
+        """
+        # Create the string instance with the value
+        instance = str.__new__(cls, value)
+        return instance
+    
+    def __init__(self, value: str, chatfield: Dict[str, Any]):
+        """Initialize the field value proxy metadata.
+        
+        Note: The string value is already set in __new__, this just stores metadata.
+        
+        Args:
+            value: The actual string value of the field (for compatibility)
+            chatfield: Metadata about the field including match rules
+        """
+
+        # Don't call str.__init__ as it doesn't take arguments
+        # Store metadata for the proxy functionality
+        self._chatfield = chatfield
+    
+    # def __repr__(self) -> str:
+    #     """Return a representation of the proxy."""
+    #     # Use self directly since we're now a string
+    #     value_preview = self[:50] + '...' if len(self) > 50 else self
+    #     return f"{self._chatfield['type']}('{value_preview}')"
+    
+    def __getattr__(self, attr_name: str):
+        """Provide access to match rule evaluations and type transformations.
+        
+        Args:
+            attr_name: The name of the match rule (e.g., 'is_personal') or 
+                transformation (e.g., 'as_int')
+            
+        Returns:
+            The evaluation/transformation result, or None if not evaluated
+            
+        Raises:
+            AttributeError: If the attribute doesn't exist
+        """
+        # print(f'FieldProxy: __getattr__ {attr_name!r} for {self._chatfield!r}')
+        llm_value = self._chatfield.get('value')
+        if not llm_value or not isinstance(llm_value, dict):
+            raise AttributeError(f"Field {attr_name} has no value set. Cannot access attributes.")
+
+        if attr_name in llm_value:
+            # If the attribute is a match rule, return its evaluation
+            cast_value = llm_value[attr_name]
+            return cast_value

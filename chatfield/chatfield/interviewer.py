@@ -49,7 +49,7 @@ class Interviewer:
         # Each field will take a dict argument pertaining to it.
         tool_call_args_schema = {}
 
-        theAlice = self.interview._alice_role_name()
+        # theAlice = self.interview._alice_role_name()
         theBob   = self.interview._bob_role_name()
 
         interview_field_names = self.interview._fields()
@@ -95,7 +95,7 @@ class Interviewer:
                 __doc__= field_docstring,
 
                 # These are always defined and returned by the LLM.
-                value                = (str, Field(title=f'Value', description=f'The most natural representation of a {interview._name()} {field_name}')),
+                value                = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
                 conversation_context = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
                 as_quote             = (str, Field(title=f'Direct {theBob} Quotation', description=quote_desc)),
 
@@ -117,18 +117,23 @@ class Interviewer:
 
         @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
         def tool_wrapper(state, tool_call_id, **kwargs):
-            print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
-            # print(f'---- Yay got this from the LLM:\n' + json.dumps(kwargs, indent=2))
+            # print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
+            try:
+                self.process_tool_input(state, **kwargs)
+            except Exception as er:
+                tool_msg = f'Error: {er!r}'
+            else:
+                tool_msg = f'Success'
 
-            tool_msg = ToolMessage(f'Success', tool_call_id=tool_call_id)
-            state_update = {
-                "messages": state['messages'] + [tool_msg],
-            }
+            tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
+            new_messages = state['messages'] + [tool_msg]
+            new_interview = state['interview']
+            state_update = { "messages": new_messages, "interview": new_interview }
             return Command(update=state_update)
 
         tools_avilable = [tool_wrapper]
         self.llm_with_tools = self.llm.bind_tools(tools_avilable)
-        tool_node = ToolNode(tools=tools_avilable) # , name='update_interview')
+        tool_node = ToolNode(tools=tools_avilable)
 
         builder = StateGraph(State)
 
@@ -186,13 +191,23 @@ class Interviewer:
 
         return state
     
-    def update_interview(self, query:str) -> str:
+    def process_tool_input(self, state: State, **kwargs):
         """
-        Update the interview with a new query.
+        Process the tool input and update the interview state.
         """
-        print(f'Update interview> {query!r}')
-        return f'Interview updated with query: {query}'
-    
+        # print(f'Process tool input: {kwargs!r}')
+        interview = state['interview']
+        for field_name, llm_field_value in kwargs.items():
+            if llm_field_value is None:
+                continue
+
+            all_values = llm_field_value.model_dump()
+            print(f'LLM found a valid field: {field_name!r} = {all_values!r}')
+            chatfield = interview._get_chat_field(field_name)
+            if 'value' in chatfield:
+                raise ValueError(f'Field {field_name!r} already has a value set: {chatfield["value"]!r}')
+            chatfield['value'] = all_values
+
     def mk_system_prompt(self, state: State) -> str:
         interview = state['interview']
         # interview = self.interview._fromdict(interview)  # Reconstruct the interview object from the state
@@ -295,6 +310,12 @@ class Interviewer:
         if result == 'tools':
             print(f'Route: to tools')
             return 'tools'
+
+        interview = state['interview']
+        if interview._done:
+            print(f'Route: to end')
+            return END
+
         return 'listen'
         
     def listen(self, state: State) -> State:
