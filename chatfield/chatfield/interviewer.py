@@ -214,8 +214,10 @@ class Interviewer:
             all_values = llm_field_value.model_dump()
             print(f'LLM found a valid field: {field_name!r} = {all_values!r}')
             chatfield = interview._get_chat_field(field_name)
-            if 'value' in chatfield:
-                raise ValueError(f'Field {field_name!r} already has a value set: {chatfield["value"]!r}')
+            if chatfield.get('value'):
+                # print(f'{self.__class__.__name__}: Overwrite old field {field_name!r} value: {chatfield["value"]!r}')
+                # TODO: This could do something sophisticated.
+                pass
             chatfield['value'] = all_values
 
     def mk_system_prompt(self, state: State) -> str:
