@@ -46,7 +46,7 @@ class Interview:
             raise er
 
     def __inner_init__(self, **kwargs):
-        # print(f'Initializing Interview: {self.__class__.__name__}')
+        print(f'{self.__class__.__name__}: Init with kwargs: {bool(kwargs)}')
         # super().__init__()
         
         # This object is simple types able to serialize.
