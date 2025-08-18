@@ -1,8 +1,8 @@
 """Core decorators for Chatfield."""
 
-import sys
-
 from typing import Any, Callable, TypeVar, Type, Optional, Union
+
+from .base import Interview
 
 T = TypeVar('T')
 
@@ -174,10 +174,7 @@ class FieldSpecificationDecorator:
     
     def __call__(self, description: str) -> Callable:
         def decorator(func: Callable) -> Callable:
-            if not hasattr(func, '_chatfield'):
-                func._chatfield = {}
-            if 'specs' not in func._chatfield:
-                func._chatfield['specs'] = {}
+            Interview._init_field(func)
             if self.name not in func._chatfield['specs']:
                 func._chatfield['specs'][self.name] = []
             func._chatfield['specs'][self.name].append(description)
@@ -216,13 +213,10 @@ class FieldCastDecorator:
             target = None
 
         def decorator(func: Callable) -> Callable:
-            if not hasattr(func, '_chatfield'):
-                func._chatfield = {}
-            if 'casts' not in func._chatfield:
-                func._chatfield['casts'] = {}
+            Interview._init_field(func)
             if self.name in func._chatfield['casts']:
                 raise ValueError(f"Field {self.name!r} already has a cast defined: {func._chatfield['casts'][self.name]!r}. Cannot redefine it.")
-            
+
             func._chatfield['casts'][self.name] = {
                 'type': self.primitive_type.__name__,
                 'prompt': override_prompt or self.prompt,

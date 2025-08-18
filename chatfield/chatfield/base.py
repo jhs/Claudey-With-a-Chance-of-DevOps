@@ -42,6 +42,15 @@ class Interview:
         # super().__init__(*args, **kwargs)
         super().__init__()
     
+    @classmethod
+    def _init_field(cls, func: Callable):
+        if not hasattr(func, '_chatfield'):
+            func._chatfield = {
+                'desc': func.__doc__ or func.__name__,
+                'specs': {},
+                'casts': {},
+            }
+    
     # This must take kwargs to support langsmith calling it.
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         # print(f'model_dump: kwargs={kwargs!r}')
