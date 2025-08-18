@@ -159,10 +159,10 @@ class Interview:
         for field_name in self._fields():
             field = getattr(self, field_name)
             chatfield = self._get_chat_field(field_name)
-            desc = chatfield.get('desc', None)
+            # desc = chatfield.get('desc', None)
 
             if field is None:
-                lines.append(f' {field_name} ({desc}): None')
+                lines.append(f'  {field_name}: None')
                 continue
         
             # field is a proxy

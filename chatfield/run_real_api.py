@@ -85,6 +85,8 @@ def interview_loop():
     user_input = None
     while True:
         # print(f'In my loop; request done={interview._done}')
+        print(f'Current collection status:\n--------------\n{interview._pretty()}\n-------------')
+
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
         # print(f'Interviewer returned {type(result)} {result!r}')
 
@@ -123,6 +125,7 @@ def interview_loop():
         #     print(f'  {i:>3}: {msg!r}')
         # print(f'---------------------------')
 
+    print(f'---------------------------')
     print(f"Dialogue finished:")
     print(interview._pretty())
 
