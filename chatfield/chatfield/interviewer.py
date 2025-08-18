@@ -19,10 +19,46 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from .base import Interview
 
+def foo(a, b) -> Any:
+    result = None
+    # If a is an object of type Interview and b is a strict subclass of Interview, return b.
+    print(f'===========')
+    print(f'Reduce:')
+    print(f'  a: {type(a)} {a!r}')
+    print(f'  b: {type(b)} {b!r}')
+
+    if not isinstance(a, Interview):
+        raise TypeError(f'Expected a to be an Interview instance, got {type(a)}: {a!r}')
+    if not isinstance(b, Interview):
+        raise TypeError(f'Expected b to be an Interview instance, got {type(b)}: {b!r}')
+
+    a_type = type(a)
+    b_type = type(b)
+    a_subclass = isinstance(a, b_type) and a_type is not b_type
+    b_subclass = isinstance(b, a_type) and a_type is not b_type
+
+    if a_subclass:
+        # print(f'Reduce to subclass: {a!r}')
+        result = a
+    elif b_subclass:
+        # print(f'Reduce to subclass: {b!r}')
+        result = b
+    elif a_type is not b_type:
+        # TODO: I think this logic will change if/when changing the model in-flight works.
+        raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r}')
+    else:
+        # a and b are the same type.
+        raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r} because they are the same type')    
+
+    if result is None:
+        raise Exception(f'XXX')
+    print(f'  Result: {result!r}')
+    print(f'===========')
+    return result
 
 class State(TypedDict):
     messages: List[Any]
-    interview: Interview
+    interview: Annotated[Interview, foo]
 
 
 class Interviewer:
@@ -127,6 +163,9 @@ class Interviewer:
             else:
                 tool_msg = f'Success'
 
+            # TODO: Either process_tool_input must return bool whether there was a change
+            # or detect it here from state['interview'].
+            # Only if something changes, set state_update['interview'] to the new interview.
             tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
             new_messages = state['messages'] + [tool_msg]
             new_interview = self._get_state_interview(state)
@@ -161,7 +200,9 @@ class Interviewer:
         return interview
 
     def initialize(self, state:State) -> State:
-        print(f'Initialize: {self._get_state_interview(state).__class__.__name__}')
+        # print(f'Initialize> {self._get_state_interview(state).__class__.__name__}')
+        print(f'Initialize> {self._get_state_interview(state)!r}')
+        # return {}
         return state
         
     def think(self, state: State) -> State:
@@ -199,7 +240,7 @@ class Interviewer:
         # print(f'New message: {llm_response_message!r}')
         state['messages'].append(llm_response_message)
 
-        return state
+        return {'messages': state['messages']}
     
     def process_tool_input(self, state: State, **kwargs):
         """
@@ -358,7 +399,7 @@ class Interviewer:
             # print(f'ev> {event!r}')
             for value in event.values():
                 # print("Assistant:", value["messages"][-1].content)
-                # print(f'  >> {type(value)} {value!r}')
+                print(f'  >> {type(value)} {value!r}')
                 for obj in value:
                     # print(f'    >> {type(obj)} {obj!r}')
                     if isinstance(obj, Interrupt):
