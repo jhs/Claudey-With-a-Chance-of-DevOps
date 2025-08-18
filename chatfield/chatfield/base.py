@@ -152,60 +152,24 @@ class Interview:
                     return proxy
         return val
     
-    # def __setattr__(self, name: str, value):
-    #     """Set attributes with field protection.
+    def _pretty(self) -> str:
+        """Return a pretty representation of this interview."""
+        lines = [f'{self._name()}']
+
+        for field_name in self._fields():
+            field = getattr(self, field_name)
+            chatfield = self._get_chat_field(field_name)
+            desc = chatfield.get('desc', None)
+
+            if field is None:
+                lines.append(f' {field_name} ({desc}): None')
+                continue
         
-    #     Fields defined in the dialogue are read-only and cannot be set directly.
-    #     """
-    #     raise Exception(f'XXX')
-    #     # Allow setting of private attributes
-    #     if name.startswith('_'):
-    #         object.__setattr__(self, name, value)
-    #         return
+            # field is a proxy
+            lines.append(f'  {field_name}: {chatfield["value"]["value"]!r}')
+            lines.append(field._pretty())
         
-    #     # Check if this is a field - if so, it's read-only
-    #     if hasattr(self, '_meta') and name in self._meta.fields:
-    #         raise AttributeError(
-    #             f"Cannot set field '{name}' directly - fields are read-only. "
-    #             f"Fields should only be populated through the dialogue process."
-    #         )
-        
-    #     # Allow setting other attributes normally
-    #     object.__setattr__(self, name, value)
-    
-    # def _set_field_value(self, field_name: str, value, evaluations=None, transformations=None):
-    #     """Internal method to set field values with FieldValueProxy.
-        
-    #     This is used internally by the dialogue system to populate fields.
-    #     """
-    #     raise Exception(f'XXX')
-    #     if field_name not in self._meta.fields:
-    #         raise ValueError(f"Unknown field: {field_name}")
-        
-    #     if value is None:
-    #         self._field_values[field_name] = None
-    #     else:
-    #         # Import here to avoid circular dependency
-    #         from .field_proxy import FieldValueProxy
-            
-    #         field_meta = self._meta.get_field(field_name)
-    #         field_evaluations = evaluations or {}
-    #         field_transformations = transformations or {}
-            
-    #         proxy = FieldValueProxy(
-    #             value,
-    #             field_meta,
-    #             field_evaluations,
-    #             field_transformations
-    #         )
-    #         self._field_values[field_name] = proxy
-            
-    #         # Also update internal tracking
-    #         self._collected_data[field_name] = value
-    #         if evaluations:
-    #             self._match_evaluations[field_name] = evaluations
-    #         if transformations:
-    #             self._transformations[field_name] = transformations
+        return '\n'.join(lines)
     
     @property
     def _done(self):
@@ -273,11 +237,17 @@ class FieldProxy(str):
         # Store metadata for the proxy functionality
         self._chatfield = chatfield
     
-    # def __repr__(self) -> str:
-    #     """Return a representation of the proxy."""
-    #     # Use self directly since we're now a string
-    #     value_preview = self[:50] + '...' if len(self) > 50 else self
-    #     return f"{self._chatfield['type']}('{value_preview}')"
+    def _pretty(self) -> str:
+        """Return a representation of the proxy."""
+        # Use self directly since we're now a string
+        # limit = 100
+        # value_preview = self[:limit] + '...' if len(self) > limit else self
+        # lines = [value_preview]
+        lines = []
+        for key, val in self._chatfield['value'].items():
+            if key != 'value':
+                lines.append(f'    {key:<25}: {val!r}')
+        return '\n'.join(lines)
     
     def __getattr__(self, attr_name: str):
         """Provide access to match rule evaluations and type transformations.

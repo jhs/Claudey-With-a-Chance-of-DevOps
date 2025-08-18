@@ -88,6 +88,7 @@ def interview_loop():
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
         # print(f'Interviewer returned {type(result)} {result!r}')
 
+        # TODO: Not sure if None should ever return back.
         if result:
             print(f'')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
@@ -122,13 +123,8 @@ def interview_loop():
         #     print(f'  {i:>3}: {msg!r}')
         # print(f'---------------------------')
 
-    print(f"Dialogue finished.")
-    # print(f"Final Request object is done={interview._done}:")
-
-    # print(f"Scope of work: {interview.scope}")
-    # print(f"Current status: {interview.current_status}")
-    # print(f"Constraints: {interview.constraints}")
-    # print(f"Budget: {interview.budget}")
+    print(f"Dialogue finished:")
+    print(interview._pretty())
 
 if __name__ == "__main__":
     main()

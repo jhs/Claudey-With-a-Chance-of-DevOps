@@ -299,12 +299,8 @@ class Interviewer:
         )
         return res
     
-    def route_think(self, state: State, *args, **kwargs) -> str:
+    def route_think(self, state: State) -> str:
         print(f'Route think edge: {state["interview"].__class__.__name__}')
-
-        # TODO get rid of this
-        if args or kwargs:
-            print(f'  - args={args!r} kwargs={kwargs!r}')
 
         result = tools_condition(dict(state))
         if result == 'tools':
