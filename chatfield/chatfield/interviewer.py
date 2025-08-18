@@ -127,7 +127,7 @@ class Interviewer:
 
             tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
             new_messages = state['messages'] + [tool_msg]
-            new_interview = state['interview']
+            new_interview = self._get_state_interview(state)
             state_update = { "messages": new_messages, "interview": new_interview }
             return Command(update=state_update)
 
@@ -150,12 +150,20 @@ class Interviewer:
 
         self.graph = builder.compile(checkpointer=self.checkpointer)
         
+    # This exists to fail faster in case if serialization bugs with the LangGraph checkpointer.
+    # Hopefully it can go away.
+    def _get_state_interview(self, state: State) -> Interview:
+        interview = state.get('interview')
+        if not isinstance(interview, Interview):
+            raise ValueError(f'Expected state["interview"] to be an Interview instance, got {type(interview)}: {interview!r}')
+        return interview
+
     def initialize(self, state:State) -> State:
-        print(f'Initialize: {state["interview"].__class__.__name__}')
+        print(f'Initialize: {self._get_state_interview(state).__class__.__name__}')
         return state
         
     def think(self, state: State) -> State:
-        print(f'Think: {state["interview"].__class__.__name__}')
+        print(f'Think: {self._get_state_interview(state).__class__.__name__}')
         
         if state['messages']:
             # I think ultimately the tools will be defined and the llm bound at this time.
@@ -196,7 +204,7 @@ class Interviewer:
         Process the tool input and update the interview state.
         """
         # print(f'Process tool input: {kwargs!r}')
-        interview = state['interview']
+        interview = self._get_state_interview(state)
         for field_name, llm_field_value in kwargs.items():
             if llm_field_value is None:
                 continue
@@ -209,7 +217,7 @@ class Interviewer:
             chatfield['value'] = all_values
 
     def mk_system_prompt(self, state: State) -> str:
-        interview = state['interview']
+        interview = self._get_state_interview(state)
         # interview = self.interview._fromdict(interview)  # Reconstruct the interview object from the state
 
         collection_name = interview._name()
@@ -300,14 +308,14 @@ class Interviewer:
         return res
     
     def route_think(self, state: State) -> str:
-        print(f'Route think edge: {state["interview"].__class__.__name__}')
+        print(f'Route think edge: {self._get_state_interview(state).__class__.__name__}')
 
         result = tools_condition(dict(state))
         if result == 'tools':
             print(f'Route: to tools')
             return 'tools'
 
-        interview = state['interview']
+        interview = self._get_state_interview(state)
         if interview._done:
             print(f'Route: to end')
             return END
@@ -315,7 +323,7 @@ class Interviewer:
         return 'listen'
         
     def listen(self, state: State) -> State:
-        print(f'Listen: {state["interview"].__class__.__name__}')
+        print(f'Listen: {self._get_state_interview(state).__class__.__name__}')
 
         feedback = {'messages': state['messages']}
         # TODO: Make the LLM possibly set a prompt to the user.

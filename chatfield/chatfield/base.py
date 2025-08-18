@@ -2,6 +2,7 @@
 
 # import json
 # import textwrap
+import traceback
 from typing import Type, TypeVar, List, Dict, Any, Callable
 
 T = TypeVar('T', bound='Interview')
@@ -31,13 +32,37 @@ class Interview:
     # - Jason Sun Aug 17 03:19:08 PM CDT 2025
     not_field_names = {'model_dump'}
 
-    def __init__(self, **kwargs): # TODO: Bring back *args if any serialization or tracing errors happen.
-        print(f'Initializing Interview: {self.__class__.__name__}')
-        print(f'  - kwargs: {bool(kwargs)}')
+    def __init__(self, **kwargs):
+        try:
+            self.__inner_init__(**kwargs)
+        except Exception as er:
+            # The LangGraph deserializer will silently catch any Exception and then just return
+            # the value of kwargs here. For now at least log out any errors that happen.
+            # print(f'Error initializing {self.__class__.__name__}: {er}')
+            print(f'-----------------------------------------')
+            traceback.print_exc()
+            print(f'-----------------------------------------')
+            raise er
 
-        # pass
-        # super().__init__(*args, **kwargs)
-        super().__init__()
+    def __inner_init__(self, **kwargs):
+        # print(f'Initializing Interview: {self.__class__.__name__}')
+        # super().__init__()
+
+        fields = kwargs.get('fields', {})
+        for field_name, field_value in fields.items():
+            value = field_value.get('value', None)
+            if value is None:
+                # print(f'{self.__class__.__name__} field not yet present: {field_name!r}')
+                pass
+            else:
+                print(f'{self.__class__.__name__} value of field {field_name!r}: {value!r}')
+                chatfield = self._get_chat_field(field_name)
+                if chatfield.get('value'):
+                    raise Exception(f'{self.__class__.__name__} field {field_name!r} already has a value: {chatfield["value"]!r}')
+                else:
+                    print(f'- fine to set value for {field_name!r}')
+                chatfield['value'] = value
+        pass
     
     @classmethod
     def _init_field(cls, func: Callable):
