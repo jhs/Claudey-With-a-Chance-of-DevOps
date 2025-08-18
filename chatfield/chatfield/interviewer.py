@@ -228,9 +228,7 @@ class Interviewer:
 
         fields = []
         for field_name in interview._fields():
-            field = object.__getattribute__(interview, field_name)
-
-            chatfield = getattr(field, '_chatfield', {})
+            chatfield = interview._get_chat_field(field_name)
             desc = chatfield.get('desc')
             field_label = f'{field_name}'
             if desc:
