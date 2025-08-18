@@ -166,8 +166,8 @@ class InterviewDecorator:
 class FieldSpecificationDecorator:
     """Decorator for specifying information about fields in an Interview class."""
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self, category: str):
+        self.category = category
 
         # TODO: It is not possible to populate the "title" field of the tools schema for the LLM.
         # It would be nice to pass a value or use a docstring or something.
@@ -175,9 +175,10 @@ class FieldSpecificationDecorator:
     def __call__(self, description: str) -> Callable:
         def decorator(func: Callable) -> Callable:
             Interview._init_field(func)
-            if self.name not in func._chatfield['specs']:
-                func._chatfield['specs'][self.name] = []
-            func._chatfield['specs'][self.name].append(description)
+            if self.category not in func._chatfield['specs']:
+                func._chatfield['specs'][self.category] = []
+            if description not in func._chatfield['specs'][self.category]:
+                func._chatfield['specs'][self.category].append(description)
             return func
         return decorator
 
