@@ -57,6 +57,7 @@ class NotableNumbers(Interview):
     @as_int
     @as_float(f'Pi if the number is 3; otherwise Tau')
     @must("a number between 1 and 100")
+    # @match.aribitrary_name_here('aribtrary predicate here')
     def favorite():
         "What is your favorite number?"
     
@@ -87,15 +88,24 @@ def interview_loop():
         result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
         # print(f'Interviewer returned {type(result)} {result!r}')
 
-        print(f'')
-        print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-        for msg in result['messages']:
-            print(f'{msg.__class__.__name__:<15}: {msg.content}')
+        if result:
+            print(f'')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+            for msg in result['messages']:
+                print(f'{msg.__class__.__name__:<15}: {msg.content}')
+                print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
-        # if interview._done:
-        #     print(f'Hooray! User request is done.')
-        #     break
+        print(f'Favorite number: {interview.favorite}')
+        if interview.favorite is not None:
+            print(f'Implied favorite float: {interview.favorite.as_float}')
+        
+        if interview.least_favorite:
+            print(f'Least favorite number: {interview.least_favorite!r}')
+            print(f'Reciprocal of least favorite: {interview.least_favorite.as_float!r}')
+
+        if interview._done:
+            print(f'Hooray! User request is done.')
+            break
 
         try:
             user_input = input(f'> ')
