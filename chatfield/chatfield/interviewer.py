@@ -1,9 +1,7 @@
 """LangGraph-based evaluator for Chatfield conversations."""
 
-import json
 import uuid
-import textwrap
-# from logging import config
+import traceback
 
 from pydantic import BaseModel, Field, create_model
 
@@ -122,6 +120,10 @@ class Interviewer:
                 self.process_tool_input(state, **kwargs)
             except Exception as er:
                 tool_msg = f'Error: {er!r}'
+                # Also include the entire traceback in tool_msg.
+                # tb.format_exception(None, e, e.__traceback__)
+                # tool_msg += f'\n\n' + ''.join(traceback.format_exception(None, er, er.__traceback__))
+                tool_msg += f'\n\n' + ''.join(traceback.format_exception(er))
             else:
                 tool_msg = f'Success'
 
