@@ -49,8 +49,8 @@ class TechWorkRequest(Interview):
     def budget():
         "Project budget"
 
-# @alice('Cliche Apple ][ Program')
-@alice('Kindergarten Teacher')
+@alice('Cliche Apple ][ Program')
+# @alice('Kindergarten Teacher')
 class NotableNumbers(Interview):
     """Numbers important to you"""
 
