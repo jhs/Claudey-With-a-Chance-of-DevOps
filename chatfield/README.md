@@ -1,3 +1,10 @@
+# Today's plan
+
+1. init bug?
+2. Support all the decorators
+3. Basic end-to-end testing
+4. Javascript
+
 # Chatfield: The Socratic Method for Data Gathering
 
 Transform rigid forms into thoughtful Socratic dialogues powered by LLMs and LangGraph agents. Through careful questioning and guided exploration, Chatfield helps users articulate their needs clearly and completely.
@@ -639,6 +646,7 @@ UserRequest:
 - System prompt
   - "in no particular order" i.e. the LLM should decide the priority, the next thing to discuss, etc.
 
+- "Derivative"
 - Maybe in dev mode or in tracing mode, or a "check" command, to use the LLM to advise/warn the developer of better prompts:
   - Something more brief with identical information content
   - Wrong "part of speech" or phrasing, e.g
