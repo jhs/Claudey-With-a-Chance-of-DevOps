@@ -2,6 +2,7 @@
 
 # import json
 # import textwrap
+import copy
 import traceback
 from typing import Type, TypeVar, List, Dict, Any, Callable
 
@@ -47,6 +48,37 @@ class Interview:
     def __inner_init__(self, **kwargs):
         # print(f'Initializing Interview: {self.__class__.__name__}')
         # super().__init__()
+        
+        # This object is simple types able to serialize.
+        # return dict(type=type_name, desc=desc, roles=roles, fields=fields)
+        chatfield_interview = {
+            'type': self.__class__.__name__,
+            'desc': self.__doc__ or self.__name__,
+            'roles': {},
+            'fields': {
+                # "field_name"
+                    # "desc"
+                    # "specs"
+                    # "casts"
+                    # "value"  # This is the value set by the LLM.
+            },
+        }
+
+        # Process all fields.
+        for attr_name in dir(self):
+            if not attr_name.startswith('_'):
+                if attr_name not in self.not_field_names:
+                    attr = object.__getattribute__(self, attr_name)
+                    if callable(attr): # All methods are fields.
+                        self.__class__._init_field(attr)
+                        field_def = {
+                            'desc': attr.__doc__ or attr.__name__,
+                            'specs': attr._chatfield.get('specs', {}),
+                            'casts': attr._chatfield.get('casts', {}),
+                            'value': None,  # This will be set by the LLM.
+                        }
+
+                        chatfield_interview['fields'][attr_name] = field_def
 
         fields = kwargs.get('fields', {})
         for field_name, field_value in fields.items():
@@ -56,19 +88,19 @@ class Interview:
                 pass
             else:
                 print(f'{self.__class__.__name__} value of field {field_name!r}: {value!r}')
-                chatfield = self._get_chat_field(field_name)
+                chatfield = chatfield_interview['fields'][field_name]
                 if chatfield.get('value'):
                     raise Exception(f'{self.__class__.__name__} field {field_name!r} already has a value: {chatfield["value"]!r}')
                 else:
                     print(f'- fine to set value for {field_name!r}')
                 chatfield['value'] = value
-        pass
-    
+        
+        self._chatfield = copy.deepcopy(chatfield_interview)
+
     @classmethod
     def _init_field(cls, func: Callable):
         if not hasattr(func, '_chatfield'):
             func._chatfield = {
-                'desc': func.__doc__ or func.__name__,
                 'specs': {},
                 'casts': {},
             }
@@ -76,18 +108,8 @@ class Interview:
     # This must take kwargs to support langsmith calling it.
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         # print(f'model_dump: kwargs={kwargs!r}')
-        type_name = self.__class__.__name__
-        roles = getattr(self, '_roles', None)
-
-        # desc = textwrap.dedent(self.__doc__).strip() if self.__doc__ else None
-        desc = self.__doc__ if self.__doc__ else None
-
-        fields = {}
-        for field_name in self._fields():
-            field = self._get_chat_field(field_name)
-            fields[field_name] = field
-        
-        return dict(type=type_name, desc=desc, roles=roles, fields=fields)
+        result = copy.deepcopy(self._chatfield)
+        return result
     
     def _name(self) -> str:
         """Return a human-readable label representing this interview data type"""
@@ -117,40 +139,16 @@ class Interview:
     
     def _get_chat_field(self, field_name: str):
         """Get the chatfield metadata for a field in this interview."""
-        if field_name.startswith('_'):
-            raise ValueError(f'{self._name()}: Field name must not start with an underscore: {field_name!r}')
-
         try:
-            attr = object.__getattribute__(self, field_name)
-        except AttributeError:
-            raise ValueError(f'{self._name()}: Field not defined: {field_name!r}')
-
-        if not callable(attr):
-            raise ValueError(f'{self._name()}: Not a field (not callable): {field_name!r}')
-        
-        method = attr
-        if not hasattr(method, '_chatfield'):
-            attr._chatfield = {}
-
-            # TODO: Maybe it is sloppy to modify the state of method._chatfield
-            if method.__doc__:
-                attr._chatfield['desc'] = method.__doc__
-            else:
-                attr._chatfield['desc'] = method.__name__
-        
-        return attr._chatfield
+            return self._chatfield['fields'][field_name]
+        except KeyError:
+            print(f'{self._name()}: Not a field: {field_name!r}, must be {self._chatfield["fields"].keys()!r}')
+            # print(f'Available fields: {self._fields()}')
+            raise KeyError(f'{self._name()}: Not a field: {field_name!r}')
 
     def _fields(self) -> List[str]:
         """Return a list of field names defined in this interview."""
-        result = []
-
-        for attr_name in dir(self):
-            if not attr_name.startswith('_'):
-                if attr_name not in self.not_field_names:
-                    attr = object.__getattribute__(self, attr_name)
-                    if callable(attr):
-                        result.append(attr_name) # All methods are fields.
-        return result
+        return self._chatfield['fields'].keys()
 
     def __getattribute__(self, name: str):
         """Get field values or other attributes.
