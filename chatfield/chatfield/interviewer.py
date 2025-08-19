@@ -121,7 +121,7 @@ class Interviewer:
             casts = chatfield.get('casts', {})
 
             casts_definitions = {}
-            ok_primitive_types = dict(int=int, float=float, str=str, bool=bool, list=List[Any])
+            ok_primitive_types = dict(int=int, float=float, str=str, bool=bool, list=List[Any], set=set)
 
             for cast_name, cast_info in casts.items():
                 cast_type = cast_info['type']

@@ -11,6 +11,7 @@ from .decorators import alice, bob
 from .decorators import must, reject, hint
 from .decorators import (
     as_int,
+    as_set,
     as_bool,
     as_list,
     as_float,

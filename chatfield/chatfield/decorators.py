@@ -202,7 +202,7 @@ class FieldCastDecorator:
         self.prompt = prompt
         self.primitive_type = primitive_type
 
-        ok_primitive_types = (int, float, str, bool, list)
+        ok_primitive_types = (int, float, str, bool, list, set)
         if primitive_type not in ok_primitive_types:
             raise ValueError(f"Bad primitive type: {primitive_type!r}; must be one of {ok_primitive_types!r}")
     
@@ -243,4 +243,6 @@ as_float = FieldCastDecorator('as_float', float, 'handle phrases e.g. "five poin
 
 as_percent = FieldCastDecorator('as_percent', float, 'handle "50%" or "half", etc. converted to the range 0.0 to 1.0')
 
-as_list = FieldCastDecorator('as_list', list, 'interpret the value as a list or array of items in the most suitable way')
+as_set = FieldCastDecorator('as_set', set, 'interpret as a set of distinct items, in the most suitable way')
+# TODO: Possibly allow a kwwarg @as_list(of=int) which would need to appear in the tool argument schema.
+as_list = FieldCastDecorator('as_list', list, 'interpret as a list or array of items, in the most suitable way')
