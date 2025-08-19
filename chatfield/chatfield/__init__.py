@@ -12,6 +12,7 @@ from .decorators import must, reject, hint
 from .decorators import (
     as_int,
     as_bool,
+    as_list,
     as_float,
     as_percent,
 )

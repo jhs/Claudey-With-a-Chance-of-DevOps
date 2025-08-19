@@ -202,7 +202,7 @@ class FieldCastDecorator:
         self.prompt = prompt
         self.primitive_type = primitive_type
 
-        ok_primitive_types = (int, float, str, bool)
+        ok_primitive_types = (int, float, str, bool, list)
         if primitive_type not in ok_primitive_types:
             raise ValueError(f"Bad primitive type: {primitive_type!r}; must be one of {ok_primitive_types!r}")
     
@@ -242,3 +242,5 @@ as_bool = FieldCastDecorator('as_bool', bool, 'handle true/false, yes/no, 1/0, f
 as_float = FieldCastDecorator('as_float', float, 'handle phrases e.g. "five point five", mathematical constants, or the most suitable interpretation')
 
 as_percent = FieldCastDecorator('as_percent', float, 'handle "50%" or "half", etc. converted to the range 0.0 to 1.0')
+
+as_list = FieldCastDecorator('as_list', list, 'interpret the value as a list or array of items in the most suitable way')
