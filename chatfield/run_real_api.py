@@ -49,7 +49,9 @@ class TechWorkRequest(Interview):
     def budget():
         "Project budget"
 
-@alice('Cliche Apple ][ Program')
+@bob('Man on the Street')
+@alice.trait('Medieval Knight')
+# @alice('Cliche Apple ][ Program')
 # @alice('Kindergarten Teacher')
 class NotableNumbers(Interview):
     """Numbers important to you"""
@@ -91,10 +93,11 @@ def interview_loop():
         # print(f'Interviewer returned {type(result)} {result!r}')
 
         # TODO: Not sure if None should ever return back.
-        latest_message = result['messages'][-1] if result and result.get('messages') else None
-        if latest_message:
+        # latest_message = result['messages'][-1] if result and result.get('messages') else None
+        all_messages = (result and result['messages']) or []
+        for message in all_messages:
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-            print(f'{latest_message.__class__.__name__:<15}: {latest_message.content}')
+            print(f'{message.__class__.__name__:<15}: {message.content}')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
         print(interview._pretty())
