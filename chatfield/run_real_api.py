@@ -55,16 +55,16 @@ class NotableNumbers(Interview):
     """Numbers important to you"""
 
     @as_int
-    @as_float(f'Pi if the number is 3; otherwise Tau')
+    # @as_float(f'pi if the number is 3; otherwise tau')
     @must("a number between 1 and 100")
     # @match.aribitrary_name_here('aribtrary predicate here')
     def favorite():
-        "What is your favorite number?"
+        "what is your favorite number? your silence implies that you love 3"
     
-    @as_int(f'The negation, e.g. given 13 results is -13')
-    @as_float(f'The reciprocal')
+    @as_int(f'the negation, e.g. given 13 results is -13')
+    @as_float(f'the reciprocal')
     def least_favorite():
-        "What is your least favorite number?"
+        "what is your least favorite number?"
 
 def main():
     dotenv.load_dotenv(override=True)
@@ -91,13 +91,14 @@ def interview_loop():
         # print(f'Interviewer returned {type(result)} {result!r}')
 
         # TODO: Not sure if None should ever return back.
-        if result:
-            print(f'')
+        latest_message = result['messages'][-1] if result and result.get('messages') else None
+        if latest_message:
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-            for msg in result['messages']:
-                print(f'{msg.__class__.__name__:<15}: {msg.content}')
-                print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+            print(f'{latest_message.__class__.__name__:<15}: {latest_message.content}')
+            print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
+        print(interview._pretty())
+        print(f'=-=-=-=')
         print(f'Favorite number: {interview.favorite}')
         if interview.favorite is not None:
             print(f'Implied favorite float: {interview.favorite.as_float}')
@@ -111,7 +112,7 @@ def interview_loop():
             break
 
         try:
-            user_input = input(f'> ')
+            user_input = input(f'Your response> ')
         except (KeyboardInterrupt, EOFError):
             print(f'Exit')
             break
