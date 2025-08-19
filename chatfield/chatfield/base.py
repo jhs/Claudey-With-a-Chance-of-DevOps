@@ -68,7 +68,8 @@ class Interview:
         for attr_name in dir(self):
             if not attr_name.startswith('_'):
                 if attr_name not in self.not_field_names:
-                    attr = object.__getattribute__(self, attr_name)
+                    # attr = object.__getattribute__(self.__class__, attr_name)
+                    attr = getattr(self.__class__, attr_name)
                     if callable(attr): # All methods are fields.
                         self.__class__._init_field(attr)
                         field_def = {
@@ -158,40 +159,45 @@ class Interview:
         """
         # __class = object.__getattribute__(self, '__class__')
         # __name = __class.__name__
-
         val = object.__getattribute__(self, name)
-        if not name.startswith('_'):
-            if callable(val):
-                if name not in self.not_field_names:
-                    chatfield = getattr(val, '_chatfield', {})
-                    value = chatfield.get('value', None)
-                    if not value:
-                        # print(f'Field {name!r} is not yet valid; return None')
-                        return None
-                    
-                    # print(f'Field {name!r} is valid: {value!r}')
-                    primary_value = value['value']
-                    proxy = FieldProxy(primary_value, chatfield)
-                    return proxy
-        return val
+
+        try:
+            self_chatfield = object.__getattribute__(self, '_chatfield')
+        except AttributeError:
+            # If _chatfield is not defined, just return the value.
+            # This can happen if the object is not fully initialized.
+            # print(f'{object.__getattribute__(self, "_name")()}: No chatfield defined, returning {val!r}')
+            return val
+
+        chatfield = self_chatfield['fields'].get(name, None)
+        if chatfield is None:
+            # print(f'No chatfield for {name!r}, returning {val!r}')
+            return val
+        
+        # At this point, chatfield is definitely a field.
+        llm_value = chatfield['value']
+        if llm_value is None:
+            # print(f'Return None to represent unpopulated field: {name!r}')
+            return None
+        
+        # print(f'Valid field {name!r}: {llm_value!r}')
+        primary_value = llm_value['value']
+        proxy = FieldProxy(primary_value, chatfield)
+        return proxy
     
     def _pretty(self) -> str:
         """Return a pretty representation of this interview."""
         lines = [f'{self._name()}']
 
-        for field_name in self._fields():
-            field = getattr(self, field_name)
-            chatfield = self._get_chat_field(field_name)
-            # desc = chatfield.get('desc', None)
-
-            if field is None:
+        for field_name, chatfield in self._chatfield['fields'].items():
+            proxy = getattr(self, field_name)
+            if proxy is None:
                 lines.append(f'  {field_name}: None')
-                continue
-        
-            # field is a proxy
-            lines.append(f'  {field_name}: {chatfield["value"]["value"]!r}')
-            lines.append(field._pretty())
-        
+            else:
+                # field is a proxy
+                # llm_value = chatfield['value']
+                lines.append(f'  {field_name}: {proxy!r}')
+                lines.append(proxy._pretty())
         return '\n'.join(lines)
     
     @property
