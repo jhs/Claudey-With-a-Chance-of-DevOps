@@ -14,6 +14,7 @@ from langgraph.types import Command, interrupt, Interrupt
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph.message import add_messages
 
 # from mcp import Tool
 
@@ -77,8 +78,7 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
     return result
 
 class State(TypedDict):
-    initialized: bool
-    messages: List[Any]
+    messages: Annotated[List[Any] , add_messages    ]
     interview: Annotated[Interview, merge_interviews]
 
 
@@ -104,13 +104,12 @@ class Interviewer:
         tool_desc = (
             f'Record valid information stated by the {theBob}'
             f' about the {self.interview._name()}'
-            # f'. Always call this tool with at most one field at a time.'
+            # f'. Always call this tool with at most one field at a time, and the others all null.'
             # f' To record multiple fields, call this tool multiple times.'
         )
 
         # Each field will take a dict argument pertaining to it.
         tool_call_args_schema = {}
-
 
         interview_field_names = self.interview._fields()
         for field_name in interview_field_names:
@@ -172,13 +171,16 @@ class Interviewer:
             **tool_call_args_schema,
         )
 
-        # XXX
-        # Maybe 1 tool for storing validated fields and a second tool for updates but it's not yet valid.
+        # TODO: Probably need more tools:
+        # - updates worth saving but it's not yet valid.
+        # - Something to re-zero the field (if the above cannot do it)
 
         @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
         def tool_wrapper(state, tool_call_id, **kwargs):
             # print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
             interview = self._get_state_interview(state)
+
+            pre_interview_model = interview.model_dump()
 
             try:
                 self.process_tool_input(interview, **kwargs)
@@ -188,12 +190,26 @@ class Interviewer:
             else:
                 tool_msg = f'Success'
 
-            # TODO: Either process_tool_input must return bool whether there was a change
-            # or detect it here from state['interview'].
-            # Only if something changes, set state_update['interview'] to the new interview.
+            post_interview_model = interview.model_dump()
+
+            # Prepare the return value, including needed state updates.
+            state_update = {}
+
+            # Append a ToolMessage indicating a completed run by tool_call_id.
             tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
-            new_messages = state['messages'] + [tool_msg]
-            state_update = { "messages": new_messages, "interview": interview }
+            state_update["messages"] = [tool_msg]
+
+            # Specify an interview object if anything changed.
+            data_diff = DeepDiff(pre_interview_model, post_interview_model, ignore_order=True)
+            if data_diff:
+                # type_diff = data_diff.get('type_changes')
+                # vals_diff = data_diff.get('values_changed')
+                # if type_diff:
+                #     print(f'Keys with changed type: {len(type_diff.keys())}: {", ".join(type_diff.keys())}')
+                # if vals_diff:
+                #     print(f'Keys with changed values: {len(vals_diff.keys())}: {", ".join(vals_diff.keys())}')
+                state_update["interview"] = interview
+
             return Command(update=state_update)
 
         tools_avilable = [tool_wrapper]
@@ -206,12 +222,14 @@ class Interviewer:
         builder.add_node('think'     , self.think)
         builder.add_node('listen'    , self.listen)
         builder.add_node('tools'     , tool_node)
+        builder.add_node('teardown'  , self.teardown)
 
         builder.add_edge             (START       , 'initialize')
         builder.add_edge             ('initialize', 'think')
         builder.add_conditional_edges('think'     , self.route_think)
         builder.add_edge             ('listen'    , 'think')
         builder.add_edge             ('tools'     , 'think')
+        builder.add_edge             ('teardown'  , END    )
 
         self.graph = builder.compile(checkpointer=self.checkpointer)
         
@@ -223,33 +241,34 @@ class Interviewer:
             raise ValueError(f'Expected state["interview"] to be an Interview instance, got {type(interview)}: {interview!r}')
         return interview
 
-    def initialize(self, state:State) -> State:
+    # Node
+    def initialize(self, state:State):
         # print(f'Initialize> {self._get_state_interview(state).__class__.__name__}')
         print(f'Initialize> {self._get_state_interview(state)!r}')
-        return {'initialized': True}
-        return state
+        return None
         
-    def think(self, state: State) -> State:
+    # Node
+    def think(self, state: State):
         print(f'Think: {self._get_state_interview(state).__class__.__name__}')
         
-        if state['messages']:
-            # I think ultimately the tools will be defined and the llm bound at this time.
-            print(f'Messages already exist; continue conversation.')
-            llm = self.llm_with_tools
-        else:
-            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
-            llm = self.llm
+        # Track net-new messages. Its reducer will merge them.
+        new_messages = []
 
-            system_prompt = self.mk_system_prompt(state)
-            # print(f'----\n{system_msg.content}\n----')
-
-            system_msg = SystemMessage(content=system_prompt)
-            state['messages'].append(system_msg)
-
-        # Tools are available by default, but they are omitted following a
-        # system message, or following a "Success" tool response.
+        # `llm` controls which tools are available/bound to the LLM.
+        # The LLMs are previously bound, so this references whichever is needed.
+        #
+        # By default, the tools are available. But they are omitted following a
+        # system message, or following a "Success" tool response. This
+        # encourages the LLM to respond with an AIMessage.
         llm = None
-        latest_message = state['messages'][-1] if state['messages'] else None
+
+        if not state['messages']:
+            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
+            system_prompt = self.mk_system_prompt(state)
+            system_msg = SystemMessage(content=system_prompt)
+            new_messages.append(system_msg)
+
+        latest_message = new_messages[-1] if new_messages else None
         if isinstance(latest_message, SystemMessage):
             # print(f'No tools: Latest message is a system message.')
             llm = self.llm
@@ -260,19 +279,22 @@ class Interviewer:
         
         llm = llm or self.llm_with_tools
 
+        # Note, the reducer will merge these properly in the state. For now, append them for presentation to the LLM.
+        all_messages = state['messages'] + new_messages
 
-        llm_response_message = llm.invoke(state['messages'])
+        llm_response_message = llm.invoke(all_messages)
         # print(f'New message: {llm_response_message!r}')
-        state['messages'].append(llm_response_message)
+        new_messages.append(llm_response_message)
 
-        return {'messages': state['messages']}
+        return {'messages':new_messages}
     
     # def process_tool_input(self, state: State, **kwargs):
     def process_tool_input(self, interview: Interview, **kwargs):
         """
         Move any LLM-provided field values into the interview state.
         """
-        # print(f'Process tool input: {kwargs!r}')
+        defined_args = [X for X in kwargs if kwargs[X] is not None]
+        print(f'Tool input for {len(defined_args)} fields: {", ".join(defined_args)}')
         for field_name, llm_field_value in kwargs.items():
             if llm_field_value is None:
                 continue
@@ -287,6 +309,7 @@ class Interviewer:
             chatfield['value'] = all_values
 
     def mk_system_prompt(self, state: State) -> str:
+        # XXX TODO: There is a bug pulling the roles, probably because of the new ._chatfield dict.
         interview = self._get_state_interview(state)
         # interview = self.interview._fromdict(interview)  # Reconstruct the interview object from the state
 
@@ -367,7 +390,7 @@ class Interviewer:
         use_tools = ''
 
         res = (
-            f'You are a the conversational {interview._alice_role_name()} focused on gathering key information in conversation with the {interview._bob_role_name()},'
+            f'You are the conversational {interview._alice_role_name()} focused on gathering key information in conversation with the {interview._bob_role_name()},'
             f' into a collection called {collection_name}, detailed below.'
             f'{with_traits}'
             f' You begin the conversation in the most suitable way.'
@@ -392,13 +415,27 @@ class Interviewer:
 
         interview = self._get_state_interview(state)
         if interview._done:
-            print(f'Route: to end')
-            return END
+            print(f'Route: to teardown')
+            return 'teardown'
 
         return 'listen'
+    
+    # Node
+    def teardown(self, state: State):
+        # Ending will cause a return back to .go() caller.
+        # That caller will expect the original interview object to reflect the conversation.
+        interview = self._get_state_interview(state)
+        print(f'Teardown: {interview._name()}')
+        self.interview._copy_from(interview)
         
-    def listen(self, state: State) -> State:
-        print(f'Listen: {self._get_state_interview(state).__class__.__name__}')
+    def listen(self, state: State):
+        interview = self._get_state_interview(state)
+        print(f'Listen: {interview.__class__.__name__}')
+
+        # The interrupt will cause a return back to .go() caller.
+        # That caller will expect the original interview object to reflect the conversation.
+        # So, for now just copy over the _chatfield dict.
+        self.interview._copy_from(interview)
 
         feedback = {'messages': state['messages']}
         # TODO: Make the LLM possibly set a prompt to the user.
@@ -407,8 +444,7 @@ class Interviewer:
         print(f'Interrupt result: {update!r}')
         user_input = update["user_input"]
         user_msg = HumanMessage(content=user_input)
-        state['messages'].append(user_msg)
-        return state
+        return {'messages': [user_msg]}
         
     def go(self, user_input: Optional[str] = None):
         print(f'Go: User input: {user_input!r}')
@@ -422,7 +458,7 @@ class Interviewer:
             user_message = HumanMessage(content=user_input) if user_input else None
             user_messages = [user_message] if user_message else []
             # graph_input = State(messages=user_messages, interview=self.interview)
-            graph_input = State(messages=user_messages, interview=self.interview, initialized=False)
+            graph_input = State(messages=user_messages, interview=self.interview)
 
         interrupts = []
         for event in self.graph.stream(graph_input, config=self.config):
