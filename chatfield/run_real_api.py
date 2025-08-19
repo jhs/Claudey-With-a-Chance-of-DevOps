@@ -4,7 +4,7 @@
 import os
 import sys
 import json
-from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_float, as_bool
+from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_float, as_percent, as_bool
 from chatfield import Interviewer
 
 import dotenv
@@ -50,21 +50,22 @@ class TechWorkRequest(Interview):
         "Project budget"
 
 @bob('Man on the Street')
-@alice.trait('Medieval Knight')
+# @alice.trait('Talks like Medieval Knight')
 # @alice('Cliche Apple ][ Program')
-# @alice('Kindergarten Teacher')
+@alice('Kindergarten Teacher')
 class NotableNumbers(Interview):
     """Numbers important to you"""
 
     @as_int
+    @as_percent
     # @as_float(f'pi if the number is 3; otherwise tau')
     @must("a number between 1 and 100")
     # @match.aribitrary_name_here('aribtrary predicate here')
     def favorite():
         "what is your favorite number? your silence implies that you love 3"
     
-    @as_int(f'the negation, e.g. given 13 results is -13')
-    @as_float(f'the reciprocal')
+    @as_int
+    @as_percent('Fraction of 100 except negative, e.g. disliking 13 implies -0.13')
     def least_favorite():
         "what is your least favorite number?"
 

@@ -13,6 +13,7 @@ from .decorators import (
     as_int,
     as_bool,
     as_float,
+    as_percent,
 )
 
 # from .match import match
