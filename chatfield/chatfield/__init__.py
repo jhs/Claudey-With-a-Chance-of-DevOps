@@ -5,7 +5,7 @@ Transform rigid forms into thoughtful Socratic conversations that guide users to
 
 __version__ = "0.2.0"
 
-from .base import Interview
+from .interview import Interview
 
 from .decorators import alice, bob
 from .decorators import must, reject, hint

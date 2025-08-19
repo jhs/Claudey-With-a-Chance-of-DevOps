@@ -19,7 +19,7 @@ from langgraph.graph.message import add_messages
 # from mcp import Tool
 
 
-from .base import Interview
+from .interview import Interview
 
 def merge_interviews(a:Interview, b:Interview) -> Interview:
     """

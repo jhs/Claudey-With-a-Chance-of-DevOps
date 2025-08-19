@@ -6,7 +6,7 @@ to/from msgpack-compatible dictionaries, preserving all metadata and field value
 
 from typing import Dict, Any, List, Optional, Type
 import inspect
-from .base import Interview
+from .interview import Interview
 from .socrates import SocratesMeta, FieldMeta
 
 

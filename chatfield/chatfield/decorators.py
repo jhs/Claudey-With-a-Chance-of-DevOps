@@ -2,7 +2,7 @@
 
 from typing import Any, Callable, TypeVar, Type, Optional, Union
 
-from .base import Interview
+from .interview import Interview
 
 T = TypeVar('T')
 
