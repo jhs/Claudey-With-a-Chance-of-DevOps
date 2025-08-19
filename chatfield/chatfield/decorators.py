@@ -201,6 +201,7 @@ class FieldCastDecorator:
     
     def __init__(self, name:str, primitive_type: Type[T], prompt: str):
         self.name = name
+        self.sub_name = None
         self.prompt = prompt
         self.primitive_type = primitive_type
 
@@ -222,15 +223,35 @@ class FieldCastDecorator:
             if self.name in func._chatfield['casts']:
                 raise ValueError(f"Field {self.name!r} already has a cast defined: {func._chatfield['casts'][self.name]!r}. Cannot redefine it.")
 
-            func._chatfield['casts'][self.name] = {
+            prompt = self.prompt
+            if '{sub_name}' in prompt:
+                if self.sub_name is None:
+                    raise ValueError(f"Field {self.name!r} has a prompt with {{sub_name}} but no sub_name set. Use .{self.name}.sub_name to set it.")
+                prompt = prompt.format(sub_name=self.sub_name)
+
+            field_id = self.name
+            if self.sub_name:
+                field_id = field_id + '_' + self.sub_name
+
+            func._chatfield['casts'][field_id] = {
                 'type': self.primitive_type.__name__,
-                'prompt': override_prompt or self.prompt,
+                'prompt': override_prompt or prompt,
             }
 
             return func
 
         return decorator(target) if target else decorator
+    
+    def __getattr__(self, name: str):
+        """Allow chaining like @as_int.some_other_method"""
+        if name.startswith('_'):
+            return super().__getattr__(name)
 
+        if self.sub_name is not None:
+            raise AttributeError(f"{self.name} already has sub_name: {self.sub_name!r}; cannot set {name=}")
+        
+        self.sub_name = name
+        return self
 
 alice = InterviewDecorator('alice')
 bob = InterviewDecorator('bob')
@@ -250,5 +271,33 @@ as_set = FieldCastDecorator('as_set', set, 'interpret as a set of distinct items
 as_list = FieldCastDecorator('as_list', list, 'interpret as a list or array of items, in the most suitable way')
 
 # TODO This is not working. For some reason the LLM always omits the "as_obj" field despite it being listed as required.
-as_obj = FieldCastDecorator('as_obj', dict, 'represent as zero or more key-value pairs; zero key {} implies N/A')
+as_obj = FieldCastDecorator('as_obj', dict, 'represent as zero or more key-value pairs')
 as_dict = as_obj
+
+as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {sub_name}')
+# def as_lang(language: str) -> Callable:
+#     """Track the language or format of the field value for later processing.
+    
+#     Args:
+#         language: Any string describing the language or format (e.g., "python", "sql", 
+#                  "natural language", "markdown", "json", etc.)
+    
+#     Examples:
+#         @as_lang("python")
+#         def code(): return "Your Python code"
+        
+#         @as_lang("natural language")  
+#         def description(): return "Describe in plain English"
+        
+#         @as_lang("sql")
+#         def query(): return "Your database query"
+#     """
+#     def decorator(func: Callable) -> Callable:
+#         decorator_obj = TypeDecorator(
+#             'as_lang',
+#             f'Track as {language} for processing',
+#             language=language
+#         )
+#         return decorator_obj(func)
+    
+#     return decorator

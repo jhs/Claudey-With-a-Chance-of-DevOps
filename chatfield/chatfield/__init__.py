@@ -15,6 +15,7 @@ from .decorators import (
     as_set,
     as_bool,
     as_dict,
+    as_lang,
     as_list,
     as_float,
     as_percent,
