@@ -275,29 +275,3 @@ as_obj = FieldCastDecorator('as_obj', dict, 'represent as zero or more key-value
 as_dict = as_obj
 
 as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {sub_name}')
-# def as_lang(language: str) -> Callable:
-#     """Track the language or format of the field value for later processing.
-    
-#     Args:
-#         language: Any string describing the language or format (e.g., "python", "sql", 
-#                  "natural language", "markdown", "json", etc.)
-    
-#     Examples:
-#         @as_lang("python")
-#         def code(): return "Your Python code"
-        
-#         @as_lang("natural language")  
-#         def description(): return "Describe in plain English"
-        
-#         @as_lang("sql")
-#         def query(): return "Your database query"
-#     """
-#     def decorator(func: Callable) -> Callable:
-#         decorator_obj = TypeDecorator(
-#             'as_lang',
-#             f'Track as {language} for processing',
-#             language=language
-#         )
-#         return decorator_obj(func)
-    
-#     return decorator
