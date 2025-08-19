@@ -4,6 +4,7 @@ import uuid
 import traceback
 
 from pydantic import BaseModel, Field, create_model
+from deepdiff import DeepDiff
 
 from typing import Annotated, Any, Dict, Optional, TypedDict, List
 from langchain_core.tools import tool, InjectedToolCallId
@@ -19,7 +20,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 from .base import Interview
 
-def foo(a, b) -> Any:
+def merge_interviews(a:Interview, b:Interview) -> Interview:
     result = None
     # If a is an object of type Interview and b is a strict subclass of Interview, return b.
     print(f'===========')
@@ -48,7 +49,12 @@ def foo(a, b) -> Any:
         raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r}')
     else:
         # a and b are the same type.
-        raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r} because they are the same type')    
+        diff = DeepDiff(a._chatfield, b._chatfield)
+        if not diff:
+            print(f'Identical instances: {a_type} and {b_type}')
+            result = a    
+        else:
+            raise NotImplementedError(f'Cannot reduce {a_type!r} instances with different values: {diff}')
 
     if result is None:
         raise Exception(f'XXX')
@@ -57,8 +63,9 @@ def foo(a, b) -> Any:
     return result
 
 class State(TypedDict):
+    initialized: bool
     messages: List[Any]
-    interview: Annotated[Interview, foo]
+    interview: Annotated[Interview, merge_interviews]
 
 
 class Interviewer:
@@ -71,6 +78,8 @@ class Interviewer:
 
         self.config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())}}
         self.interview = interview
+        theAlice = self.interview._alice_role_name()
+        theBob   = self.interview._bob_role_name()
 
         # tool_id = 'openai:gpt-5'
         tool_id = 'openai:gpt-4.1'
@@ -78,13 +87,16 @@ class Interviewer:
 
         # Define the tools used in the graph.
         tool_name = f'update_{self.interview._name()}'
-        tool_desc = f'Record valid information stated by the {self.interview._bob_role_name()} about the {self.interview._name()}'
+        tool_desc = (
+            f'Record valid information stated by the {theBob}'
+            f' about the {self.interview._name()}'
+            # f'. Always call this tool with at most one field at a time.'
+            # f' To record multiple fields, call this tool multiple times.'
+        )
 
         # Each field will take a dict argument pertaining to it.
         tool_call_args_schema = {}
 
-        # theAlice = self.interview._alice_role_name()
-        theBob   = self.interview._bob_role_name()
 
         interview_field_names = self.interview._fields()
         for field_name in interview_field_names:
@@ -152,13 +164,12 @@ class Interviewer:
         @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
         def tool_wrapper(state, tool_call_id, **kwargs):
             # print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
+            interview = self._get_state_interview(state)
+
             try:
-                self.process_tool_input(state, **kwargs)
+                self.process_tool_input(interview, **kwargs)
             except Exception as er:
                 tool_msg = f'Error: {er!r}'
-                # Also include the entire traceback in tool_msg.
-                # tb.format_exception(None, e, e.__traceback__)
-                # tool_msg += f'\n\n' + ''.join(traceback.format_exception(None, er, er.__traceback__))
                 tool_msg += f'\n\n' + ''.join(traceback.format_exception(er))
             else:
                 tool_msg = f'Success'
@@ -168,8 +179,7 @@ class Interviewer:
             # Only if something changes, set state_update['interview'] to the new interview.
             tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
             new_messages = state['messages'] + [tool_msg]
-            new_interview = self._get_state_interview(state)
-            state_update = { "messages": new_messages, "interview": new_interview }
+            state_update = { "messages": new_messages, "interview": interview }
             return Command(update=state_update)
 
         tools_avilable = [tool_wrapper]
@@ -202,7 +212,7 @@ class Interviewer:
     def initialize(self, state:State) -> State:
         # print(f'Initialize> {self._get_state_interview(state).__class__.__name__}')
         print(f'Initialize> {self._get_state_interview(state)!r}')
-        # return {}
+        return {'initialized': True}
         return state
         
     def think(self, state: State) -> State:
@@ -236,18 +246,19 @@ class Interviewer:
         
         llm = llm or self.llm_with_tools
 
+
         llm_response_message = llm.invoke(state['messages'])
         # print(f'New message: {llm_response_message!r}')
         state['messages'].append(llm_response_message)
 
         return {'messages': state['messages']}
     
-    def process_tool_input(self, state: State, **kwargs):
+    # def process_tool_input(self, state: State, **kwargs):
+    def process_tool_input(self, interview: Interview, **kwargs):
         """
-        Process the tool input and update the interview state.
+        Move any LLM-provided field values into the interview state.
         """
         # print(f'Process tool input: {kwargs!r}')
-        interview = self._get_state_interview(state)
         for field_name, llm_field_value in kwargs.items():
             if llm_field_value is None:
                 continue
@@ -267,9 +278,13 @@ class Interviewer:
 
         collection_name = interview._name()
 
+        field_keys = interview._chatfield['fields'].keys()
+        field_keys = reversed(field_keys)  # Reverse the order to maintain source-code order.
+
         fields = []
-        for field_name in interview._fields():
-            chatfield = interview._get_chat_field(field_name)
+        for field_name in field_keys:
+            chatfield = interview._chatfield['fields'][field_name]
+
             desc = chatfield.get('desc')
             field_label = f'{field_name}'
             if desc:
@@ -358,7 +373,7 @@ class Interviewer:
 
         result = tools_condition(dict(state))
         if result == 'tools':
-            print(f'Route: to tools')
+            # print(f'Route: to tools')
             return 'tools'
 
         interview = self._get_state_interview(state)
@@ -392,21 +407,21 @@ class Interviewer:
             print(f'New conversation: {self.config["configurable"]["thread_id"]}')
             user_message = HumanMessage(content=user_input) if user_input else None
             user_messages = [user_message] if user_message else []
-            graph_input = State(messages=user_messages, interview=self.interview)
+            # graph_input = State(messages=user_messages, interview=self.interview)
+            graph_input = State(messages=user_messages, interview=self.interview, initialized=False)
 
         interrupts = []
         for event in self.graph.stream(graph_input, config=self.config):
+            # The event is a dict mapping node name to node output.
             # print(f'ev> {event!r}')
-            for value in event.values():
-                # print("Assistant:", value["messages"][-1].content)
-                print(f'  >> {type(value)} {value!r}')
-                for obj in value:
-                    # print(f'    >> {type(obj)} {obj!r}')
-                    if isinstance(obj, Interrupt):
-                        # Do I need to keep a reference to this Interrupt or its ID?
-                        interrupts.append(obj.value)
-        
+            for node_name, state_delta in event.items():
+                # print(f'Node {node_name!r} emitted: {state_delta!r}')
+                if isinstance(state_delta, tuple):
+                    if isinstance(state_delta[0], Interrupt):
+                        interrupts.append(state_delta[0].value)
+
         if not interrupts:
+            # TODO: What is the logic? I think never return None right?
             return None
         
         if len(interrupts) > 1:
