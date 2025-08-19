@@ -2,6 +2,8 @@
 
 from typing import Any, Callable, TypeVar, Type, Optional, Union
 
+from regex import F
+
 from .interview import Interview
 
 T = TypeVar('T')
@@ -202,7 +204,7 @@ class FieldCastDecorator:
         self.prompt = prompt
         self.primitive_type = primitive_type
 
-        ok_primitive_types = (int, float, str, bool, list, set)
+        ok_primitive_types = (int, float, str, bool, list, set, dict)
         if primitive_type not in ok_primitive_types:
             raise ValueError(f"Bad primitive type: {primitive_type!r}; must be one of {ok_primitive_types!r}")
     
@@ -246,3 +248,7 @@ as_percent = FieldCastDecorator('as_percent', float, 'handle "50%" or "half", et
 as_set = FieldCastDecorator('as_set', set, 'interpret as a set of distinct items, in the most suitable way')
 # TODO: Possibly allow a kwwarg @as_list(of=int) which would need to appear in the tool argument schema.
 as_list = FieldCastDecorator('as_list', list, 'interpret as a list or array of items, in the most suitable way')
+
+# TODO This is not working. For some reason the LLM always omits the "as_obj" field despite it being listed as required.
+as_obj = FieldCastDecorator('as_obj', dict, 'represent as zero or more key-value pairs; zero key {} implies N/A')
+as_dict = as_obj
