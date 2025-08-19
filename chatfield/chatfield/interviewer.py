@@ -4,7 +4,7 @@ import uuid
 import traceback
 
 from pydantic import BaseModel, Field, create_model
-from deepdiff import DeepDiff
+from deepdiff import DeepDiff, extract
 
 from typing import Annotated, Any, Dict, Optional, TypedDict, List
 from langchain_core.tools import tool, InjectedToolCallId
@@ -21,17 +21,10 @@ from langgraph.checkpoint.memory import InMemorySaver
 from .base import Interview
 
 def merge_interviews(a:Interview, b:Interview) -> Interview:
+    """
+    LangGraph reducer for Interview objects. It merges any defined values.
+    """
     result = None
-    # If a is an object of type Interview and b is a strict subclass of Interview, return b.
-    print(f'===========')
-    print(f'Reduce:')
-    print(f'  a: {type(a)} {a!r}')
-    print(f'  b: {type(b)} {b!r}')
-
-    if not isinstance(a, Interview):
-        raise TypeError(f'Expected a to be an Interview instance, got {type(a)}: {a!r}')
-    if not isinstance(b, Interview):
-        raise TypeError(f'Expected b to be an Interview instance, got {type(b)}: {b!r}')
 
     a_type = type(a)
     b_type = type(b)
@@ -49,17 +42,38 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
         raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r}')
     else:
         # a and b are the same type.
-        diff = DeepDiff(a._chatfield, b._chatfield)
+        # For some reason I see them coming in reversed.
+        # left, right = a, b
+        left, right = b, a
+
+        diff = DeepDiff(left._chatfield, right._chatfield, ignore_order=True)
         if not diff:
-            print(f'Identical instances: {a_type} and {b_type}')
+            # print(f'Identical instances: {a_type} and {b_type}')
             result = a    
         else:
-            raise NotImplementedError(f'Cannot reduce {a_type!r} instances with different values: {diff}')
+            type_changes = diff.get('type_changes')
+            if not type_changes:
+                raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
+            
+            # Accumulate everything into a in order to return it.
+            result = a    
+
+            print(f'===========')
+            print(f'Reduce:')
+            print(f'  a: {type(a)} {a!r}')
+            print(f'  b: {type(b)} {b!r}')
+            for key_path, delta in type_changes.items():
+                if delta['old_value'] is None and delta['new_value'] is not None:
+                    # print(f'  Field already present {key_path}: {extract(a._chatfield, key_path)}')
+                    pass
+                else:
+                    raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes: {diff}')
+            
+            if len(diff) != 1:
+                raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
 
     if result is None:
         raise Exception(f'XXX')
-    print(f'  Result: {result!r}')
-    print(f'===========')
     return result
 
 class State(TypedDict):
