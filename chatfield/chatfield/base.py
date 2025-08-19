@@ -142,7 +142,7 @@ class Interview:
         return role_type
     
     def _get_role(self, role_name: str):
-        roles = getattr(self, '_roles', {})
+        roles = self._chatfield['roles']
         role = roles.get(role_name, {})
         return role
     
