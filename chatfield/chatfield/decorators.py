@@ -125,10 +125,7 @@ class InterviewDecorator:
     
     # A helper to ensure that a class has ._roles and its contents initialized.
     def _ensure_roles(self, cls):
-        if not hasattr(cls, '_roles'):
-            cls._roles = {}
-        if self.name not in cls._roles:
-            cls._roles[self.name] = {'type': None, 'traits': []}
+        return cls._ensure_roles()
     
     def __call__(self, callable_or_role: Optional[Union[Callable, str]]=None) -> Callable:
         """Makes these work (but not simultaneously on the same class):
@@ -145,21 +142,26 @@ class InterviewDecorator:
 
         role_type = callable_or_role
         def decorator(cls):
-            if role_type is None: # Note: This could possibly check for empty string, or only whitespace, etc.
+            # if role_type is None: # Note: This could possibly check for empty string, or only whitespace, etc.
+            if not role_type:
                 return cls
 
             self._ensure_roles(cls)
-            if cls._roles[self.name]['type'] is not None:
-                raise ValueError(f"{self.name} role is {cls._roles[self.name]['type']!r}. Cannot set to {role_type!r}.")
-            cls._roles[self.name]['type'] = role_type
+            if cls._chatfield_roles[self.name]['type'] is not None:
+                raise ValueError(f"{self.name} role is {cls._chatfield_roles[self.name]['type']!r}. Cannot set to {role_type!r}.")
+            cls._chatfield_roles[self.name]['type'] = role_type
             return cls
         return decorator
     
     def trait(self, description):
         """Makes @alice.trait("...") work"""
         def decorator(cls):
+            if not description:
+                return cls
+
             self._ensure_roles(cls)
-            cls._roles[self.name]['traits'].append(description)
+            if description not in cls._chatfield_roles[self.name]['traits']:
+                cls._chatfield_roles[self.name]['traits'].append(description)
             return cls
         return decorator
 

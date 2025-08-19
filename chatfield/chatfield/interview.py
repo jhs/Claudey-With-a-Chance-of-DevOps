@@ -33,6 +33,11 @@ class Interview:
     # - Jason Sun Aug 17 03:19:08 PM CDT 2025
     not_field_names = {'model_dump'}
 
+    # _chatfield_roles = {
+    #     'alice': {'type': None, 'traits': []},
+    #     'bob'  : {'type': None, 'traits': []},
+    # }
+
     def __init__(self, **kwargs):
         try:
             self.__inner_init__(**kwargs)
@@ -46,15 +51,18 @@ class Interview:
             raise er
 
     def __inner_init__(self, **kwargs):
+        # NOTE: Be careful about self.* invocations because self.__getattribute__ will run which needs things initialized.
         print(f'{self.__class__.__name__}: Init with kwargs: {bool(kwargs)}')
         # super().__init__()
+
+        self.__class__._ensure_roles()
         
         # This object is simple types able to serialize.
         # return dict(type=type_name, desc=desc, roles=roles, fields=fields)
         chatfield_interview = {
             'type': self.__class__.__name__,
-            'desc': self.__doc__ or self.__name__,
-            'roles': {},
+            'desc': self.__doc__ or self.__class__.__name__,
+            'roles': self.__class__._chatfield_roles,
             'fields': {
                 # "field_name"
                     # "desc"
@@ -106,6 +114,23 @@ class Interview:
                 'casts': {},
             }
     
+    @classmethod
+    def _ensure_roles(cls):
+        if not hasattr(cls, '_chatfield_roles'):
+            cls._chatfield_roles = {}
+
+        if 'alice' not in cls._chatfield_roles:
+            cls._chatfield_roles['alice'] = {
+                'type': None,
+                'traits': [],
+            }
+        
+        if 'bob' not in cls._chatfield_roles:
+            cls._chatfield_roles['bob'] = {
+                'type': None,
+                'traits': [],
+            }
+
     # This must take kwargs to support langsmith calling it.
     def model_dump(self, **kwargs) -> Dict[str, Any]:
         # print(f'model_dump: kwargs={kwargs!r}')
@@ -138,12 +163,13 @@ class Interview:
     
     def _get_role_name(self, role_name: str, default: str) -> str:
         role = self._get_role(role_name)
-        role_type = role.get('type', default)
+        role_type = role.get('type') or default
         return role_type
     
     def _get_role(self, role_name: str):
         roles = self._chatfield['roles']
-        role = roles.get(role_name, {})
+        role = roles[role_name]
+        # role = roles.get(role_name, {})
         return role
     
     def _get_chat_field(self, field_name: str):
