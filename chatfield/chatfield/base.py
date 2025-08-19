@@ -112,6 +112,14 @@ class Interview:
         result = copy.deepcopy(self._chatfield)
         return result
     
+    def _copy_from(self, source):
+        """
+        Copy from an interview into this object
+        """
+
+        # The current implementation is very minimal.
+        self._chatfield = copy.deepcopy(source._chatfield)
+    
     def _name(self) -> str:
         """Return a human-readable label representing this interview data type"""
         return self.__class__.__name__
