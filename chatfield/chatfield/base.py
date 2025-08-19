@@ -216,13 +216,9 @@ class Interview:
         Fields are only populated when they pass validation, so checking
         for non-None values is sufficient.
         """
-        states = []
-        for field_name in self._fields():
-            field = getattr(self, field_name, None)
-            states.append(field is not None)
-            # field = object.__getattribute__(self, field_name)
-            # chatfield = field and getattr(field, '_chatfield', None)
-        return all(states)
+        chatfields = self._chatfield['fields'].values()
+        all_values = [ chatfield['value'] for chatfield in chatfields ]
+        return all(value is not None for value in all_values)
 
     # def __repr__(self):
     #     as_dict = self._asdict()
