@@ -4,7 +4,7 @@
 import os
 import sys
 import json
-from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_float, as_percent, as_bool
+from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_lang, as_float, as_set, as_list, as_dict, as_percent, as_bool
 from chatfield import Interviewer
 
 import dotenv
@@ -57,15 +57,27 @@ class NotableNumbers(Interview):
     """Numbers important to you"""
 
     @as_int
-    @as_percent
+    # @as_percent
     # @as_float(f'pi if the number is 3; otherwise tau')
     @must("a number between 1 and 100")
     # @match.aribitrary_name_here('aribtrary predicate here')
+    # @as_set('The set of numbers from 1 to the favorite, spelled out as words: odds are English, evens are Spanish')
+    # @as_list('A range of numbers from 1 to the favorite, spelled out in English for odds and Thai for evens')
+    # @as_dict
+    # @as_lang.fr
+    # @as_lang.de
+    # @as_lang.erlang_expression
+    # @as_lang.pig_latin
+    # @as_lang.th
+    # @as_lang.greek
+    @as_lang.traditional_chinese
     def favorite():
-        "what is your favorite number? your silence implies that you love 3"
+        "what is your favorite number?"
+    # .as_french
+    # .as_lang.my_secret_pig_latin_dialect
     
-    @as_int
-    @as_percent('Fraction of 100 except negative, e.g. disliking 13 implies -0.13')
+    # @as_int
+    # @as_percent('Fraction of 100 except negative, e.g. disliking 13 implies -0.13')
     def least_favorite():
         "what is your least favorite number?"
 
