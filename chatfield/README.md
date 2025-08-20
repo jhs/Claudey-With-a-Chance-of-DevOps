@@ -2,6 +2,7 @@
 
 3. Basic end-to-end testing
 4. Javascript
+5. Fuller test system
 
 # Chatfield: The Socratic Method for Data Gathering
 
