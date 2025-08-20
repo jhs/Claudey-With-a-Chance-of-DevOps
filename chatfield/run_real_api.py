@@ -58,6 +58,8 @@ import dotenv
 # @alice("Estranged Ex-Wife")
 # @alice('Circus Clown')
 @alice('Abraham Lincoln')
+@bob('John Wilkes Booth')
+# @alice.trait('talks in Cockney rhyming slang')
 # @alice.trait("writes in alternating limericks and haiku")
 class NotableNumbers(Interview):
     """Numbers important to you"""
@@ -70,21 +72,16 @@ class NotableNumbers(Interview):
     # @as_set('The set of numbers from 1 to the favorite, spelled out as words: odds are English, evens are Spanish')
     # @as_list('A range of numbers from 1 to the favorite, spelled out in English for odds and Thai for evens')
     # @as_dict
-    # @as_lang.fr
+    @as_lang.fr
     # @as_lang.de
     # @as_lang.erlang_expression
     # @as_lang.pig_latin(f'pig latin and in all upper-case')
-    # @as_lang.th
+    @as_lang.th
     # @as_lang.greek
-    # @as_lang.traditionalChinese
+    @as_lang.traditionalChinese
     # @as_bool.even('True if the number is even, False if odd')
-    # @as_bool.odd('True if the number is odd, False if even')
-    # @as_bool.power_of_two('True if the number is a power of two, False otherwise')
-    # @as_choice.scale(f'Smaller than 10', '10 to 23', 'Larger than 23')
-    # @as_choice.spelling('starts with f when written longhand', 'starts with t when written longhand', 'all other numbers')
-    # @as_choice.prime('prime number', 'not a prime number')
-    # @as_choice.div4('div 4 remainder is 0', 'div 4 remainder is 1', 'div 4 remainder is 2', 'div 4 remainder is 3')
-    # @as_choice.user_feedback('feedback provided was numeric', 'feedback provided was prose or text')
+    @as_bool.odd('True if the number is odd, False if even')
+    @as_bool.power_of_two('True if the number is a power of two, False otherwise')
 
     @as_str('Timestamp in ISO format, representing this value number of minutes since Jan 1 2025 Zulu time')
     @as_set.factors('The set of all factors the number, excluding 1 and the number itself')
