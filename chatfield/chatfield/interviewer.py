@@ -334,13 +334,21 @@ class Interviewer:
             if llm_field_value is None:
                 continue
 
-            all_values = llm_field_value.model_dump()
-            print(f'LLM found a valid field: {field_name!r} = {all_values!r}')
+            llm_values = llm_field_value.model_dump()
+            print(f'LLM found a valid field: {field_name!r} = {llm_values!r}')
             chatfield = interview._get_chat_field(field_name)
             if chatfield.get('value'):
                 # print(f'{self.__class__.__name__}: Overwrite old field {field_name!r} value: {chatfield["value"]!r}')
                 # TODO: This could do something sophisticated.
                 pass
+
+            all_values = {}
+            for key, val in llm_values.items():
+                key = re.sub(r'^choose_exactly_one_' , 'as_one_'  , key)
+                key = re.sub(r'^choose_zero_or_one_' , 'as_maybe_', key)
+                key = re.sub(r'^choose_one_or_more_' , 'as_multi_', key)
+                key = re.sub(r'^choose_zero_or_more_', 'as_any_'  , key)
+                all_values[key] = val
             chatfield['value'] = all_values
 
     def mk_system_prompt(self, state: State) -> str:
