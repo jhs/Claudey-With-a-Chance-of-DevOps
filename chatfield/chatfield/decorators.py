@@ -1,8 +1,9 @@
 """Core decorators for Chatfield."""
 
-from typing import Any, Callable, TypeVar, Type, Optional, Union
+import json
 
-from regex import F
+from os import sep
+from typing import Any, Callable, TypeVar, Type, Optional, Union
 
 from .interview import Interview
 
@@ -253,7 +254,7 @@ class FieldCastDecorator:
         
         # Format the prompt if it contains {sub_name} placeholder
         compound_prompt = self.prompt.format(name=name)
-        
+
         # Return a new FieldCastDecorator instance, never marked as sub_only
         return FieldCastDecorator(
             name=compound_name,
@@ -261,6 +262,46 @@ class FieldCastDecorator:
             prompt=compound_prompt,
             sub_only=False  # The new instance is not sub_only
         )
+
+class FieldCastChoiceDecorator(FieldCastDecorator):
+    def __init__(self, name:str, prompt: str):
+        super().__init__(name, primitive_type=str, prompt=prompt, sub_only=True)
+
+    def __getattr__(self, name: str):
+        """Allow chaining like @as_choice.some_choice
+        """
+        if name.startswith('_'):
+            raise AttributeError(f"{self.name} has no attribute: {name!r}")
+        
+        # Create a new decorator instance with a compound name
+        compound_name = f'{self.name}_{name}'
+        
+        # Return a new FieldCastDecorator instance, never marked as sub_only
+        return FieldCastChoiceDecorator(name=compound_name, prompt=self.prompt)
+
+    def __call__(self, callable_or_prompt: Union[Callable, str], *args) -> Callable: # TODO: Maybe remove the Union stuff?
+        if callable(callable_or_prompt):
+            raise ValueError(f"Decorator {self.name!r} cannot be used directly on a function. Use it with a prompt or choices instead.")
+
+        choices = [callable_or_prompt] + list(args)
+        choices_json = json.dumps(choices)
+
+        def decorator(func: Callable) -> Callable:
+            Interview._init_field(func)
+            type_name = self.primitive_type.__name__
+            chatfield = func._chatfield
+
+            # Check for duplicate cast definition
+            if self.name in chatfield['casts']:
+                raise ValueError(f"Field {self.name!r} already has a cast defined: {chatfield['casts'][self.name]!r}. Cannot redefine it.")
+
+            # Add the cast with either the override prompt or the default prompt
+            chatfield['casts'][self.name] = {
+                'type': type_name,
+                'prompt': self.prompt.format(choices=choices_json),
+            }
+            return func
+        return decorator
 
 alice = InterviewDecorator('alice')
 bob = InterviewDecorator('bob')
@@ -285,3 +326,5 @@ as_dict = as_obj
 
 # TODO: I though if the language matches the standard name like "fr" or "fr_CA" then tell the LLM that.
 as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {name}', sub_only=True)
+
+as_choice = FieldCastChoiceDecorator('as_choice', 'choose exactly one element from this list: {choices}')

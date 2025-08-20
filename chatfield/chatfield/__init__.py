@@ -18,6 +18,7 @@ from .decorators import (
     as_lang,
     as_list,
     as_float,
+    as_choice,
     as_percent,
 )
 
