@@ -1,6 +1,5 @@
 # Today's plan
 
-2. Support all the decorators
 3. Basic end-to-end testing
 4. Javascript
 
