@@ -4,10 +4,10 @@ import re
 import uuid
 import traceback
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, conset, create_model
 from deepdiff import DeepDiff, extract
 
-from typing import Annotated, Any, Dict, Optional, TypedDict, List, Literal
+from typing import Annotated, Any, Dict, Optional, TypedDict, List, Literal, Set
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
@@ -143,19 +143,27 @@ class Interviewer:
                 cast_prompt = cast_info['prompt']
 
                 if cast_type == 'choice':
-                    if cast_info['multi']:
-                        raise NotImplementedError(f'Cannot use multi-choice {cast_name!r} in tool call args schema: {cast_info!r}')
-
                     # TODO: Unclear if this name shortening helps:
                     cast_short_name = re.sub(r'^choose_.*_', '', cast_name)
                     cast_prompt = cast_prompt.format(name=cast_short_name)
 
+                    # First start with all the choices.
+                    choices = tuple(cast_info['choices'])
+                    min_results = 1
+                    max_results = 1
+
                     if cast_info['null']:
-                        # Nullable.
-                        cast_type = Optional[Literal[tuple(cast_info['choices'])]] # type: ignore
-                    else:
-                        # Not nullable.
-                        cast_type = Literal[tuple(cast_info['choices'])]  # type: ignore
+                        min_results = 0
+
+                    cast_type = Literal[choices]  # type: ignore
+
+                    if cast_info['multi']:
+                        # cast_type = Set[cast_type]
+                        max_results = len(choices)
+                        cast_type = conset(item_type=cast_type, min_length=min_results, max_length=max_results)
+
+                    if cast_info['null']:
+                        cast_type = Optional[cast_type]
 
                 cast_definition = (cast_type, Field(description=cast_prompt, title=cast_title))
                 casts_definitions[cast_name] = cast_definition
