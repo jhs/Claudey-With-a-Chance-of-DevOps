@@ -1,12 +1,6 @@
-# Today's plan
-
-3. Basic end-to-end testing
-4. Javascript
-5. Fuller test system
-
 # Chatfield: The Socratic Method for Data Gathering
 
-Transform rigid forms into thoughtful Socratic dialogues powered by LLMs and LangGraph agents. Through careful questioning and guided exploration, Chatfield helps users articulate their needs clearly and completely.
+Transform rigid forms into thoughtful Socratic dialogues powered by LLMs. Through careful questioning and guided exploration, Chatfield helps users articulate their needs clearly and completely.
 
 ## The Socratic Approach
 
@@ -18,9 +12,9 @@ Just as Socrates used thoughtful questioning to help people discover truth and u
 - **Adapts naturally** - The conversation adjusts to the user's level and responses
 
 ```python
-from chatfield import Dialogue, must, reject, hint
+from chatfield import Interview, must, reject, hint
 
-class TechHelp(Dialogue):
+class TechHelp(Interview):
     """Your technical challenges"""
     
     @hint("Be specific - 'computer is slow' vs 'Excel takes 5 minutes to open'")
@@ -65,17 +59,23 @@ pip install -e .[dev]
 Help someone fix their computer issue:
 
 ```python
-from chatfield import Dialogue
+from chatfield import Interview, Interviewer
 
-class ComputerHelp(Dialogue):
+class ComputerHelp(Interview):
     """A Socratic dialogue to understand your computer issues"""
     
     def problem(): "What's happening with your computer?"
     def when_started(): "When did this start?"
     def tried_solutions(): "What have you tried so far?"
 
-# Start the Socratic dialogue
-help_session = ComputerHelp.gather()
+# Create an interview instance
+help_session = ComputerHelp()
+
+# Use the Interviewer to conduct the dialogue
+interviewer = Interviewer(help_session)
+while not help_session._done:
+    result = interviewer.go(user_input)
+    # Display messages and collect user input
 
 # Access the insights gathered through dialogue
 print(help_session.problem)
@@ -87,9 +87,9 @@ print(help_session.when_started)
 Ensure you get useful information:
 
 ```python
-from chatfield import Dialogue, must, reject, hint
+from chatfield import Interview, must, reject, hint
 
-class WebsiteHelp(Dialogue):
+class WebsiteHelp(Interview):
     """A Socratic exploration of your website needs"""
     
     @must("specific purpose or goal clear enough to protoype by a web developer")

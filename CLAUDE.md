@@ -99,12 +99,15 @@ Development commands:
 ### Chatfield Python (`/chatfield`)
 - Complete Python package for conversational data gathering
 - Decorator-based API with LLM-powered validation
-- OpenAI integration and comprehensive test suite
-- Example implementations and documentation
+- OpenAI integration using Interview and Interviewer classes
+- Rich type transformation system with sub-attributes
+- Alice (interviewer) and Bob (interviewee) personas for dialogue control
+- Cardinality decorators (as_one, as_maybe, as_multi, as_any)
+- Language transformation decorators (as_lang.fr, as_lang.th, etc.)
 
 Development commands:
 - `python -m pytest` - Run test suite
-- `python example.py` - Run demo implementation
+- `python run_real_api.py` - Run interactive demo with OpenAI API
 
 ### Chatfield TypeScript (`/chatfield-js`)
 - NPM package @chatfield/core v0.1.0
