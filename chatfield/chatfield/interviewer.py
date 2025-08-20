@@ -143,11 +143,19 @@ class Interviewer:
                 cast_prompt = cast_info['prompt']
 
                 if cast_type == 'choice':
-                    # This appears as just [1,2,3] to the LLM :(
-                    # cast_type = Enum('Allowed Values', cast_info['choices'],
-                    cast_type = Literal[tuple(cast_info['choices'])]  # type: ignore
-                    cast_short_name = re.sub(r'^choose_', '', cast_name)
+                    if cast_info['multi']:
+                        raise NotImplementedError(f'Cannot use multi-choice {cast_name!r} in tool call args schema: {cast_info!r}')
+
+                    # TODO: Unclear if this name shortening helps:
+                    cast_short_name = re.sub(r'^choose_.*_', '', cast_name)
                     cast_prompt = cast_prompt.format(name=cast_short_name)
+
+                    if cast_info['null']:
+                        # Nullable.
+                        cast_type = Optional[Literal[tuple(cast_info['choices'])]] # type: ignore
+                    else:
+                        # Not nullable.
+                        cast_type = Literal[tuple(cast_info['choices'])]  # type: ignore
 
                 cast_definition = (cast_type, Field(description=cast_prompt, title=cast_title))
                 casts_definitions[cast_name] = cast_definition

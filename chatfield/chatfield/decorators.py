@@ -264,8 +264,10 @@ class FieldCastDecorator:
         )
 
 class FieldCastChoiceDecorator(FieldCastDecorator):
-    def __init__(self, name:str, prompt: str):
-        super().__init__(name, primitive_type=str, prompt=prompt, sub_only=True)
+    def __init__(self, name:str, prompt: str, null: bool, multi: bool):
+        super().__init__(name, prompt=prompt, primitive_type=str, sub_only=True)
+        self.null = null
+        self.multi = multi
 
     def __getattr__(self, name: str):
         """Allow chaining like @as_choice.some_choice
@@ -277,7 +279,7 @@ class FieldCastChoiceDecorator(FieldCastDecorator):
         compound_name = f'{self.name}_{name}'
         
         # Return a new FieldCastDecorator instance, never marked as sub_only
-        return FieldCastChoiceDecorator(name=compound_name, prompt=self.prompt)
+        return FieldCastChoiceDecorator(name=compound_name, prompt=self.prompt, null=self.null, multi=self.multi)
 
     def __call__(self, callable_or_prompt: Union[Callable, str], *args) -> Callable: # TODO: Maybe remove the Union stuff?
         if callable(callable_or_prompt):
@@ -287,7 +289,6 @@ class FieldCastChoiceDecorator(FieldCastDecorator):
 
         def decorator(func: Callable) -> Callable:
             Interview._init_field(func)
-            type_name = self.primitive_type.__name__
             chatfield = func._chatfield
 
             # Check for duplicate cast definition
@@ -297,6 +298,8 @@ class FieldCastChoiceDecorator(FieldCastDecorator):
             # Add the cast with either the override prompt or the default prompt
             chatfield['casts'][self.name] = {
                 'type': 'choice',
+                'null': self.null,
+                'multi': self.multi,
                 'prompt': self.prompt,
                 'choices': choices,
             }
@@ -329,4 +332,8 @@ as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate i
 
 # TODO: This got it wrong a lot.
 # as_choice = FieldCastChoiceDecorator('choose', 'the most accurate representation of the {name} of the value')
-as_choice = FieldCastChoiceDecorator('choose', "the value's {name}")
+__choice_desc = "the value's {name}"
+as_any   = FieldCastChoiceDecorator('choose_zero_or_more', f'{__choice_desc}'           , null=True , multi=True )
+as_one   = FieldCastChoiceDecorator('choose_exactly_one' , f'{__choice_desc}'           , null=False, multi=False)
+as_maybe = FieldCastChoiceDecorator('choose_zero_or_one' , f'{__choice_desc} (optional)', null=True , multi=False)
+as_multi = FieldCastChoiceDecorator('choose_one_or_more' , f'{__choice_desc}'           , null=False, multi=True )

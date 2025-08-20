@@ -18,8 +18,12 @@ from .decorators import (
     as_lang,
     as_list,
     as_float,
-    as_choice,
     as_percent,
+
+    as_one,   # exactly one
+    as_maybe, # zero or one
+    as_multi, # one or more
+    as_any,   # zero or more
 )
 
 # from .match import match
