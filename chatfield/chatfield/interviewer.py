@@ -1,12 +1,13 @@
 """LangGraph-based evaluator for Chatfield conversations."""
 
+import re
 import uuid
 import traceback
 
 from pydantic import BaseModel, Field, create_model
 from deepdiff import DeepDiff, extract
 
-from typing import Annotated, Any, Dict, Optional, TypedDict, List
+from typing import Annotated, Any, Dict, Optional, TypedDict, List, Literal
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
@@ -121,7 +122,16 @@ class Interviewer:
             casts = chatfield.get('casts', {})
 
             casts_definitions = {}
-            ok_primitive_types = dict(int=int, float=float, str=str, bool=bool, list=List[Any], set=set, dict=Dict[str, Any])
+            ok_primitive_types = {
+                'int': int,
+                'float': float,
+                'str': str,
+                'bool': bool,
+                'list': List[Any],
+                'set': set,
+                'dict': Dict[str, Any],
+                'choice': 'choice',
+            }
 
             for cast_name, cast_info in casts.items():
                 cast_type = cast_info['type']
@@ -129,8 +139,17 @@ class Interviewer:
                 if not cast_type:
                     raise ValueError(f'Cast {cast_name!r} bad type: {cast_info!r}; must be one of {ok_primitive_types.keys()}')
 
+                cast_title = None # cast_info.get('title', f'{cast_name} value')
                 cast_prompt = cast_info['prompt']
-                cast_definition = (cast_type, Field(description=cast_prompt))
+
+                if cast_type == 'choice':
+                    # This appears as just [1,2,3] to the LLM :(
+                    # cast_type = Enum('Allowed Values', cast_info['choices'],
+                    cast_type = Literal[tuple(cast_info['choices'])]  # type: ignore
+                    cast_short_name = re.sub(r'^choose_', '', cast_name)
+                    cast_prompt = cast_prompt.format(name=cast_short_name)
+
+                cast_definition = (cast_type, Field(description=cast_prompt, title=cast_title))
                 casts_definitions[cast_name] = cast_definition
 
             conv_desc = (
@@ -383,17 +402,20 @@ class Interviewer:
 
         # TODO: Is it helpful at all to mention the tools in the system prompt?
         # tool_name = 'update_interview'
-        # use_tools = (
+        use_tools = (
+            f' Use tools to record information fields'
+            f' and their related "casts",'
+            f' which are cusom conversions you provide for each field.'
         #     f' When you identify valid information to collect,'
         #     f' Use the {tool_name} tool, followed by a response to the {interview._bob_role_name()}.'
-        # )
-        use_tools = ''
+        )
+        # use_tools = ''
 
         res = (
             f'You are the conversational {interview._alice_role_name()} focused on gathering key information in conversation with the {interview._bob_role_name()},'
             f' into a collection called {collection_name}, detailed below.'
             f'{with_traits}'
-            f' You begin the conversation in the most suitable way.'
+            # f' You begin the conversation in the most suitable way.'
             f'{use_tools}'
             f' Although the {interview._bob_role_name()} may take the conversation anywhere, your response must fit the conversation and your respective roles'
             f' while refocusing the discussion so that you can gather clear key {collection_name} information from the {interview._bob_role_name()}.'
