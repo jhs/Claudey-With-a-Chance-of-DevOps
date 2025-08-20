@@ -284,7 +284,6 @@ class FieldCastChoiceDecorator(FieldCastDecorator):
             raise ValueError(f"Decorator {self.name!r} cannot be used directly on a function. Use it with a prompt or choices instead.")
 
         choices = [callable_or_prompt] + list(args)
-        choices_json = json.dumps(choices)
 
         def decorator(func: Callable) -> Callable:
             Interview._init_field(func)
@@ -297,8 +296,9 @@ class FieldCastChoiceDecorator(FieldCastDecorator):
 
             # Add the cast with either the override prompt or the default prompt
             chatfield['casts'][self.name] = {
-                'type': type_name,
-                'prompt': self.prompt.format(choices=choices_json),
+                'type': 'choice',
+                'prompt': self.prompt,
+                'choices': choices,
             }
             return func
         return decorator
@@ -327,4 +327,6 @@ as_dict = as_obj
 # TODO: I though if the language matches the standard name like "fr" or "fr_CA" then tell the LLM that.
 as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {name}', sub_only=True)
 
-as_choice = FieldCastChoiceDecorator('as_choice', 'choose exactly one element from this list: {choices}')
+# TODO: This got it wrong a lot.
+# as_choice = FieldCastChoiceDecorator('choose', 'the most accurate representation of the {name} of the value')
+as_choice = FieldCastChoiceDecorator('choose', "the value's {name}")
