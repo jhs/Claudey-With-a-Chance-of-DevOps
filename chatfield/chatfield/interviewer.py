@@ -97,7 +97,7 @@ class Interviewer:
 
         # tool_id = 'openai:gpt-5'
         tool_id = 'openai:gpt-4.1'
-        self.llm = init_chat_model(tool_id)
+        self.llm = init_chat_model(tool_id, temperature=0.0)
 
         # Define the tools used in the graph.
         tool_name = f'update_{self.interview._name()}'
