@@ -154,9 +154,9 @@ class Interviewer:
                 __doc__= field_docstring,
 
                 # These are always defined and returned by the LLM.
-                value                = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
-                conversation_context = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
-                as_quote             = (str, Field(title=f'Direct {theBob} Quotation', description=quote_desc)),
+                value    = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
+                context  = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
+                as_quote = (str, Field(title=f'Directly quote {theBob}', description=quote_desc)),
 
                 # These come in via decorators to cast the value in fun ways.
                 **casts_definitions,
