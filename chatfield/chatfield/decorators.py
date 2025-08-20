@@ -194,99 +194,73 @@ class FieldCastDecorator:
     - name: Name of the cast (e.g. 'as_int')
     - primitive_type: The type to cast the value to (e.g. int, float, list)
     - prompt: Default prompt for the cast, if needed
+    - sub_only: If True, this decorator can only be used with sub-attributes (e.g., @as_lang.fr)
     """
-
-    # TODO: Something nice would be if used as @as_whatever then that is the field for the LLM tool call.
-    # But if the user customizes the prompt, that field name for the tool call should be as_whatever_custom
     
-    def __init__(self, name:str, primitive_type: Type[T], prompt: str, sub:bool=False):
+    def __init__(self, name:str, primitive_type: Type[T], prompt: str, sub_only:bool = False):
         self.name = name
         self.prompt = prompt
+        self.sub_only = sub_only
         self.primitive_type = primitive_type
 
         ok_primitive_types = (int, float, str, bool, list, set, dict)
         if primitive_type not in ok_primitive_types:
             raise ValueError(f"Bad primitive type: {primitive_type!r}; must be one of {ok_primitive_types!r}")
 
-        # Track sub-names which will need to apply to the callable when it is passed for wrapping.
-        self.current_sub_name = None
-        self.sub_names = {} if sub else None
-            # @lang.fr
-            # 'fr': None,
-            # @lang.chinese('traditional')
-            # 'chinese': 'traditional',
-
     def __call__(self, callable_or_prompt: Union[Callable, str]) -> Callable:
-        # print(f'FieldCastDecorator> {self.name!r} with prompt {callable_or_prompt!r}', file=sys.stderr)
         if callable(callable_or_prompt):
+            # Direct decoration: @as_bool or @as_bool.something
             target = callable_or_prompt
             override_prompt = None
         else:
+            # With custom prompt: @as_bool("custom prompt") or @as_bool.something("custom prompt")
             target = None
             override_prompt = callable_or_prompt
 
-            if self.sub_names is not None and self.current_sub_name is not None:
-                # The override prompt applies to the sub name. Remember it and return self.
-                self.sub_names[self.current_sub_name] = override_prompt
-                self.current_sub_name = None
-                return self
-
         def decorator(func: Callable) -> Callable:
             Interview._init_field(func)
-        
-            # Decorators work only one of two ways:
-            # 1. If there are no sub-names, the cast is the name, and use the override prompt if provided.
-            # 2. If there are 1 or more sub-names, there is 1 cast for each sub-name with this name prefixed.
             type_name = self.primitive_type.__name__
+            chatfield = func._chatfield
 
-            if self.sub_names is None:
-                # No sub-names, so the cast is just the name.
-                if self.name in func._chatfield['casts']:
-                    raise ValueError(f"Field {self.name!r} already has a cast defined: {func._chatfield['casts'][self.name]!r}. Cannot redefine it.")
+            # Check if this is a sub_only decorator being used directly
+            if self.sub_only:
+                raise ValueError(f"Decorator {self.name!r} can only be used with sub-attributes (e.g., @{self.name}.something)")
 
-                func._chatfield['casts'][self.name] = {
-                    'type': type_name,
-                    'prompt': override_prompt or self.prompt,
-                }
-                return func
+            # Check for duplicate cast definition
+            if self.name in chatfield['casts']:
+                raise ValueError(f"Field {self.name!r} already has a cast defined: {chatfield['casts'][self.name]!r}. Cannot redefine it.")
 
-            # Otherwise, do one cast for each sub-name.
-            for sub_name, sub_prompt in self.sub_names.items():
-                # The prompt is either the override prompt or the one set for that sub_name, replacing {sub_name}
-                sub_prompt = sub_prompt or self.prompt.format(sub_name=sub_name)
-                
-                field_id = f'{self.name}_{sub_name}'
-                if field_id in func._chatfield['casts']:
-                    raise ValueError(f"Field {field_id!r} already has a cast defined: {func._chatfield['casts'][field_id]!r}. Cannot redefine it.")
-
-                func._chatfield['casts'][field_id] = {
-                    'type': type_name,
-                    'prompt': sub_prompt,
-                }
-            
-            # Zero out the sub-names so that the next call to this decorator starts fresh.
-            self.sub_names = {}
-            self.current_sub_name = None
+            # Add the cast with either the override prompt or the default prompt
+            chatfield['casts'][self.name] = {
+                'type': type_name,
+                'prompt': override_prompt or self.prompt,
+            }
             return func
 
         return decorator(target) if target else decorator
     
     def __getattr__(self, name: str):
-        """Allow chaining like @as_int.some_other_method"""
-        if name.startswith('_'):
-            return super().__getattr__(name)
+        """Allow chaining like @as_int.some_other_method
         
-        if self.sub_names is None:
-            # Do not support .anything notation.
-            return super().__getattr__(name)
-
-        if name in self.sub_names:
-            raise AttributeError(f"{self.name} already has sub_name: {name!r}; cannot set it again.")
-
-        # The value can be set by calling this object (__call__) with a string.
-        self.sub_names[name] = None
-        self.current_sub_name = name
-        return self
+        This creates a new FieldCastDecorator instance with a compound name.
+        For example: @as_bool.spelling creates a new decorator with name 'as_bool_spelling'
+        """
+        if name.startswith('_'):
+            raise AttributeError(f"{self.name} has no attribute: {name!r}")
+        
+        # Create a new decorator instance with a compound name
+        compound_name = f'{self.name}_{name}'
+        
+        # Format the prompt if it contains {sub_name} placeholder
+        compound_prompt = self.prompt.format(name=name)
+        
+        # Return a new FieldCastDecorator instance, never marked as sub_only
+        return FieldCastDecorator(
+            name=compound_name,
+            primitive_type=self.primitive_type,
+            prompt=compound_prompt,
+            sub_only=False  # The new instance is not sub_only
+        )
 
 alice = InterviewDecorator('alice')
 bob = InterviewDecorator('bob')
@@ -310,4 +284,4 @@ as_obj = FieldCastDecorator('as_obj', dict, 'represent as zero or more key-value
 as_dict = as_obj
 
 # TODO: I though if the language matches the standard name like "fr" or "fr_CA" then tell the LLM that.
-as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {sub_name}', sub=True)
+as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {name}', sub_only=True)
