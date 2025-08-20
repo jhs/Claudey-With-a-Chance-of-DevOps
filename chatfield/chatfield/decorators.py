@@ -330,10 +330,9 @@ as_dict = as_obj
 # TODO: I though if the language matches the standard name like "fr" or "fr_CA" then tell the LLM that.
 as_lang = FieldCastDecorator('as_lang', str, 'represent as words and translate into to the language: {name}', sub_only=True)
 
-# TODO: This got it wrong a lot.
-# as_choice = FieldCastChoiceDecorator('choose', 'the most accurate representation of the {name} of the value')
+# TODO: as_maybe seems to get it wrong a lot.
 __choice_desc = "the value's {name}"
-as_any   = FieldCastChoiceDecorator('choose_zero_or_more', f'{__choice_desc}'           , null=True , multi=True )
-as_one   = FieldCastChoiceDecorator('choose_exactly_one' , f'{__choice_desc}'           , null=False, multi=False)
-as_maybe = FieldCastChoiceDecorator('choose_zero_or_one' , f'{__choice_desc} (optional)', null=True , multi=False)
-as_multi = FieldCastChoiceDecorator('choose_one_or_more' , f'{__choice_desc}'           , null=False, multi=True )
+as_any   = FieldCastChoiceDecorator('choose_zero_or_more', f'{__choice_desc}, if applicable', null=True , multi=True )
+as_one   = FieldCastChoiceDecorator('choose_exactly_one' , f'{__choice_desc}'               , null=False, multi=False)
+as_maybe = FieldCastChoiceDecorator('choose_zero_or_one' , f'{__choice_desc}, if applicable', null=True , multi=False)
+as_multi = FieldCastChoiceDecorator('choose_one_or_more' , f'{__choice_desc}'               , null=False, multi=True )
