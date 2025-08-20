@@ -13,6 +13,7 @@ from .decorators import (
     as_int,
     as_obj,
     as_set,
+    as_str,
     as_bool,
     as_dict,
     as_lang,
