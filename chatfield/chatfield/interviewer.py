@@ -9,7 +9,7 @@ from deepdiff import DeepDiff, extract
 
 from typing import Annotated, Any, Dict, Optional, TypedDict, List, Literal, Set
 from langchain_core.tools import tool, InjectedToolCallId
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Command, interrupt, Interrupt
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
@@ -485,8 +485,12 @@ class Interviewer:
         # So, for now just copy over the _chatfield dict.
         self.interview._copy_from(interview)
 
-        feedback = {'messages': state['messages']}
+        msg = state['messages'][-1] if state['messages'] else None
+        if not isinstance(msg, AIMessage):
+            raise ValueError(f'Expected last message to be an AIMessage, got {type(msg)}: {msg!r}')
+
         # TODO: Make the LLM possibly set a prompt to the user.
+        feedback = msg.content.strip()
         update = interrupt(feedback)
 
         print(f'Interrupt result: {update!r}')
@@ -532,7 +536,6 @@ class Interviewer:
         
         if len(interrupts) > 1:
             # TODO: I think this can happen? Because of parallel execution?
-            print(f'XXX Hey there, I got multiple interrupts: {interrupts!r}')
             raise Exception(f'XXX Hey there, I got multiple interrupts: {interrupts!r}')
 
         return interrupts[0]
