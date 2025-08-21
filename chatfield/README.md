@@ -9,7 +9,6 @@ from chatfield import Interview, Interviewer
 
 class BugReport(Interview):
     """Bug report from user"""
-    def title(): "Brief bug description"
     def steps(): "Steps to reproduce"
     def expected(): "What should happen"
     def actual(): "What actually happens"
@@ -17,17 +16,17 @@ class BugReport(Interview):
 # Conduct the interview
 report = BugReport()
 interviewer = Interviewer(report)
-user_input = None
 
+user_input = None
 while not report._done:
-    ai_message = interviewer.go(user_input)
-    if ai_message:
-        print(f"AI: {ai_message}")
-    user_input = input("> ")
+    message = interviewer.go(user_input) # Provide user input. The interviewer returns what to say.
+    print(message)                       # Show it to the user.
+    user_input = input("Your input > ")  # Receive user input.
 
 # Access collected data
-print(report.title)  # "Login button not working"
-print(report.steps)  # "1. Go to homepage\n2. Click login..."
+print("Tried", report.steps)
+print("Expected": report.expected)
+print("Actual", report.actual)
 ```
 
 ## Installation
