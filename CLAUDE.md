@@ -18,8 +18,15 @@ The repository now contains:
   - OpenAI adapter for runtime integration
 - `chatfield/` - Python implementation of conversational data gathering
   - Complete Python package with decorators for field definitions
-  - LLM-powered validation and conversation management
+  - LLM-powered validation and conversation management using LangGraph
   - Testing suite and example implementations
+  - Key components:
+    - `Interview` base class for defining data structures
+    - `Interviewer` class orchestrating conversations with LangGraph
+    - `FieldProxy` string subclass providing transformation access
+    - Comprehensive decorator system: `@alice`/`@bob` roles, `@must`/`@reject`/`@hint` validation
+    - Type transformations: `@as_int`, `@as_float`, `@as_lang`, etc.
+    - Cardinality decorators: `@as_one`, `@as_maybe`, `@as_multi`, `@as_any`
 - `chatfield-js/` - TypeScript/JavaScript implementation of Chatfield
   - NPM package @chatfield/core for web applications
   - React integration components and CopilotKit support
