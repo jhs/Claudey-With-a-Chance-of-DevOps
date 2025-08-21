@@ -154,6 +154,7 @@ Interactive mode questions:
 1. Choose Agent framework (and language) and build first version
 1. Confirm whether CC can deliver
 1. Look into The Open Hands SecurityAnalyzer, its security layer
+1. Chatfield computed fields where you ask the LLM to consolidate multiple fields
 1. Identify any mcp servers if any that either could are have been reported to help CC. (Memory? etc)
 1. Go through all of [Claude Code hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) and see where it should connect. (e.g. MCP)
 1. Voice input
