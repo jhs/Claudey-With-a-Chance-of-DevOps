@@ -4,6 +4,8 @@
 import os
 import sys
 import json
+
+from regex import R
 from chatfield import Interview, hint, must, reject, alice, bob, as_int, as_str, as_lang, as_float, as_set, as_list, as_dict, as_percent, as_bool
 from chatfield import as_one, as_maybe, as_multi, as_any
 from chatfield import Interviewer
@@ -123,24 +125,22 @@ def interview_loop():
     user_input = None
     while True:
         # print(f'In my loop; request done={interview._done}')
-        print(f'Current collection status:\n--------------\n{interview._pretty()}\n-------------')
+        # print(f'Current collection status:\n--------------\n{interview._pretty()}\n-------------')
 
-        result = interviewer.go(user_input) # TODO: It's possible to start the conversation with a user message.
-        # print(f'Interviewer returned {type(result)} {result!r}')
+        # TODO: It should be possible to start the conversation with a user message.
+        message = interviewer.go(user_input)
+        # print(f'Interviewer returned {type(ai_message)} {ai_message!r}')
 
         # TODO: Not sure if None should ever return back.
-        # latest_message = result['messages'][-1] if result and result.get('messages') else None
-        all_messages = (result and result['messages']) or []
-        for message in all_messages:
+        if message:
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
-            print(f'{message.__class__.__name__:<15}: {message.content}')
+            print(f'{message}')
             print(f'=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
 
-        print(interview._pretty())
-        print(f'=-=-=-=')
-        print(f'Favorite number: {interview.favorite}')
-        if interview.favorite is not None:
-            print(f'Implied favorite float: {interview.favorite.as_float}')
+        # print(f'=-=-=-=')
+        # print(f'Favorite number: {interview.favorite}')
+        # if interview.favorite is not None:
+        #     print(f'Implied favorite float: {interview.favorite.as_float}')
         
         # if interview.size:
         #     print(f'Favorite size: {interview.size}')
