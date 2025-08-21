@@ -494,7 +494,16 @@ class Interviewer:
         user_msg = HumanMessage(content=user_input)
         return {'messages': [user_msg]}
         
-    def go(self, user_input: Optional[str] = None):
+    def go(self, user_input: Optional[str] = None) -> Optional[str]:
+        """
+        Process one conversation turn.
+        
+        Args:
+            user_input: The user's input message (or None to start/continue)
+            
+        Returns:
+            The content of the latest AI message as a string, or None if conversation is complete
+        """
         print(f'Go: User input: {user_input!r}')
         state = self.graph.get_state(config=self.config)
 
@@ -505,7 +514,6 @@ class Interviewer:
             print(f'New conversation: {self.config["configurable"]["thread_id"]}')
             user_message = HumanMessage(content=user_input) if user_input else None
             user_messages = [user_message] if user_message else []
-            # graph_input = State(messages=user_messages, interview=self.interview)
             graph_input = State(messages=user_messages, interview=self.interview)
 
         interrupts = []
