@@ -20,10 +20,9 @@ interviewer = Interviewer(report)
 user_input = None
 
 while not report._done:
-    result = interviewer.go(user_input)
-    # result['messages'] contains what to say
-    for msg in result['messages']:
-        print(f"{msg.__class__.__name__}: {msg.content}")
+    ai_message = interviewer.go(user_input)
+    if ai_message:
+        print(f"AI: {ai_message}")
     user_input = input("> ")
 
 # Access collected data
@@ -248,10 +247,9 @@ interviewer = Interviewer(launch)
 # Run the conversational loop
 user_input = None
 while not launch._done:
-    result = interviewer.go(user_input)
-    for msg in result.get('messages', []):
-        if hasattr(msg, 'content'):
-            print(f"\n{msg.__class__.__name__}: {msg.content}")
+    ai_message = interviewer.go(user_input)
+    if ai_message:
+        print(f"\nAI: {ai_message}")
     if not launch._done:
         user_input = input("\n> ")
 
@@ -320,8 +318,8 @@ Control selection from choices:
 
 ### Key Methods
 
-- `Interviewer.go(user_input)` - Process one conversation turn
-- `Interview._done` - Check if all fields are collected
+- `Interviewer.go(user_input)` - Process one conversation turn, returns AI message as string
+- `Interview._done` - Check if all fields are collected  
 - `Interview._pretty()` - Get formatted representation of collected data
 
 ## Requirements

@@ -111,9 +111,9 @@ class Interviewer:
         # - tools: Process field updates
         # - teardown: Complete conversation
         
-    def go(self, user_input: Optional[str]):
+    def go(self, user_input: Optional[str]) -> Optional[str]:
         # Process one conversation turn
-        # Returns dict with 'messages' key
+        # Returns the AI's message as a string
 ```
 
 The Interviewer:
@@ -262,8 +262,10 @@ interview = SimpleInterview()
 interviewer = Interviewer(interview)
 
 while not interview._done:
-    result = interviewer.go(user_input)
-    # Display messages, get user input
+    ai_message = interviewer.go(user_input)
+    if ai_message:
+        print(f"AI: {ai_message}")
+    user_input = input("> ")
 ```
 
 ### With Full Decorators

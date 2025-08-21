@@ -164,15 +164,11 @@ class TestConversationFlow:
         interviewer = Interviewer(interview)
         
         # Start conversation
-        result = interviewer.go(None)
+        ai_message = interviewer.go(None)
         
-        assert result is not None
-        assert 'messages' in result
-        assert len(result['messages']) > 0
-        
-        # Should have system and AI messages
-        message_types = [type(msg) for msg in result['messages']]
-        assert SystemMessage in message_types or AIMessage in message_types
+        assert ai_message is not None
+        assert isinstance(ai_message, str)
+        assert len(ai_message) > 0
     
     def test_interview_state_updates(self):
         """Test that interview state updates when fields are collected."""
