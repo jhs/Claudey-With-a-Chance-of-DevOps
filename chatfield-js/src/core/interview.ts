@@ -219,7 +219,7 @@ export function alice(role: string) {
   return function<T extends Interview>(target: new() => T): new() => T {
     const original = target
 
-    const newConstructor: any = function(this: any, ...args: any[]) {
+    const newConstructor: any = function(this: any, ...args: ConstructorParameters<typeof original>) {
       const instance = new original(...args)
       instance._chatfield.roles.alice.type = role
       return instance
@@ -245,7 +245,7 @@ export function alice(role: string) {
   return function<T extends Interview>(target: new() => T): new() => T {
     const original = target
 
-    const newConstructor: any = function(this: any, ...args: any[]) {
+    const newConstructor: any = function(this: any, ...args: ConstructorParameters<typeof original>) {
       const instance = new original(...args)
       instance._chatfield.roles.alice.traits.push(trait)
       return instance
@@ -263,7 +263,7 @@ export function bob(role: string) {
   return function<T extends Interview>(target: new() => T): new() => T {
     const original = target
 
-    const newConstructor: any = function(this: any, ...args: any[]) {
+    const newConstructor: any = function(this: any, ...args: ConstructorParameters<typeof original>) {
       const instance = new original(...args)
       instance._chatfield.roles.bob.type = role
       return instance
@@ -289,7 +289,7 @@ export function bob(role: string) {
   return function<T extends Interview>(target: new() => T): new() => T {
     const original = target
 
-    const newConstructor: any = function(this: any, ...args: any[]) {
+    const newConstructor: any = function(this: any, ...args: ConstructorParameters<typeof original>) {
       const instance = new original(...args)
       instance._chatfield.roles.bob.traits.push(trait)
       return instance
