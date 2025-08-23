@@ -1,377 +1,162 @@
-"""Tests for Dialogue field initialization and access control."""
+"""Test field behaviors and decorators in Interview classes."""
 
 import pytest
-from chatfield import Dialogue, must, hint
-from chatfield.field_proxy import FieldValueProxy
-from chatfield.types import as_int, as_float
+from chatfield import Interview, must, hint, as_int, as_float, as_bool, as_lang
 
 
-class TestDialogueFieldInitialization:
-    """Test that Dialogue fields are properly initialized to None."""
+class TestInterviewFields:
+    """Test various field behaviors in Interview classes."""
     
-    def test_fields_initialize_as_none(self):
-        """Test that all defined fields are initialized to None."""
-        class UserRequest(Dialogue):
-            """Test dialogue"""
-            
-            def scope():
-                """Scope of work"""
-                pass
-            
-            def budget():
-                """Project budget"""
-                pass
-            
-            def timeline():
-                """Timeline"""
-                pass
-        
-        # Create instance
-        request = UserRequest()
-        
-        # All fields should be None initially
-        assert request.scope is None
-        assert request.budget is None
-        assert request.timeline is None
-    
-    def test_fields_with_decorators_initialize_as_none(self):
-        """Test that decorated fields also initialize as None."""
-        class ProjectRequest(Dialogue):
-            """Test dialogue with decorators"""
-            
-            @hint("Be specific")
-            @must("include timeline")
-            def scope():
-                """Scope of work"""
-                pass
+    def test_field_with_type_transformations(self):
+        """Test fields with type transformation decorators."""
+        class TypedInterview(Interview):
+            """Interview with typed fields"""
             
             @as_int
+            def age(): "Your age"
+            
             @as_float
-            def budget():
-                """Budget in dollars"""
-                pass
+            def salary(): "Expected salary"
+            
+            @as_bool
+            def available(): "Are you available immediately?"
         
-        request = ProjectRequest()
+        instance = TypedInterview()
+        meta = instance._chatfield
         
-        # Decorated fields should also be None initially
-        assert request.scope is None
-        assert request.budget is None
+        # Check fields exist
+        assert 'age' in meta['fields']
+        assert 'salary' in meta['fields']
+        assert 'available' in meta['fields']
+        
+        # Check transformations are registered
+        assert 'as_int' in meta['fields']['age']['casts']
+        assert 'as_float' in meta['fields']['salary']['casts']
+        assert 'as_bool' in meta['fields']['available']['casts']
     
-    def test_fields_are_read_only(self):
-        """Test that fields cannot be set directly."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_field_with_language_transformations(self):
+        """Test fields with language transformation decorators."""
+        class MultilingualInterview(Interview):
+            """Interview with language transformations"""
             
-            def field1():
-                """Field 1"""
-                pass
-            
-            def field2():
-                """Field 2"""
-                pass
+            @as_lang.fr
+            @as_lang.es
+            def greeting(): "Say hello"
         
-        dialogue = TestDialogue()
+        instance = MultilingualInterview()
+        meta = instance._chatfield
         
-        # Attempting to set a field should raise AttributeError
-        with pytest.raises(AttributeError) as exc_info:
-            dialogue.field1 = "some value"
+        # Check field exists
+        assert 'greeting' in meta['fields']
         
-        assert "Cannot set field 'field1' directly" in str(exc_info.value)
-        assert "fields are read-only" in str(exc_info.value)
-        
-        # Field should still be None
-        assert dialogue.field1 is None
+        # Check language transformations
+        field_casts = meta['fields']['greeting']['casts']
+        assert 'as_lang_fr' in field_casts
+        assert 'as_lang_es' in field_casts
     
-    def test_non_field_attributes_can_be_set(self):
-        """Test that non-field attributes can be set normally."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_field_with_mixed_decorators(self):
+        """Test fields with mixed decorator types."""
+        class MixedInterview(Interview):
+            """Interview with mixed decorators"""
             
-            def field1():
-                """Field 1"""
-                pass
+            @must("be positive")
+            @hint("Think of your best qualities")
+            @as_int
+            def years_experience(): "Years of experience"
         
-        dialogue = TestDialogue()
+        instance = MixedInterview()
+        meta = instance._chatfield
         
-        # Should be able to set non-field attributes
-        dialogue.custom_attr = "custom value"
-        assert dialogue.custom_attr == "custom value"
+        field = meta['fields']['years_experience']
         
-        # But not fields
-        with pytest.raises(AttributeError):
-            dialogue.field1 = "value"
+        # Check validation rules
+        assert "be positive" in field['specs']['must']
+        assert "Think of your best qualities" in field['specs']['hint']
+        
+        # Check transformation
+        assert 'as_int' in field['casts']
     
-    def test_accessing_undefined_field_raises_error(self):
-        """Test that accessing undefined fields raises AttributeError."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_multiple_fields_with_decorators(self):
+        """Test multiple fields each with decorators."""
+        class CompleteInterview(Interview):
+            """Complete interview process"""
             
-            def field1():
-                """Field 1"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Accessing undefined field should raise AttributeError
-        with pytest.raises(AttributeError) as exc_info:
-            _ = dialogue.undefined_field
-        
-        assert "'TestDialogue' object has no attribute 'undefined_field'" in str(exc_info.value)
-    
-    def test_done_property_initial_state(self):
-        """Test that done property reflects field completion."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+            @must("be honest")
+            def name(): "Your full name"
             
-            def field1():
-                """Field 1"""
-                pass
-            
-            def field2():
-                """Field 2"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Initially not done (fields are None)
-        assert dialogue.done is False
-    
-    def test_repr_shows_field_status(self):
-        """Test that __repr__ shows field status."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
-            
-            def field1():
-                """Field 1"""
-                pass
-            
-            def field2():
-                """Field 2"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        repr_str = repr(dialogue)
-        assert "TestDialogue" in repr_str
-        assert "field1=None" in repr_str
-        assert "field2=None" in repr_str
-
-
-class TestDialogueFieldSetting:
-    """Test internal field setting mechanism."""
-    
-    def test_set_field_value_with_string(self):
-        """Test setting field value internally."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
-            
-            def name():
-                """Your name"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Initially None
-        assert dialogue.name is None
-        
-        # Set field value internally
-        dialogue._set_field_value("name", "John Doe")
-        
-        # Now should be a FieldValueProxy
-        assert dialogue.name is not None
-        assert isinstance(dialogue.name, FieldValueProxy)
-        assert str(dialogue.name) == "John Doe"
-    
-    def test_set_field_value_with_transformations(self):
-        """Test setting field with transformations."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+            @must("valid email")
+            @hint("We'll send confirmation here")
+            def email(): "Your email address"
             
             @as_int
-            @as_float
-            def age():
-                """Your age"""
-                pass
+            @must("be realistic")
+            def experience(): "Years of experience"
+            
+            @as_bool
+            def remote(): "Open to remote work?"
         
-        dialogue = TestDialogue()
+        instance = CompleteInterview()
+        meta = instance._chatfield
         
-        # Set with transformations
-        dialogue._set_field_value(
-            "age", 
-            "twenty-five",
-            transformations={"as_int": 25, "as_float": 25.0}
-        )
+        # Verify all fields exist
+        assert len(meta['fields']) == 4
+        assert all(field in meta['fields'] for field in ['name', 'email', 'experience', 'remote'])
         
-        # Should have access to transformations
-        assert str(dialogue.age) == "twenty-five"
-        assert dialogue.age.as_int == 25
-        assert dialogue.age.as_float == 25.0
+        # Check specific field configurations
+        assert "be honest" in meta['fields']['name']['specs']['must']
+        assert "valid email" in meta['fields']['email']['specs']['must']
+        assert "We'll send confirmation here" in meta['fields']['email']['specs']['hint']
+        assert 'as_int' in meta['fields']['experience']['casts']
+        assert 'as_bool' in meta['fields']['remote']['casts']
     
-    def test_set_field_value_with_evaluations(self):
-        """Test setting field with match evaluations."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_field_description_extraction(self):
+        """Test that field descriptions are properly extracted."""
+        class DescriptiveInterview(Interview):
+            """Interview with detailed descriptions"""
             
-            @must("be specific")
-            def scope():
-                """Project scope"""
-                pass
+            def short(): "Name"
+            
+            def medium(): "Please provide your full legal name"
+            
+            def long(): "This is a very long description that explains in great detail what we need from you and why it's important for the process"
         
-        dialogue = TestDialogue()
+        instance = DescriptiveInterview()
+        meta = instance._chatfield
         
-        # Set with evaluations
-        dialogue._set_field_value(
-            "scope",
-            "Build a web application",
-            evaluations={"_must_be_specific": True}
-        )
-        
-        assert str(dialogue.scope) == "Build a web application"
+        assert meta['fields']['short']['desc'] == "Name"
+        assert meta['fields']['medium']['desc'] == "Please provide your full legal name"
+        assert meta['fields']['long']['desc'] == "This is a very long description that explains in great detail what we need from you and why it's important for the process"
     
-    def test_set_field_value_to_none(self):
-        """Test setting field back to None."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_field_order_preservation(self):
+        """Test that field order is preserved as defined."""
+        class OrderedInterview(Interview):
+            """Interview with specific field order"""
             
-            def field1():
-                """Field 1"""
-                pass
+            def first(): "First question"
+            def second(): "Second question"
+            def third(): "Third question"
+            def fourth(): "Fourth question"
         
-        dialogue = TestDialogue()
+        instance = OrderedInterview()
+        meta = instance._chatfield
         
-        # Set to a value
-        dialogue._set_field_value("field1", "value")
-        assert dialogue.field1 is not None
-        
-        # Set back to None
-        dialogue._set_field_value("field1", None)
-        assert dialogue.field1 is None
+        # Python 3.7+ guarantees dict order
+        field_names = list(meta['fields'].keys())
+        assert field_names == ['first', 'second', 'third', 'fourth']
     
-    def test_set_unknown_field_raises_error(self):
-        """Test that setting unknown field raises error."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
+    def test_empty_specs_and_casts(self):
+        """Test fields without any decorators have empty specs and casts."""
+        class PlainInterview(Interview):
+            """Plain interview without decorators"""
             
-            def field1():
-                """Field 1"""
-                pass
+            def undecorated(): "Simple field"
         
-        dialogue = TestDialogue()
+        instance = PlainInterview()
+        meta = instance._chatfield
         
-        with pytest.raises(ValueError) as exc_info:
-            dialogue._set_field_value("unknown_field", "value")
+        field = meta['fields']['undecorated']
         
-        assert "Unknown field: unknown_field" in str(exc_info.value)
-    
-    def test_done_property_after_setting_fields(self):
-        """Test done property after setting all fields."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
-            
-            def field1():
-                """Field 1"""
-                pass
-            
-            def field2():
-                """Field 2"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Initially not done
-        assert dialogue.done is False
-        
-        # Set one field
-        dialogue._set_field_value("field1", "value1")
-        assert dialogue.done is False  # Still not done
-        
-        # Set second field
-        dialogue._set_field_value("field2", "value2")
-        assert dialogue.done is True  # Now done
-    
-    def test_repr_after_setting_fields(self):
-        """Test __repr__ after setting fields."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
-            
-            def field1():
-                """Field 1"""
-                pass
-            
-            def field2():
-                """Field 2"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Set one field
-        dialogue._set_field_value("field1", "value")
-        
-        repr_str = repr(dialogue)
-        assert "field1=<set>" in repr_str
-        assert "field2=None" in repr_str
-
-
-class TestDialoguePrivateAttributes:
-    """Test that private attributes work correctly."""
-    
-    def test_private_attributes_can_be_set(self):
-        """Test that private attributes (starting with _) can be set."""
-        class TestDialogue(Dialogue):
-            """Test dialogue"""
-            
-            def field1():
-                """Field 1"""
-                pass
-        
-        dialogue = TestDialogue()
-        
-        # Should be able to set private attributes
-        dialogue._custom_private = "private value"
-        assert dialogue._custom_private == "private value"
-        
-        # Internal attributes should exist
-        assert hasattr(dialogue, '_meta')
-        assert hasattr(dialogue, '_field_values')
-        assert hasattr(dialogue, '_collected_data')
-
-
-class TestDialogueIntegration:
-    """Integration tests with real-world usage patterns."""
-    
-    def test_evaluator_compatibility(self):
-        """Test that the dialogue works with evaluator patterns."""
-        from chatfield import user, agent
-        
-        @user("Product Owner")
-        @agent("Tech partner")
-        class UserRequest(Dialogue):
-            """Product request"""
-            
-            @must("be specific")
-            def scope():
-                """Scope of work"""
-                pass
-            
-            @as_int
-            def budget():
-                """Budget in dollars"""
-                pass
-        
-        # Create instance like in run_real_api.py
-        user_request = UserRequest()
-        
-        # Check initial state
-        assert user_request.scope is None
-        assert user_request.budget is None
-        assert user_request.done is False
-        
-        # Simulate evaluator setting values
-        user_request._set_field_value("scope", "Build a web app")
-        user_request._set_field_value("budget", "50000", transformations={"as_int": 50000})
-        
-        # Check final state
-        assert str(user_request.scope) == "Build a web app"
-        assert str(user_request.budget) == "50000"
-        assert user_request.budget.as_int == 50000
-        assert user_request.done is True
+        # Should have empty specs and casts
+        assert field['specs'] == {'must': [], 'reject': [], 'hint': []}
+        assert field['casts'] == {}
+        assert field['value'] is None  # Not collected yet

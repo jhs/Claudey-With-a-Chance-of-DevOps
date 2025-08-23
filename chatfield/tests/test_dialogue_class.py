@@ -1,34 +1,31 @@
-"""Test the Dialogue base class inheritance pattern."""
+"""Test the Interview base class inheritance pattern."""
 
 import pytest
-from chatfield import Dialogue, must, reject, hint, user, agent
-from chatfield.socrates import SocratesMeta
+from chatfield import Interview, must, reject, hint, alice, bob
 
 
-class TestDialogueInheritance:
-    """Test the Dialogue base class inheritance pattern."""
+class TestInterviewInheritancePattern:
+    """Test the Interview base class inheritance pattern."""
     
-    def test_simple_dialogue(self):
-        """Test basic Dialogue inheritance."""
-        class SimpleDialogue(Dialogue):
-            """Test dialogue"""
+    def test_simple_interview(self):
+        """Test basic Interview inheritance."""
+        class SimpleInterview(Interview):
+            """Test interview"""
             def name(): "Your name"
             def email(): "Your email"
         
-        # Should have gather method
-        assert hasattr(SimpleDialogue, 'gather')
-        assert callable(SimpleDialogue.gather)
+        # Create instance
+        instance = SimpleInterview()
+        meta = instance._chatfield
         
         # Should have metadata
-        meta = SimpleDialogue._get_meta()
-        assert isinstance(meta, SocratesMeta)
-        assert meta.docstring == "Test dialogue"
-        assert 'name' in meta.fields
-        assert 'email' in meta.fields
+        assert meta['desc'] == "Test interview"
+        assert 'name' in meta['fields']
+        assert 'email' in meta['fields']
     
-    def test_dialogue_with_field_decorators(self):
-        """Test Dialogue with field decorators."""
-        class DecoratedDialogue(Dialogue):
+    def test_interview_with_field_decorators(self):
+        """Test Interview with field decorators."""
+        class DecoratedInterview(Interview):
             """Test with decorators"""
             
             @must("be specific")
@@ -38,68 +35,105 @@ class TestDialogueInheritance:
             @hint("Think carefully")
             def solution(): "Your solution"
         
-        meta = DecoratedDialogue._get_meta()
+        instance = DecoratedInterview()
+        meta = instance._chatfield
         
         # Check problem field
-        problem_field = meta.fields['problem']
-        assert "be specific" in problem_field.must_rules
-        assert "vague" in problem_field.reject_rules
+        problem_field = meta['fields']['problem']
+        assert "be specific" in problem_field['specs']['must']
+        assert "vague" in problem_field['specs']['reject']
         
         # Check solution field
-        solution_field = meta.fields['solution']
-        assert "Think carefully" in solution_field.hints
+        solution_field = meta['fields']['solution']
+        assert "Think carefully" in solution_field['specs']['hint']
     
-    def test_dialogue_with_class_decorators(self):
-        """Test Dialogue with class-level decorators."""
-        @user("Test user")
-        @agent("Test agent")
-        class ContextDialogue(Dialogue):
-            """Test with context"""
-            def field(): "Test field"
+    def test_interview_with_class_decorators(self):
+        """Test Interview with class decorators."""
+        @alice("Interviewer")
+        @bob("Candidate")
+        class DecoratedInterview(Interview):
+            """Role-based interview"""
+            def question(): "Your question"
         
-        meta = ContextDialogue._get_meta()
-        assert "Test user" in meta.user_context
-        assert "Test agent" in meta.agent_context
+        instance = DecoratedInterview()
+        meta = instance._chatfield
+        
+        assert meta['roles']['alice']['type'] == "Interviewer"
+        assert meta['roles']['bob']['type'] == "Candidate"
+        assert 'question' in meta['fields']
     
-    
-    def test_multiple_inheritance_levels(self):
-        """Test inheritance from a Dialogue subclass."""
-        class BaseDialogue(Dialogue):
-            """Base dialogue"""
-            def base_field(): "Base field"
-        
-        class DerivedDialogue(BaseDialogue):
-            """Derived dialogue"""
-            def derived_field(): "Derived field"
-        
-        # Both should have gather method
-        assert hasattr(BaseDialogue, 'gather')
-        assert hasattr(DerivedDialogue, 'gather')
-        
-        # Check metadata
-        base_meta = BaseDialogue._get_meta()
-        assert 'base_field' in base_meta.fields
-        
-        derived_meta = DerivedDialogue._get_meta()
-        assert 'base_field' in derived_meta.fields
-        assert 'derived_field' in derived_meta.fields
-    
-    def test_dialogue_with_match_decorators(self):
-        """Test Dialogue with @match decorators."""
-        from chatfield import match
-        
-        class MatchDialogue(Dialogue):
-            """Test match decorators"""
+    def test_complex_interview(self):
+        """Test Interview with all decorator types."""
+        @alice("Technical Interviewer")
+        @alice.trait("thorough")
+        @bob("Senior Developer")
+        @bob.trait("experienced")
+        class ComplexInterview(Interview):
+            """Technical interview process"""
             
-            @match.personal("is personal")
-            @match.work("is for work")
-            def project_type(): "Project type"
+            @must("include specific examples")
+            @reject("generic answers")
+            @hint("Think about real-world scenarios")
+            def experience(): "Describe your experience"
+            
+            @must("be measurable")
+            def goals(): "Your career goals"
         
-        meta = MatchDialogue._get_meta()
-        field_meta = meta.fields['project_type']
+        instance = ComplexInterview()
+        meta = instance._chatfield
         
-        # Check match rules are stored
-        assert 'personal' in field_meta.match_rules
-        assert field_meta.match_rules['personal']['criteria'] == "is personal"
-        assert 'work' in field_meta.match_rules
-        assert field_meta.match_rules['work']['criteria'] == "is for work"
+        # Class metadata
+        assert meta['desc'] == "Technical interview process"
+        
+        # Roles
+        assert meta['roles']['alice']['type'] == "Technical Interviewer"
+        assert "thorough" in meta['roles']['alice']['traits']
+        assert meta['roles']['bob']['type'] == "Senior Developer"
+        assert "experienced" in meta['roles']['bob']['traits']
+        
+        # Fields
+        assert 'experience' in meta['fields']
+        assert 'goals' in meta['fields']
+        
+        # Field decorators
+        exp_field = meta['fields']['experience']
+        assert "include specific examples" in exp_field['specs']['must']
+        assert "generic answers" in exp_field['specs']['reject']
+        assert "Think about real-world scenarios" in exp_field['specs']['hint']
+        
+        goals_field = meta['fields']['goals']
+        assert "be measurable" in goals_field['specs']['must']
+    
+    def test_interview_inheritance_chain(self):
+        """Test that Interview can be properly inherited."""
+        class BaseInterview(Interview):
+            """Base interview"""
+            def base_field(): "Base question"
+        
+        class DerivedInterview(BaseInterview):
+            """Derived interview"""
+            def derived_field(): "Derived question"
+        
+        instance = DerivedInterview()
+        meta = instance._chatfield
+        
+        # Should have both fields from inheritance
+        assert 'base_field' in meta['fields']
+        assert 'derived_field' in meta['fields']
+        
+        # Docstring from derived class
+        assert meta['desc'] == "Derived interview"
+    
+    def test_interview_method_override(self):
+        """Test that Interview methods can be overridden."""
+        class CustomInterview(Interview):
+            """Custom interview with override"""
+            def field(): "Test field"
+            
+            def __init__(self, **kwargs):
+                super().__init__(**kwargs)
+                self.custom_attribute = "custom"
+        
+        instance = CustomInterview()
+        assert instance.custom_attribute == "custom"
+        assert 'field' in instance._chatfield['fields']

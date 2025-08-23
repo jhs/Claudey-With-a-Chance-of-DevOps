@@ -4,6 +4,10 @@ import os
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from dotenv import load_dotenv
+
+# Load environment variables from parent .env file
+load_dotenv('../.env')
 
 from chatfield import Interview, Interviewer, alice, bob, must, reject, hint
 from chatfield import as_int, as_bool, as_lang
@@ -12,8 +16,12 @@ from chatfield import as_int, as_bool, as_lang
 class TestInterviewerBasics:
     """Test basic Interviewer functionality."""
     
-    def test_interviewer_initialization(self):
+    @patch('chatfield.interviewer.init_chat_model')
+    def test_interviewer_initialization(self, mock_init_model):
         """Test Interviewer initializes correctly."""
+        mock_llm = Mock()
+        mock_init_model.return_value = mock_llm
+        
         class SimpleInterview(Interview):
             def name(): "Your name"
             def email(): "Your email"
@@ -26,8 +34,12 @@ class TestInterviewerBasics:
         assert interviewer.checkpointer is not None
         assert interviewer.graph is not None
     
-    def test_interviewer_with_custom_thread_id(self):
+    @patch('chatfield.interviewer.init_chat_model')
+    def test_interviewer_with_custom_thread_id(self, mock_init_model):
         """Test Interviewer with custom thread ID."""
+        mock_llm = Mock()
+        mock_init_model.return_value = mock_llm
+        
         class SimpleInterview(Interview):
             def name(): "Your name"
         
