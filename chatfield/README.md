@@ -88,10 +88,10 @@ class ProjectEstimate(Interview):
     def needs_design(): "Need design resources?"
 
 # After collection:
-estimate.team_size      # 5 (int)
-estimate.confidence     # 0.75 (float, from "75%")
-estimate.technologies   # ["Python", "React", "PostgreSQL"]
-estimate.needs_design   # True (bool)
+estimate.team_size.as_int      # 5 (int)
+estimate.confidence.as_percent # 0.75 (float, from "75%")
+estimate.technologies.as_list  # ["Python", "React", "PostgreSQL"]
+estimate.needs_design.as_bool  # True (bool)
 ```
 
 ## Advanced Transformations
