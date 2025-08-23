@@ -10,7 +10,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "build-and-run": "npx tsc minimal.ts --project tsconfig.run.json && node dist/minimal.js",
+    "min": "npx tsx minimal.ts"
   },
   "keywords": [
     "llm",
