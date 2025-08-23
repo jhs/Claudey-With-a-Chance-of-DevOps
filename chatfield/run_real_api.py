@@ -59,9 +59,10 @@ import dotenv
 # @alice("The Man's old Kindergarten Teacher")
 # @alice("Estranged Ex-Wife")
 # @alice('Circus Clown')
-@alice('Abraham Lincoln')
-@bob('John Wilkes Booth')
-# @alice.trait('talks in Cockney rhyming slang')
+# @alice('Abraham Lincoln')
+# @bob('John Wilkes Booth')
+@bob('Albert Einstein')
+@alice.trait('talks in Cockney rhyming slang')
 # @alice.trait("writes in alternating limericks and haiku")
 class NotableNumbers(Interview):
     """Numbers important to you"""
@@ -79,6 +80,7 @@ class NotableNumbers(Interview):
     # @as_lang.erlang_expression
     # @as_lang.pig_latin(f'pig latin and in all upper-case')
     @as_lang.th
+    @as_lang.esperanto(f'A full sentence in Esperanto translating, "The number is exactly: <value>"')
     # @as_lang.greek
     @as_lang.traditionalChinese
     # @as_bool.even('True if the number is even, False if odd')
@@ -87,10 +89,11 @@ class NotableNumbers(Interview):
 
     @as_str('Timestamp in ISO format, representing this value number of minutes since Jan 1 2025 Zulu time')
     @as_set.factors('The set of all factors the number, excluding 1 and the number itself')
-    @as_one.parity('even', 'odd')
-    @as_maybe.speaking('One syllable when spoken in English', 'Two syllables when spoken in English')
-    @as_multi.math_facts('even', 'odd', 'prime', 'composite', 'fibonacci', 'perfect square', 'power of two')
-    @as_any.other_facts('prime', 'mersenne prime', 'first digit is 3')
+
+    @as_one   .parity     ('even', 'odd')
+    @as_maybe .speaking   ('One syllable when spoken in English', 'Two syllables when spoken in English')
+    @as_multi .math_facts ('even', 'odd', 'prime', 'composite', 'fibonacci', 'perfect square', 'power of two')
+    @as_any   .other_facts('prime', 'mersenne prime', 'first digit is 3')
     def favorite():
         "what is your favorite number?"
     
