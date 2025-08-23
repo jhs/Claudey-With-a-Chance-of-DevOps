@@ -160,3 +160,4 @@ Development commands:
 4. Structure updates for PO approval before syncing back to knowledge base
 - always remember for this entire project that we prefer to delete old code and not implement backward-compatibility code but rather to just upgrade everything then
 - When changing code, always keep comments with a TODO message or else commented-out code
+- When running python, always make sure the top-level .venv is active. This applies to CLI executions and also configuring tools like the IDE, etc.
