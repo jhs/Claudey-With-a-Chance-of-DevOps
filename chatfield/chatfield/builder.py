@@ -3,8 +3,8 @@
 import copy
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .interview import Interview
+# if TYPE_CHECKING:
+from .interview import Interview
 
 
 class TraitBuilder:
@@ -283,9 +283,6 @@ class ChatfieldBuilder:
     
     def build(self):
         """Build the final Interview object."""
-        # Import here to avoid circular dependency
-        from .interview import Interview
-        
         # Create Interview instance with the built structure
         # Pass fields to avoid default initialization
         interview = Interview(fields={})
