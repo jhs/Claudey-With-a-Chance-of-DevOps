@@ -118,10 +118,9 @@ class Interviewer:
         for field_name in interview_field_names:
             print(f'Define field formal parameters: {field_name}')
 
-            method = object.__getattribute__(self.interview, field_name)
-            chatfield = getattr(method, '_chatfield', {})
-            # specs = chatfield.get('specs', {})
-            casts = chatfield.get('casts', {})
+            # Get field metadata directly from _chatfield for builder-created interviews
+            field_metadata = self.interview._chatfield['fields'][field_name]
+            casts = field_metadata.get('casts', {})
 
             casts_definitions = {}
             ok_primitive_types = {
@@ -183,7 +182,7 @@ class Interviewer:
                 f' [clarifying square brackets], or [sic]'
             )
 
-            field_docstring = method.__doc__ or method.__name__
+            field_docstring = field_metadata.get('desc', field_name)
 
             field_definition = create_model(
                 field_name,

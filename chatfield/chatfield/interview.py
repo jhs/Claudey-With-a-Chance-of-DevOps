@@ -5,6 +5,7 @@
 import copy
 import traceback
 from typing import Type, TypeVar, List, Dict, Any, Callable
+from types import SimpleNamespace
 
 T = TypeVar('T', bound='Interview')
 
@@ -148,6 +149,41 @@ class Interview:
     def _name(self) -> str:
         """Return a human-readable label representing this interview data type"""
         return self.__class__.__name__
+    
+    def _get_role_info(self, role_name: str):
+        """Get role information as an object with type and traits.
+        
+        Args:
+            role_name: Either 'alice' or 'bob'
+            
+        Returns:
+            SimpleNamespace with type and traits properties
+        """
+        role = self._chatfield.get('roles', {}).get(role_name, {})
+        
+        # Start with explicit traits
+        traits = set(role.get('traits', []))
+        
+        # Add possible traits that have been activated
+        possible_traits = role.get('possible_traits', {})
+        for trait_name, trait_info in possible_traits.items():
+            if trait_info.get('active', False):
+                traits.add(trait_name)
+        
+        return SimpleNamespace(
+            type=role.get('type'),
+            traits=list(traits)
+        )
+    
+    @property
+    def _alice(self):
+        """Return alice role as an object with traits property."""
+        return self._get_role_info('alice')
+    
+    @property
+    def _bob(self):
+        """Return bob role as an object with traits property."""
+        return self._get_role_info('bob')
     
     def _alice_role(self):
         return self._get_role('alice')

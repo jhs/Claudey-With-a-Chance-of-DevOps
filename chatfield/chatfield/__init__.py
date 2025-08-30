@@ -45,6 +45,7 @@ from .decorators import (
 # )
 # from .socrates import SocratesMeta, FieldMeta, SocratesInstance, process_socrates_class
 from .interviewer import Interviewer
+from .builder import chatfield, patient_gatherer, quick_gatherer, expert_gatherer
 
 # __all__ = []
 # __all__ = [
