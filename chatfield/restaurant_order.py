@@ -5,14 +5,15 @@ import os
 import sys
 import dotenv
 from sqlalchemy import result_tuple
-from chatfield.builder import chatfield
+
+from chatfield import chatfield
 from chatfield import Interviewer
 
 
 def create_restaurant_order():
     """Create a restaurant order interview instance."""
     return (chatfield()
-        .type("RestaurantOrder")
+        .type("Restaurant Order")
         .desc("Taking your order for tonight")
         
         .alice()
@@ -20,25 +21,25 @@ def create_restaurant_order():
         
         .bob()
             .type("Diner")
-            .trait("Hungry")
-            .trait.possible("Vegan", "mentions vegan, plant-based, no meat/dairy")
-            .trait.possible("Budget-conscious", "asks about prices, deals, specials")
+            .trait("First-time visitor")
+            .trait.possible("Vegan", "needs vegan, plant-based, non animal product")
 
-        .field("restrictions")
-            .desc("Any dietary restrictions or preferences")
-            .confidential()
-            .as_bool.vegan('Vegan dietary restrictions')
+        # .field("hurry")
+        #     .desc("wishes to be served quickly")
+        #     .confidential()
+        #     .as_bool()
         
         .field("starter")
-            .desc("What would you like to start with?")
+            .desc("starter or appetizer")
             .as_one.selection("Sir Digby Chicken Caesar", "Shrimp cocktail", "Garden salad")
         
         .field("main_course")
-            .desc("Main course; choose from: Grilled salmon, Veggie pasta, Beef tenderloin, Chicken parmesan")
+            .desc("Main course")
+            .hint("Choose from: Grilled salmon, Veggie pasta, Beef tenderloin, Chicken parmesan")
             .as_one.selection("Grilled salmon", "Veggie pasta", "Beef tenderloin", "Chicken parmesan")
         
         .field("dessert")
-            .desc("Dessert; choices: Cheesecake, Creamy Chocolate mousse, Fruit sorbet")
+            .desc("Mandatory dessert; choices: Cheesecake, Creamy Chocolate mousse, Fruit sorbet")
             .as_one.selection("Cheesecake", "Creamy Chocolate mousse", "Fruit sorbet")
         
         .build())
@@ -47,19 +48,25 @@ def create_restaurant_order():
 def main():
     dotenv.load_dotenv(override=True)
     
-    restaurant_order = create_restaurant_order()
+    order = create_restaurant_order()
+    print(f'Order: {hex(id(order))}')
     
-    print("Welcome to our restaurant!")
-
+    print("Welcome to our restaurant")
     print("=" * 40)
-    interview_loop(restaurant_order)
+    interview_loop(order)
     print("=" * 40)
     
-    print(restaurant_order._pretty())
+    print(order._pretty())
     print("\nThank you for dining with us!")
     
+    # Examples of accessing a confidential field.
+    if order.hurry.as_bool:
+        print("\n[Note: Expedited request]")
+    else:
+        print("\n[Note: Normal request]")
+    
     # Check if vegan trait was activated
-    if 'Vegan' in restaurant_order._bob.traits:
+    if 'Vegan' in order._bob.traits:
         print("\n[Note: Guest is vegan - all selections must be plant-based]")
 
 def interview_loop(food_order):
@@ -67,9 +74,10 @@ def interview_loop(food_order):
     interviewer = Interviewer(food_order, thread_id=thread_id)
     
     user_input = None
-    while not food_order._done:
+    while True:
         message = interviewer.go(user_input)
-        print(f"\nServer: {message}")
+        print(f'---------------------------')
+        print(f"{message}")
 
         if food_order._done:
             break
