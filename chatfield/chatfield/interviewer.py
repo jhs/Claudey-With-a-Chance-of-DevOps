@@ -123,16 +123,9 @@ class Interviewer:
         self.llm = init_chat_model(tool_id, temperature=temperature)
 
         # Define the tools used in the graph.
-        tool_name = f'update_{self.interview._name()}'
-        tool_desc = (
-            f'Record valid information stated by the {theBob}'
-            f' about the {self.interview._name()}'
-            # f'. Always call this tool with at most one field at a time, and the others all null.'
-            # f' To record multiple fields, call this tool multiple times.'
-        )
-
-        # Each field will take a dict argument pertaining to it.
+        # The schema maps field names to its input type, in this case a dict with all the casts, etc.
         tool_call_args_schema = {}
+        conclude_args_schema = {}
 
         interview_field_names = self.interview._fields()
         for field_name in interview_field_names:
@@ -140,18 +133,9 @@ class Interviewer:
 
             # Get field metadata directly from _chatfield for builder-created interviews
             field_metadata = self.interview._chatfield['fields'][field_name]
-        
-            is_conclude = field_metadata['specs'].get('conclude', False)
-            if is_conclude:
-                print(f'Skip conclude field for tool call: {field_name!r}')
-                continue
+            is_conclude = field_metadata['specs']['conclude']
 
-            is_confidential = field_metadata['specs'].get('confidential', False)
-            if is_confidential:
-                print(f'Allow confidential field for tool call: {field_name!r}')
-                # continue
-
-            casts = field_metadata.get('casts', {})
+            casts = field_metadata['casts']
             casts_definitions = {}
             ok_primitive_types = {
                 'int': int,
@@ -212,12 +196,10 @@ class Interviewer:
                 f' [clarifying square brackets], or [sic]'
             )
 
-            field_docstring = field_metadata.get('desc', field_name)
-
             field_definition = create_model(
                 field_name,
                 # title = field_docstring,
-                __doc__= field_docstring,
+                __doc__= field_metadata.get('desc', field_name),
 
                 # These are always defined and returned by the LLM.
                 # TODO: I think only value should be here. The others should move to the other casts.
@@ -229,59 +211,63 @@ class Interviewer:
                 **casts_definitions,
             )
 
-            tool_call_args_schema[field_name] = Optional[field_definition]
-
-        
-        ToolArgs = create_model('ToolArgs',
-            state        = Annotated[dict, InjectedState     ],
-            tool_call_id = Annotated[str , InjectedToolCallId],
-            **tool_call_args_schema,
-        )
+            if is_conclude:
+                conclude_args_schema[field_name] = field_definition # Mandatory
+            else:
+                tool_call_args_schema[field_name] = Optional[field_definition] # Optional
 
         # TODO: Probably need more tools:
         # - updates worth saving but it's not yet valid.
         # - Something to re-zero the field (if the above cannot do it)
 
-        @tool(tool_name, description=tool_desc, args_schema=ToolArgs)
-        def tool_wrapper(state, tool_call_id, **kwargs):
-            # print(f'tool_wrapper for id {tool_call_id}: {kwargs!r}')
-            interview = self._get_state_interview(state)
+        #
+        # Update Tool
+        #
 
-            pre_interview_model = interview.model_dump()
+        tool_name = f'update_{self.interview._id()}'
+        tool_desc = (
+            f'Record valid information shared by the {theBob}'
+            f' about the {self.interview._name()}'
+            # f'. Always call this tool with at most one field at a time, and the others all null.'
+            # f' To record multiple fields, call this tool multiple times.'
+        )
 
-            try:
-                self.process_tool_input(interview, **kwargs)
-            except Exception as er:
-                tool_msg = f'Error: {er!r}'
-                tool_msg += f'\n\n' + ''.join(traceback.format_exception(er))
-            else:
-                tool_msg = f'Success'
+        UpdateToolArgs = create_model('UpdateToolArgs',
+            state        = Annotated[dict, InjectedState     ],
+            tool_call_id = Annotated[str , InjectedToolCallId],
+            **tool_call_args_schema,
+        )
 
-            post_interview_model = interview.model_dump()
+        @tool(tool_name, description=tool_desc, args_schema=UpdateToolArgs)
+        def update_wrapper(state, tool_call_id, **kwargs):
+            return self.run_tool(state, tool_call_id, **kwargs)
 
-            # Prepare the return value, including needed state updates.
-            state_update = {}
+        #
+        # Conclude Tool
+        #
 
-            # Append a ToolMessage indicating a completed run by tool_call_id.
-            tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
-            state_update["messages"] = [tool_msg]
+        tool_name = f'conclude_{self.interview._id()}'
+        tool_desc = (
+            f'Record key required information'
+            f' about the {self.interview._name()}'
+            f' by summarizing, synthesizing, or recalling'
+            f' the conversation so far with the {theBob}'
+        )
+        ConcludeToolArgs = create_model('ConcludeToolArgs',
+            state        = Annotated[dict, InjectedState     ],
+            tool_call_id = Annotated[str , InjectedToolCallId],
+            **conclude_args_schema,
+        )
 
-            # Specify an interview object if anything changed.
-            data_diff = DeepDiff(pre_interview_model, post_interview_model, ignore_order=True)
-            if data_diff:
-                # type_diff = data_diff.get('type_changes')
-                # vals_diff = data_diff.get('values_changed')
-                # if type_diff:
-                #     print(f'Keys with changed type: {len(type_diff.keys())}: {", ".join(type_diff.keys())}')
-                # if vals_diff:
-                #     print(f'Keys with changed values: {len(vals_diff.keys())}: {", ".join(vals_diff.keys())}')
-                state_update["interview"] = interview
+        @tool(tool_name, description=tool_desc, args_schema=ConcludeToolArgs)
+        def conclude_wrappr(state, tool_call_id, **kwargs):
+            return self.run_tool(state, tool_call_id, **kwargs)
 
-            return Command(update=state_update)
+        self.llm_with_update = self.llm.bind_tools([update_wrapper])
+        self.llm_with_conclude = self.llm.bind_tools([conclude_wrappr])
+        self.llm_with_both = self.llm.bind_tools([update_wrapper, conclude_wrappr])
 
-        tools_available = [tool_wrapper]
-        self.llm_with_tools = self.llm.bind_tools(tools_available)
-        tool_node = ToolNode(tools=tools_available)
+        tool_node = ToolNode(tools=[update_wrapper, conclude_wrappr])
 
         builder = StateGraph(State)
 
@@ -294,9 +280,10 @@ class Interviewer:
 
         builder.add_edge             (START       , 'initialize')
         builder.add_edge             ('initialize', 'think')
-        builder.add_conditional_edges('think'     , self.route_think)
+        builder.add_conditional_edges('think'     , self.route_from_think)
         builder.add_edge             ('listen'    , 'think')
-        builder.add_edge             ('tools'     , 'think')
+        builder.add_conditional_edges('tools'     , self.route_from_tools, ['think', 'digest'])
+        builder.add_conditional_edges('digest'    , self.route_from_digest, ['tools', 'think'])
         builder.add_edge             ('teardown'  , END    )
 
         self.graph = builder.compile(checkpointer=self.checkpointer)
@@ -325,127 +312,202 @@ class Interviewer:
         
         # Currently there is an empty/null Interview object in the state. Populate that with the real one.
         return {'interview': self.interview}
+    
+    # Node
+    def run_tool(self, state: State, tool_call_id: str, **kwargs) -> Command:
+        print(f'Tool> {tool_call_id}> {kwargs!r}')
+
+        interview = self._get_state_interview(state)
+        pre_interview_model = interview.model_dump()
+
+        try:
+            self.process_tool_input(interview, **kwargs)
+        except Exception as er:
+            tool_msg = f'Error: {er!r}'
+            tool_msg += f'\n\n' + ''.join(traceback.format_exception(er))
+        else:
+            tool_msg = f'Success'
+
+        post_interview_model = interview.model_dump()
+
+        # Prepare the return value, including needed state updates.
+        state_update = {}
+
+        # Append a ToolMessage indicating a completed run by tool_call_id.
+        tool_msg = ToolMessage(tool_msg, tool_call_id=tool_call_id)
+        state_update["messages"] = [tool_msg]
+
+        # Specify an interview object if anything changed.
+        data_diff = DeepDiff(pre_interview_model, post_interview_model, ignore_order=True)
+        if data_diff:
+            state_update["interview"] = interview
+
+        return Command(update=state_update)
 
     # Node
     def digest(self, state: State):
         interview = self._get_state_interview(state)
         print(f'Digest> {interview._name()}')
 
-        # Each field will take a dict argument pertaining to it.
-        tool_call_args_schema = {}
-        sys_prompt_guidance = ''
+        # First digest undefined confidential fields. Then digest the conclude fields.
+        for field_name, chatfield in interview._chatfield['fields'].items():
+            if not chatfield['specs']['conclude']:
+                if chatfield['specs']['confidential']:
+                    if not chatfield['value']:
+                        return self.digest_confidential(state)
+        return self.digest_conclude(state)
+    
+    def digest_confidential(self, state: State):
+        interview = self._get_state_interview(state)
+        print(f'Digest Confidential> {interview._name()}')
 
-        fields = interview._chatfield['fields']
-        for field_name, chatfield in fields.items():
-            specs = chatfield['specs']
-            if specs['conclude']:
-                # The LLM must provide all conclusion-type fields now.
-                field_definition = create_model(
-                    chatfield['name'],
-                    __doc__ = chatfield['desc'],
-                    value = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
-                    **casts_definitions,
-                )
+        fields_prompt = []
+        field_definitions = {}
+        for field_name, chatfield in interview._chatfield['fields'].items():
+            if chatfield['specs']['conclude']:
+                continue
 
-            elif specs['confidential']:
-                if chatfield['value'] is not None:
-                    # Confidential field already defined, so skip it.
-                    continue
-                if not specs['conclude']:
-                    # This is a "normal" field.
-                    if chatfield['value'] is None:
-                        return False # TODO HERE HERE: Figure out what really should happen. A node can't return False.
+            if chatfield['specs']['confidential'] and not chatfield['value']:
+                # This confidential field must be marked "N/A".
+                fields_prompt.append(f'- {field_name}: {chatfield["desc"]}')
+                field_definition = self.mk_field_definition(interview, field_name, chatfield)
+            else:
+                # Force the LLM to pass null for values we don't need.
+                field_definition = (Literal[None], Field(title=f'Must be null', description=f'must be null'))
 
-        # So all undefined confidential fields and all conclude fields must go to the LLM now.
-            # (
-            # field_definition = create_model(
-            #     field_name,
-            #     # title = field_docstring,
-            #     __doc__= field_docstring,
+            field_definitions[field_name] = field_definition
 
-            #     # These are always defined and returned by the LLM.
-            #     # TODO: I think only value should be here. The others should move to the other casts.
-            #     value    = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
-            #     # context  = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
-            #     # as_quote = (str, Field(title=f'Directly quote {theBob}', description=quote_desc)),
+        fields_prompt = '\n'.join(fields_prompt)
 
-            #     # These come in via decorators to cast the value in fun ways.
-            #     **casts_definitions,
-            # )
-
-            # tool_call_args_schema[field_name] = Optional[field_definition]
-        
-        # Here if no tool_call_args_schema then no-op
-
-        DigestArgs = create_model('DigestArgs',
-            state        = Annotated[dict, InjectedState     ],
-            tool_call_id = Annotated[str , InjectedToolCallId],
-            **tool_call_args_schema,
+        # Build a special llm object bound to a speicial tool which explicitly requires the proper arguments.
+        # Make it call the a compatible tool name.
+        tool_name = f'update_{interview._id()}'
+        tool_desc = (
+            f'Record those confidential fields about the {interview._name()}'
+            f' from the {interview._bob_role_name()}'
+            f' which have no relevent information so far.'
         )
 
-        # Track any system messages that need to be added.
-        sys_msg_make_conclusions = SystemMessage(content=(
-            f'You have successfully gathered enough information to draw conclusions.'
-            f' Use your tools to record '
+        ConfidentialToolArgs = create_model('ConfidentialToolArgs',
+            state        = Annotated[dict, InjectedState     ],
+            tool_call_id = Annotated[str , InjectedToolCallId],
+            **field_definitions,
+        )
+
+        @tool(tool_name, description=tool_desc, args_schema=ConfidentialToolArgs)
+        def confidential_wrapper(state, tool_call_id, **kwargs):
+            # Note, I think this wrapper never actually runs. The real update wrapper runs.
+            # But, the LLM does use the correct arguments defined in this code.
+            return self.run_tool(state, tool_call_id, **kwargs)
+
+        llm = self.llm.bind_tools([confidential_wrapper])
+
+        sys_msg = SystemMessage(content=(
+            # f'You have successfully gathered enough information to'
+            f'You must now'
+            f' update and populate the not-yet-defined confidential fields, listed below to remind you.'
+            f' Use the update tool call to indicate there is no relevant information'
+            f' for the fields.'
+            f'\n\n'
+            f'## Confidential Fields needed for {interview._name()}\n'
+            f'\n'
+            f'{fields_prompt}'
         ))
 
-        #
-        # System Messages
-        #
-
-        prior_system_messages = [msg for msg in state['messages'] if isinstance(msg, SystemMessage)]
-        if len(prior_system_messages) == 0:
-            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
-            system_prompt = self.mk_system_prompt(state)
-
-        #
-        # LLM Tool Optimizations
-        #
-
-        # `llm` controls which tools are available/bound to the LLM.
-        # The LLMs are previously bound, so this references whichever is needed.
-        #
-        # By default, the tools are available. But they are omitted following a
-        # system message, or following a "Success" tool response. This
-        # encourages the LLM to respond with an AIMessage.
-        llm = None
-        latest_message = state['messages'][-1] if state['messages'] else None
-
-        if isinstance(latest_message, SystemMessage):
-            # print(f'No tools: Latest message is a system message.')
-            llm = self.llm
-        elif isinstance(latest_message, ToolMessage):
-            if latest_message.content == 'Success':
-                # print(f'No tools: Latest message is a tool response')
-                llm = self.llm
-        
-        llm = llm or self.llm_with_tools
-
-        #
-        # Call the LLM
-        #
-
-        if new_system_message:
-            if prior_system_messages:
-                raise NotImplementedError(f'Cannot handle multiple system messages yet: {prior_system_messages!r}')
-
-        # Although the reducer only wants net-new messages, the LLM wants the full conversation.
-        new_system_messages = [new_system_message] if new_system_message else []
-        all_messages = new_system_messages + state['messages']
+        all_messages = state['messages'] + [sys_msg]
         llm_response_message = llm.invoke(all_messages)
         # print(f'New LLM response message: {llm_response_message!r}')
 
-        #
-        # Return to LangGraph
-        #
-        
         # LangGraph wants only net-new messages. Its reducer will merge them.
-        # TODO: I do not know if anything else needs to be done to place the system message before the others.
-        new_messages = new_system_messages + [llm_response_message]
-        new_messages.append(llm_response_message)
+        new_messages = [sys_msg] + [llm_response_message]
         return {'messages':new_messages}
     
-        
+    def mk_field_definition(self, interview:Interview, field_name: str, chatfield: Dict[str, Any]):
+        casts_definitions = self.mk_casts_definitions(chatfield)
+        field_definition = create_model(
+            field_name,
+            __doc__= chatfield['desc'],
+            value  = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
+            **casts_definitions,
+        )
+        return field_definition
+    
+    def mk_casts_definitions(self, chatfield): # field_name:str, chatfield:Dict[str, Any]):
+        casts_definitions = {}
+
+        ok_primitive_types = {
+            'int': int,
+            'float': float,
+            'str': str,
+            'bool': bool,
+            'list': List[Any],
+            'set': set,
+            'dict': Dict[str, Any],
+            'choice': 'choice',
+        }
+
+        casts = chatfield['casts']
+        for cast_name, cast_info in casts.items():
+            cast_type = cast_info['type']
+            cast_type = ok_primitive_types.get(cast_type)
+            if not cast_type:
+                raise ValueError(f'Cast {cast_name!r} bad type: {cast_info!r}; must be one of {ok_primitive_types.keys()}')
+
+            cast_title = None # cast_info.get('title', f'{cast_name} value')
+            cast_prompt = cast_info['prompt']
+
+            if cast_type == 'choice':
+                # TODO: Unclear if this name shortening helps:
+                cast_short_name = re.sub(r'^choose_.*_', '', cast_name)
+                cast_prompt = cast_prompt.format(name=cast_short_name)
+
+                # First start with all the choices.
+                choices = tuple(cast_info['choices'])
+                min_results = 1
+                max_results = 1
+
+                if cast_info['null']:
+                    min_results = 0
+
+                cast_type = Literal[choices]  # type: ignore
+
+                if cast_info['multi']:
+                    # cast_type = Set[cast_type]
+                    max_results = len(choices)
+                    cast_type = conset(item_type=cast_type, min_length=min_results, max_length=max_results)
+
+                if cast_info['null']:
+                    cast_type = Optional[cast_type]
+
+            cast_definition = (cast_type, Field(description=cast_prompt, title=cast_title))
+            casts_definitions[cast_name] = cast_definition
+
+        return casts_definitions
+
+    def digest_conclude(self, state: State):
+        interview = self._get_state_interview(state)
+        print(f'Digest Conclude> {interview._name()}')
+
+        llm = self.llm_with_conclude
+        fields_prompt = self.mk_fields_prompt(interview, mode='conclude')
+        sys_msg = SystemMessage(content=(
+            f'You have successfully gathered enough information'
+            f' to draw conclusions and record key information from this conversation.'
+            f' You must now record all conclusion fields, defined below.'
+            f'\n\n'
+            f'## Conclusion Fields needed for {interview._name()}\n'
+            f'\n'
+            f'{fields_prompt}'
+        ))
+
+        all_messages = state['messages'] + [sys_msg]
+        llm_response_message = llm.invoke(all_messages)
+        # print(f'New LLM response message: {llm_response_message!r}')
+
+        # LangGraph wants only net-new messages. Its reducer will merge them.
+        new_messages = [sys_msg] + [llm_response_message]
+        return {'messages':new_messages}
+
     # Node
     def think(self, state: State):
         print(f'Think> {self._get_state_interview(state).__class__.__name__}')
@@ -484,7 +546,7 @@ class Interviewer:
                 # print(f'No tools: Latest message is a tool response')
                 llm = self.llm
         
-        llm = llm or self.llm_with_tools
+        llm = llm or self.llm_with_update
 
         #
         # Call the LLM
@@ -510,7 +572,6 @@ class Interviewer:
         new_messages.append(llm_response_message)
         return {'messages':new_messages}
     
-    # def process_tool_input(self, state: State, **kwargs):
     def process_tool_input(self, interview: Interview, **kwargs):
         """
         Move any LLM-provided field values into the interview state.
@@ -539,67 +600,9 @@ class Interviewer:
             chatfield['value'] = all_values
 
     def mk_system_prompt(self, state: State) -> str:
-        # XXX TODO: There is a bug pulling the roles, probably because of the new ._chatfield dict.
         interview = self._get_state_interview(state)
-        # interview = self.interview._fromdict(interview)  # Reconstruct the interview object from the state
-
         collection_name = interview._name()
-
-        field_keys = interview._chatfield['fields'].keys()
-
-        # The goal is to maintain source-code order, since decorators apply bottom-up,
-        # But the builder-based one does not.
-        # field_keys = reversed(field_keys)
-
-        fields = []
-        for field_name in field_keys:
-            chatfield = interview._chatfield['fields'][field_name]
-
-            if chatfield['specs']['conclude']:
-                print(f'Skip conclude-only field for system prompt: {field_name!r}')
-                continue
-
-            desc = chatfield.get('desc')
-            field_label = f'{field_name}'
-            if desc:
-                field_label += f': {desc}'
-
-            # TODO: I think confidential and conclude should be their own thing, not specs.
-            specs = chatfield['specs']
-            specs_prompts = []
-
-            if specs['confidential']:
-                specs_prompts.append(
-                    f'**Confidential**:'
-                    f' Do not inquire about this explicitly nor bring it up yourself. Continue your normal behavior.'
-                    f' However, if the {interview._bob_role_name()} ever volunteers or implies it, you must record this information.'
-                )
-
-            for spec_name, predicates in specs.items():
-                if spec_name not in ('confidential', 'conclude'):
-                    for predicate in predicates:
-                        specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
-            
-            casts = chatfield.get('casts', {})
-            casts_prompts = []
-            for cast_name, cast_info in casts.items():
-                cast_prompt = cast_info.get('prompt')
-                if cast_prompt:
-                    casts_prompts.append(f'{cast_name.capitalize()}: {cast_prompt}')
-            
-            # Disable casts for the system prompt becauase they are required parameters for the tool call.
-            casts_prompts = []
-
-            field_specs = '\n'.join(f'    - {spec}' for spec in specs_prompts) + '\n' if specs_prompts else ''
-            field_casts = '\n'.join(f'    - {cast}' for cast in casts_prompts) + '\n' if casts_prompts else ''
-
-            field_prompt = (
-                f'- {field_label}\n'
-                f'{field_specs}'
-                f'{field_casts}'
-            )
-            fields.append(field_prompt)
-        fields = '\n'.join(fields)
+        fields_prompt = self.mk_fields_prompt(interview)
 
         alice_traits = ''
         bob_traits = ''
@@ -657,12 +660,74 @@ class Interviewer:
             f'\n\n'
             f'## Fields to Collect\n'
             f'\n'
-            f'{fields}\n'
+            f'{fields_prompt}\n'
         )
         return res
+
+    def mk_fields_prompt(self, interview: Interview, mode='normal', field_names=None) -> str:
+        if mode not in ('normal', 'conclude'):
+            raise ValueError(f'Bad mode: {mode!r}; must be "normal" or "conclude"')
+
+        fields = [] # Note, this should always be in source-code order.
+
+        field_keys = field_names or interview._chatfield['fields'].keys()
+        for field_name in field_keys:
+            chatfield = interview._chatfield['fields'][field_name]
+
+            if mode == 'normal' and chatfield['specs']['conclude']:
+                # print(f'Skip conclude field for normal prompt: {field_name!r}')
+                continue
+        
+            if mode == 'conclude' and not chatfield['specs']['conclude']:
+                # print(f'Skip normal field for conclude prompt: {field_name!r}')
+                continue
+
+            desc = chatfield.get('desc')
+            field_label = f'{field_name}'
+            if desc:
+                field_label += f': {desc}'
+
+            # TODO: I think confidential and conclude should be their own thing, not specs.
+            specs = chatfield['specs']
+            specs_prompts = []
+
+            if specs['confidential']:
+                specs_prompts.append(
+                    f'**Confidential**:'
+                    f' Do not inquire about this explicitly nor bring it up yourself. Continue your normal behavior.'
+                    f' However, if the {interview._bob_role_name()} ever volunteers or implies it, you must record this information.'
+                )
+
+            for spec_name, predicates in specs.items():
+                if spec_name not in ('confidential', 'conclude'):
+                    for predicate in predicates:
+                        specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
+            
+            casts = chatfield.get('casts', {})
+            casts_prompts = []
+            for cast_name, cast_info in casts.items():
+                cast_prompt = cast_info.get('prompt')
+                if cast_prompt:
+                    casts_prompts.append(f'{cast_name.capitalize()}: {cast_prompt}')
+            
+            # Disable casts for the system prompt becauase they are required parameters for the tool call.
+            casts_prompts = []
+
+            field_specs = '\n'.join(f'    - {spec}' for spec in specs_prompts) + '\n' if specs_prompts else ''
+            field_casts = '\n'.join(f'    - {cast}' for cast in casts_prompts) + '\n' if casts_prompts else ''
+
+            field_prompt = (
+                f'- {field_label}\n'
+                f'{field_specs}'
+                f'{field_casts}'
+            )
+            fields.append(field_prompt)
+
+        fields = '\n'.join(fields)
+        return fields
     
-    def route_think(self, state: State) -> str:
-        print(f'Route think edge: {self._get_state_interview(state).__class__.__name__}')
+    def route_from_think(self, state: State) -> str:
+        print(f'Route from think: {self._get_state_interview(state).__class__.__name__}')
 
         result = tools_condition(dict(state))
         if result == 'tools':
@@ -678,10 +743,32 @@ class Interviewer:
         # Or, digest after every subsequent user message. For now, do the former
         # because then _done would evaluate true, so the above return would trigger.
         if interview._enough:
-            print(f'Route: to digest')
+            # TODO: I wonder if this is needed anymore? Does digest happen differently in the graph now?
+            print(f'Route: think -> digest')
             return 'digest'
 
         return 'listen'
+    
+    def route_from_tools(self, state: State) -> str:
+        interview = self._get_state_interview(state)
+        print(f'Route from tools: {interview._name()}')
+
+        if interview._enough and not interview._done:
+            print(f'Route: tools -> digest')
+            return 'digest'
+
+        return 'think'
+    
+    def route_from_digest(self, state: State) -> str:
+        interview = self._get_state_interview(state)
+        print(f'Route from digest: {interview._name()}')
+
+        result = tools_condition(dict(state))
+        if result == 'tools':
+            print(f'Route: digest -> tools')
+            return 'tools'
+
+        return 'think'
     
     # Node
     def teardown(self, state: State):
