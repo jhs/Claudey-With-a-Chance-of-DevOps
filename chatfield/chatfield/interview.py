@@ -1,5 +1,6 @@
 """Base class for Chatfield gatherers."""
 
+import re
 # import json
 # import textwrap
 import copy
@@ -151,6 +152,17 @@ class Interview:
     def _name(self) -> str:
         """Return a human-readable label representing this interview data type"""
         return self._chatfield['type']
+    
+    def _id(self) -> str:
+        """Return this interview data type as a valid identifier (lowercase, underscores)"""
+        name = self._name()
+        # name = name.lower()
+        name = re.sub(r'\s+', '_', name)          # Replace whitespace with underscores
+        name = re.sub(r'[^a-zA-Z0-9_]', '', name) # Remove non-alphanumeric/underscore characters
+        name = re.sub(r'_+', '_', name)           # Collapse multiple underscores
+        name = name.strip('_')                    # Remove leading/trailing underscores
+        name = name or 'interview'
+        return name
     
     def _get_role_info(self, role_name: str):
         """Get role information as an object with type and traits.
