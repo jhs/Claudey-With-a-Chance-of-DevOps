@@ -9,6 +9,8 @@ from sqlalchemy import result_tuple
 from chatfield import chatfield
 from chatfield import Interviewer
 
+prefab_inputs = ['I am vegan.', 'Thank you so much, that is perfect!']
+# prefab_inputs = []
 
 def create_restaurant_order():
     """Create a restaurant order interview instance."""
@@ -18,6 +20,7 @@ def create_restaurant_order():
         
         .alice()
             .type("Server")
+            .trait(f'Speaks in limmericks')
         
         .bob()
             .type("Diner")
@@ -43,7 +46,7 @@ def create_restaurant_order():
             .as_bool()
 
         .field("politeness")
-            .desc("Level of politeness from the Diner")
+            .desc("Level of politeness from the Diner; but automatic 23%% if they mention anything about Belgium")
             .conclude()
             .as_percent()
         
@@ -61,13 +64,15 @@ def main():
     print("=" * 40)
     
     print(order._pretty())
-    print("\nThank you for dining with us!")
     
-    # Examples of accessing a confidential field.
+    # Example confidential field.
     if order.hurry.as_bool:
         print("\n[Note: Expedited request]")
     else:
         print("\n[Note: Normal request]")
+    
+    # Example conclude field.
+    print(f"\n[Note: {order.politeness.as_percent * 100}% polite]")
     
     # Check if vegan trait was activated
     if 'Vegan' in order._bob.traits:
@@ -78,7 +83,7 @@ def interview_loop(food_order):
     print(f'LangSmith trace: https://smith.langchain.com/o/92e94533-dd45-4b1d-bc4f-4fd9476bb1e4/projects/p/1991a1b2-6dad-4d39-8a19-bbc3be33a8b6/t/{thread_id}\n')
     interviewer = Interviewer(food_order, thread_id=thread_id)
     
-    user_input = 'I am vegan.'
+    user_input = prefab_inputs.pop(0) if prefab_inputs else None
     while True:
         message = interviewer.go(user_input)
         print(f'---------------------------')
@@ -88,15 +93,15 @@ def interview_loop(food_order):
         if food_order._done:
             break
         
-        if 'Perfect' in user_input:
-            raise Exception(f'Detected infinite loop in interview. Aborting.')
-
-        try:
-            # user_input = input("You: ").strip()
-            user_input = 'Perfect, that is exactly what I want.'
-        except (KeyboardInterrupt, EOFError):
-            print("\n[Leaving restaurant]")
-            break
+        if prefab_inputs:
+            user_input = prefab_inputs.pop(0)
+            print(f'You: {user_input}')
+        else:
+            try:
+                user_input = input("You: ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print("\n[Leaving restaurant]")
+                break
 
 
 if __name__ == "__main__":
