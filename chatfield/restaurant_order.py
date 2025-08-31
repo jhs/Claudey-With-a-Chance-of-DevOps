@@ -13,7 +13,7 @@ from chatfield import Interviewer
 def create_restaurant_order():
     """Create a restaurant order interview instance."""
     return (chatfield()
-        .type("Restaurant Order")
+        .type("RestaurantOrder") # TODO: Space not supported, it just quietly works until the LLM throws a 400.
         .desc("Taking your order for tonight")
         
         .alice()
@@ -24,10 +24,10 @@ def create_restaurant_order():
             .trait("First-time visitor")
             .trait.possible("Vegan", "needs vegan, plant-based, non animal product")
 
-        # .field("hurry")
-        #     .desc("wishes to be served quickly")
-        #     .confidential()
-        #     .as_bool()
+        .field("hurry")
+            .desc("wishes to be served quickly")
+            .confidential()
+            .as_bool()
         
         .field("starter")
             .desc("starter or appetizer")
@@ -51,7 +51,6 @@ def main():
     order = create_restaurant_order()
     print(f'Order: {hex(id(order))}')
     
-    print("Welcome to our restaurant")
     print("=" * 40)
     interview_loop(order)
     print("=" * 40)
@@ -73,17 +72,18 @@ def interview_loop(food_order):
     thread_id = str(os.getpid())
     interviewer = Interviewer(food_order, thread_id=thread_id)
     
-    user_input = None
+    user_input = 'I am vegan.'
     while True:
         message = interviewer.go(user_input)
         print(f'---------------------------')
         print(f"{message}")
+        print(f'---------------------------')
 
         if food_order._done:
             break
         
         try:
-            user_input = input("\nYou: ").strip()
+            user_input = input("You: ").strip()
         except (KeyboardInterrupt, EOFError):
             print("\n[Leaving restaurant]")
             break
