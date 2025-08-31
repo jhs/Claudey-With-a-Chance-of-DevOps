@@ -179,9 +179,9 @@ class Interview:
         traits = set(role.get('traits', []))
         
         # Add possible traits that have been activated
-        possible_traits = role.get('possible_traits', {})
+        possible_traits = role['possible_traits']
         for trait_name, trait_info in possible_traits.items():
-            if trait_info.get('active', False):
+            if trait_info['active']:
                 traits.add(trait_name)
         
         return SimpleNamespace(
