@@ -35,47 +35,49 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
 
     if a_subclass:
         # print(f'Reduce to subclass: {a!r}')
-        result = a
-    elif b_subclass:
+        return a
+    if b_subclass:
         # print(f'Reduce to subclass: {b!r}')
-        result = b
-    elif a_type is not b_type:
+        return b
+    if a_type is not b_type:
         # TODO: I think this logic will change if/when changing the model in-flight works.
         raise NotImplementedError(f'Cannot reduce {a_type!r} and {b_type!r}')
-    else:
-        # a and b are the same type.
-        # For some reason I see them coming in reversed.
-        # left, right = a, b
-        left, right = b, a
 
-        diff = DeepDiff(left._chatfield, right._chatfield, ignore_order=True)
-        if not diff:
-            # print(f'Identical instances: {a_type} and {b_type}')
-            result = a    
+    # a and b are the same type. Diff them to see what changed.
+    left, right = a, b
+    diff = DeepDiff(left._chatfield, right._chatfield, ignore_order=True)
+    if not diff:
+        # print(f'Identical instances: {a_type} and {b_type}')
+        return a
+
+    # Accumulate everything into the result in order to return it.
+    print(f'===========')
+    print(f'Reduce:')
+    print(f'  a: {type(a)} {a!r}')
+    print(f'  b: {type(b)} {b!r}')
+
+    # Assume B has all the latest information and throw if otherwise.
+    result = b
+
+    type_changes = diff.pop('type_changes') if 'type_changes' in diff else {}
+    for key_path, delta in type_changes.items():
+        if delta['old_value'] is None and delta['new_value'] is not None:
+            # print(f'  Field changing to non-None {key_path}: {extract(result._chatfield, key_path)}')
+            pass
         else:
-            type_changes = diff.get('type_changes')
-            if not type_changes:
-                raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
-            
-            # Accumulate everything into a in order to return it.
-            result = a    
+            raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes: {diff}')
 
-            print(f'===========')
-            print(f'Reduce:')
-            print(f'  a: {type(a)} {a!r}')
-            print(f'  b: {type(b)} {b!r}')
-            for key_path, delta in type_changes.items():
-                if delta['old_value'] is None and delta['new_value'] is not None:
-                    # print(f'  Field already present {key_path}: {extract(a._chatfield, key_path)}')
-                    pass
-                else:
-                    raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes: {diff}')
-            
-            if len(diff) != 1:
-                raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
+    dict_added = diff.pop('dictionary_item_added') if 'dictionary_item_added' in diff else set()
+    if dict_added:
+        pass # All adds are fine.
 
-    if result is None:
-        raise Exception(f'XXX')
+    iterable_added = diff.pop('iterable_item_added') if 'iterable_item_added' in diff else set()
+    if iterable_added:
+        pass # All adds are fine.
+    
+    if len(diff) != 0:
+        raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
+
     return result
 
 class State(TypedDict):
@@ -98,7 +100,8 @@ class Interviewer:
 
         # tool_id = 'openai:o3-mini'
         # temperature = None
-        tool_id = 'openai:gpt-5'
+        # tool_id = 'openai:gpt-5'
+        tool_id = 'openai:gpt-4.1'
         temperature = 0.0
         self.llm = init_chat_model(tool_id, temperature=temperature)
 
@@ -121,6 +124,11 @@ class Interviewer:
             # Get field metadata directly from _chatfield for builder-created interviews
             field_metadata = self.interview._chatfield['fields'][field_name]
             casts = field_metadata.get('casts', {})
+
+            is_confidential = field_metadata['specs'].get('confidential', False)
+            if is_confidential:
+                print(f'Skip confidential field for tool call: {field_name!r}')
+                continue
 
             casts_definitions = {}
             ok_primitive_types = {
@@ -248,9 +256,9 @@ class Interviewer:
 
             return Command(update=state_update)
 
-        tools_avilable = [tool_wrapper]
-        self.llm_with_tools = self.llm.bind_tools(tools_avilable)
-        tool_node = ToolNode(tools=tools_avilable)
+        tools_available = [tool_wrapper]
+        self.llm_with_tools = self.llm.bind_tools(tools_available)
+        tool_node = ToolNode(tools=tools_available)
 
         builder = StateGraph(State)
 
@@ -275,13 +283,16 @@ class Interviewer:
         interview = state.get('interview')
         if not isinstance(interview, Interview):
             raise ValueError(f'Expected state["interview"] to be an Interview instance, got {type(interview)}: {interview!r}')
+        if not interview._chatfield['fields']:
+            print(f'Expected state["interview"] to have fields, got empty: {interview!r}')
         return interview
 
     # Node
     def initialize(self, state:State):
-        # print(f'Initialize> {self._get_state_interview(state).__class__.__name__}')
-        print(f'Initialize> {self._get_state_interview(state)!r}')
-        return None
+        print(f'Initialize> {self._get_state_interview(state).__class__.__name__}')
+        
+        # Currently there is an empty/null Interview object in the state. Populate that with the real one.
+        return {'interview': self.interview}
         
     # Node
     def think(self, state: State):
@@ -374,6 +385,9 @@ class Interviewer:
             specs = chatfield.get('specs', {})
             specs_prompts = []
             for spec_name, predicates in specs.items():
+                if spec_name in ('confidential', 'conclude'):
+                    # TODO: I think these two flags/decorators/whatever are not really specs.
+                    continue
                 for predicate in predicates:
                     specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
             
@@ -477,7 +491,7 @@ class Interviewer:
         
     def listen(self, state: State):
         interview = self._get_state_interview(state)
-        print(f'Listen: {interview.__class__.__name__}')
+        print(f'Listen> {interview.__class__.__name__}')
 
         # The interrupt will cause a return back to .go() caller.
         # That caller will expect the original interview object to reflect the conversation.
@@ -517,7 +531,7 @@ class Interviewer:
             print(f'New conversation: {self.config["configurable"]["thread_id"]}')
             user_message = HumanMessage(content=user_input) if user_input else None
             user_messages = [user_message] if user_message else []
-            graph_input = State(messages=user_messages, interview=self.interview)
+            graph_input = State(messages=user_messages)
 
         interrupts = []
         for event in self.graph.stream(graph_input, config=self.config):
@@ -530,11 +544,11 @@ class Interviewer:
                         interrupts.append(state_delta[0].value)
 
         if not interrupts:
-            # TODO: What is the logic? I think never return None right?
+            print(f'WARN: Return None, probably should generate a message anyway')
             return None
         
         if len(interrupts) > 1:
             # TODO: I think this can happen? Because of parallel execution?
-            raise Exception(f'XXX Hey there, I got multiple interrupts: {interrupts!r}')
+            raise Exception(f'Unexpected scenario multiple interrupts: {interrupts!r}')
 
         return interrupts[0]

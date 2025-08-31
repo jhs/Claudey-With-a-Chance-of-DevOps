@@ -54,25 +54,41 @@ class Interview:
     def __inner_init__(self, **kwargs):
         # NOTE: Be careful about self.* invocations because self.__getattribute__ will run which needs things initialized.
         print(f'{self.__class__.__name__}: Init with kwargs: {bool(kwargs)}')
-        # super().__init__()
+        if kwargs:
+            pass
 
         self.__class__._ensure_roles()
+
+        desc = None
+        if self.__class__ is not Interview:
+            desc = self.__doc__ or self.__class__.__name__
         
         # This object is simple types able to serialize.
         # return dict(type=type_name, desc=desc, roles=roles, fields=fields)
         chatfield_interview = {
-            'type': self.__class__.__name__,
-            'desc': self.__doc__ or self.__class__.__name__,
-            'roles': self.__class__._chatfield_roles,
-            'fields': {
+            'type': None,
+            'desc': desc,
+            'roles': {
+                'alice': {
+                    'type': None,
+                    'traits': [],
+                    'possible_traits': {},
+                },
+                'bob': {
+                    'type': None,
+                    'traits': [],
+                    'possible_traits': {},
+                },
+            },
+            'fields': None,
                 # "field_name"
                     # "desc"
                     # "specs"
                     # "casts"
                     # "value"  # This is the value set by the LLM.
-            },
         }
 
+        # TODO: Need to rewrite this now that there are no methods that are fields, and the builder class runs.
         # Process all fields.
         for attr_name in dir(self):
             if not attr_name.startswith('_'):
@@ -221,28 +237,24 @@ class Interview:
         """Return a list of field names defined in this interview."""
         return self._chatfield['fields'].keys()
 
-    def __getattribute__(self, name: str):
+    def __getattr__(self, name: str):
         """Get field values or other attributes.
         
         For defined fields, returns either None or a FieldValueProxy.
         Overrides the method access to return field values instead.
         """
+        if name == '_done':
+            print(f'XXX')
+
         # __class = object.__getattribute__(self, '__class__')
         # __name = __class.__name__
-        val = object.__getattribute__(self, name)
-
-        try:
-            self_chatfield = object.__getattribute__(self, '_chatfield')
-        except AttributeError:
-            # If _chatfield is not defined, just return the value.
-            # This can happen if the object is not fully initialized.
-            # print(f'{object.__getattribute__(self, "_name")()}: No chatfield defined, returning {val!r}')
-            return val
-
-        chatfield = self_chatfield['fields'].get(name, None)
+        #self_chatfield = object.__getattribute__(self, '_chatfield')
+        self_chatfield = self._chatfield
+        fields = self_chatfield['fields']
+        chatfield = fields.get(name, None) if fields else None
         if chatfield is None:
             # print(f'No chatfield for {name!r}, returning {val!r}')
-            return val
+            raise AttributeError(f'{self.__class__.__name__}: Not a field: {name!r}')
         
         # At this point, chatfield is definitely a field.
         llm_value = chatfield['value']
@@ -278,7 +290,11 @@ class Interview:
         Fields are only populated when they pass validation, so checking
         for non-None values is sufficient.
         """
-        chatfields = self._chatfield['fields'].values()
+        fields = self._chatfield['fields']
+        if not fields:
+            raise Exception(f'{self._name()} has no fields defined, cannot be done.')
+
+        chatfields = fields.values()
         all_values = [ chatfield['value'] for chatfield in chatfields ]
         return all(value is not None for value in all_values)
 
