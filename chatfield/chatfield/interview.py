@@ -51,75 +51,60 @@ class Interview:
             print(f'-----------------------------------------')
             raise er
 
-    def __inner_init__(self, **kwargs):
-        # NOTE: Be careful about self.* invocations because self.__getattribute__ will run which needs things initialized.
-        print(f'{self.__class__.__name__}: Init with kwargs: {bool(kwargs)}')
+    def __inner_init__(self, type=None, desc=None, roles=None, fields=None, **kwargs):
+        print(f'{self.__class__.__name__}: Init')
         if kwargs:
-            pass
+            raise Exception(f'Unknown kwargs to {self.__class__.__name__}(): {kwargs}')
 
-        self.__class__._ensure_roles()
-
-        desc = None
-        if self.__class__ is not Interview:
-            desc = self.__doc__ or self.__class__.__name__
+        # I hope this is no longer needed.
+        # self.__class__._ensure_roles()
         
-        # This object is simple types able to serialize.
-        # return dict(type=type_name, desc=desc, roles=roles, fields=fields)
-        chatfield_interview = {
-            'type': None,
-            'desc': desc,
-            'roles': {
-                'alice': {
-                    'type': None,
-                    'traits': [],
-                    'possible_traits': {},
-                },
-                'bob': {
-                    'type': None,
-                    'traits': [],
-                    'possible_traits': {},
-                },
+        if not desc:
+            if self.__class__ is not Interview:
+                desc = self.__doc__ or self.__class__.__name__
+
+        roles = roles or {
+            'alice': {
+                'type': 'Agent',
+                'traits': [],
+                'possible_traits': {},
             },
-            'fields': None,
-                # "field_name"
-                    # "desc"
-                    # "specs"
-                    # "casts"
-                    # "value"  # This is the value set by the LLM.
+            'bob': {
+                'type': 'User',
+                'traits': [],
+                'possible_traits': {},
+            },
         }
 
-        # TODO: Need to rewrite this now that there are no methods that are fields, and the builder class runs.
-        # Process all fields.
-        for attr_name in dir(self):
-            if not attr_name.startswith('_'):
-                if attr_name not in self.not_field_names:
-                    # attr = object.__getattribute__(self.__class__, attr_name)
-                    attr = getattr(self.__class__, attr_name)
-                    if callable(attr): # All methods are fields.
-                        self.__class__._init_field(attr)
-                        field_def = {
-                            'desc': attr.__doc__ or attr.__name__,
-                            'specs': attr._chatfield.get('specs', {}),
-                            'casts': attr._chatfield.get('casts', {}),
-                            'value': None,  # This will be set by the LLM.
-                        }
+        chatfield_interview = {
+            'type': type,
+            'desc': desc,
+            'roles': roles,
+            'fields': fields or {},
+        }
 
-                        chatfield_interview['fields'][attr_name] = field_def
+        # field_def = {
+        #     'desc': attr.__doc__ or attr.__name__,
+        #     'specs': attr._chatfield.get('specs', {}),
+        #     'casts': attr._chatfield.get('casts', {}),
+        #     'value': None,  # This will be set by the LLM.
+        # }
+        # chatfield_interview['fields'][attr_name] = field_def
 
-        fields = kwargs.get('fields', {})
-        for field_name, field_value in fields.items():
-            value = field_value.get('value', None)
-            if value is None:
-                # print(f'{self.__class__.__name__} field not yet present: {field_name!r}')
-                pass
-            else:
-                print(f'{self.__class__.__name__} value of field {field_name!r}: {value!r}')
-                chatfield = chatfield_interview['fields'][field_name]
-                if chatfield.get('value'):
-                    raise Exception(f'{self.__class__.__name__} field {field_name!r} already has a value: {chatfield["value"]!r}')
-                else:
-                    print(f'- fine to set value for {field_name!r}')
-                chatfield['value'] = value
+        # fields = kwargs.get('fields', {})
+        # for field_name, field_value in fields.items():
+        #     value = field_value.get('value', None)
+        #     if value is None:
+        #         # print(f'{self.__class__.__name__} field not yet present: {field_name!r}')
+        #         pass
+        #     else:
+        #         print(f'{self.__class__.__name__} value of field {field_name!r}: {value!r}')
+        #         chatfield = chatfield_interview['fields'][field_name]
+        #         if chatfield.get('value'):
+        #             raise Exception(f'{self.__class__.__name__} field {field_name!r} already has a value: {chatfield["value"]!r}')
+        #         else:
+        #             print(f'- fine to set value for {field_name!r}')
+        #         chatfield['value'] = value
         
         self._chatfield = copy.deepcopy(chatfield_interview)
 
@@ -133,6 +118,7 @@ class Interview:
     
     @classmethod
     def _ensure_roles(cls):
+        raise Exception(f'This might be a bug because everything is re-using the Interview class again')
         if not hasattr(cls, '_chatfield_roles'):
             cls._chatfield_roles = {}
 
@@ -164,7 +150,7 @@ class Interview:
     
     def _name(self) -> str:
         """Return a human-readable label representing this interview data type"""
-        return self.__class__.__name__
+        return self._chatfield['type']
     
     def _get_role_info(self, role_name: str):
         """Get role information as an object with type and traits.
@@ -243,19 +229,16 @@ class Interview:
         For defined fields, returns either None or a FieldValueProxy.
         Overrides the method access to return field values instead.
         """
-        if name == '_done':
-            print(f'XXX')
+        # I'm not sure why this can happen, usually in the thread workers.
+        if '_chatfield' not in self.__dict__:
+            raise AttributeError(f'{self.__class__.__name__}: No such attribute: {name!r} (no _chatfield yet)')
 
-        # __class = object.__getattribute__(self, '__class__')
-        # __name = __class.__name__
-        #self_chatfield = object.__getattribute__(self, '_chatfield')
-        self_chatfield = self._chatfield
+        self_chatfield = self.__dict__['_chatfield']
         fields = self_chatfield['fields']
-        chatfield = fields.get(name, None) if fields else None
+        chatfield = fields.get(name, None) # if fields else None
         if chatfield is None:
-            # print(f'No chatfield for {name!r}, returning {val!r}')
-            raise AttributeError(f'{self.__class__.__name__}: Not a field: {name!r}')
-        
+            raise AttributeError(f'{self.__class__.__name__}: No such attribute: {name!r}')
+
         # At this point, chatfield is definitely a field.
         llm_value = chatfield['value']
         if llm_value is None:
@@ -284,11 +267,9 @@ class Interview:
     
     @property
     def _done(self):
-        """Check if all required fields have been collected.
+        """Return whether all fields have been collected.
         
         Returns True when all fields have been populated with values.
-        Fields are only populated when they pass validation, so checking
-        for non-None values is sufficient.
         """
         fields = self._chatfield['fields']
         if not fields:
@@ -297,15 +278,24 @@ class Interview:
         chatfields = fields.values()
         all_values = [ chatfield['value'] for chatfield in chatfields ]
         return all(value is not None for value in all_values)
-
-    # def __repr__(self):
-    #     as_dict = self._asdict()
-    #     return repr(as_dict)
     
-    # def __str__(self) -> str:
-    #     return f'Interview: {self.__class__.__name__} - {self._done}'
-    #     # as_dict = self._asdict()
-    #     # return json.dumps(as_dict)
+    @property
+    def _enough(self):
+        """Return whether all non-confidential, non-conclude fields have been
+        collected, i.e. enough to wrap up the interview.
+        
+        Returns True when all fields which have confidential and conclude set to False are populated.
+        """
+        fields = self._chatfield['fields']
+        for field_name, chatfield in fields.items():
+            specs = chatfield['specs']
+            if not specs['confidential']:
+                if not specs['conclude']:
+                    # This is a "normal" field.
+                    if chatfield['value'] is None:
+                        return False
+        return True
+
 
 class FieldProxy(str):
     """Proxy object that provides match attribute access to field values.

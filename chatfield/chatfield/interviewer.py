@@ -51,12 +51,12 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
         return a
 
     # Accumulate everything into the result in order to return it.
-    print(f'===========')
-    print(f'Reduce:')
-    print(f'  a: {type(a)} {a!r}')
-    print(f'  b: {type(b)} {b!r}')
+    # print(f'Reduce:')
+    # print(f'  a: {type(a)} {a!r}')
+    # print(f'  b: {type(b)} {b!r}')
 
-    # Assume B has all the latest information and throw if otherwise.
+    # TODO: Assume B has all the latest information. If LangGraph does not guarantee
+    # any ordering, then this a bug which would trigger if they arrive differently from my testing.
     result = b
 
     type_changes = diff.pop('type_changes') if 'type_changes' in diff else {}
@@ -67,6 +67,23 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
         else:
             raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes: {diff}')
 
+    values_changed = diff.pop('values_changed') if 'values_changed' in diff else {}
+    for key_path, delta in values_changed.items():
+        if delta['old_value'] is None and delta['new_value'] is not None:
+            # print(f'  Field changing to non-None {key_path}: {extract(result._chatfield, key_path)}')
+            pass
+        elif (not delta['old_value']) and delta['new_value']:
+            # print(f'  Field changing falsy to truthy {key_path}: {extract(result._chatfield, key_path)}')
+            pass
+        elif key_path == "root['roles']['alice']['type']" and delta['old_value'] == 'Agent':
+            # print(f'  Field changing from default value {key_path}: {extract(result._chatfield, key_path)}')
+            pass
+        elif key_path == "root['roles']['bob']['type']" and delta['old_value'] == 'User':
+            # print(f'  Field changing from default value {key_path}: {extract(result._chatfield, key_path)}')
+            pass
+        else:
+            raise NotImplementedError(f'Cannot reduce {a_type!r} with value changes: {diff}')
+
     dict_added = diff.pop('dictionary_item_added') if 'dictionary_item_added' in diff else set()
     if dict_added:
         pass # All adds are fine.
@@ -75,7 +92,7 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
     if iterable_added:
         pass # All adds are fine.
     
-    if len(diff) != 0:
+    if diff:
         raise NotImplementedError(f'Cannot reduce {a_type!r} with non-type changes: {diff}')
 
     return result
@@ -119,17 +136,22 @@ class Interviewer:
 
         interview_field_names = self.interview._fields()
         for field_name in interview_field_names:
-            print(f'Define field formal parameters: {field_name}')
+            # print(f'Define field formal parameters: {field_name}')
 
             # Get field metadata directly from _chatfield for builder-created interviews
             field_metadata = self.interview._chatfield['fields'][field_name]
-            casts = field_metadata.get('casts', {})
+        
+            is_conclude = field_metadata['specs'].get('conclude', False)
+            if is_conclude:
+                print(f'Skip conclude field for tool call: {field_name!r}')
+                continue
 
             is_confidential = field_metadata['specs'].get('confidential', False)
             if is_confidential:
-                print(f'Skip confidential field for tool call: {field_name!r}')
-                continue
+                print(f'Allow confidential field for tool call: {field_name!r}')
+                # continue
 
+            casts = field_metadata.get('casts', {})
             casts_definitions = {}
             ok_primitive_types = {
                 'int': int,
@@ -198,9 +220,10 @@ class Interviewer:
                 __doc__= field_docstring,
 
                 # These are always defined and returned by the LLM.
+                # TODO: I think only value should be here. The others should move to the other casts.
                 value    = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
-                context  = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
-                as_quote = (str, Field(title=f'Directly quote {theBob}', description=quote_desc)),
+                # context  = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
+                # as_quote = (str, Field(title=f'Directly quote {theBob}', description=quote_desc)),
 
                 # These come in via decorators to cast the value in fun ways.
                 **casts_definitions,
@@ -266,6 +289,7 @@ class Interviewer:
         builder.add_node('think'     , self.think)
         builder.add_node('listen'    , self.listen)
         builder.add_node('tools'     , tool_node)
+        builder.add_node('digest'    , self.digest)
         builder.add_node('teardown'  , self.teardown)
 
         builder.add_edge             (START       , 'initialize')
@@ -277,14 +301,22 @@ class Interviewer:
 
         self.graph = builder.compile(checkpointer=self.checkpointer)
         
-    # This exists to fail faster in case if serialization bugs with the LangGraph checkpointer.
+    # This exists to fail faster in case of serialization bugs with the LangGraph checkpointer.
     # Hopefully it can go away.
     def _get_state_interview(self, state: State) -> Interview:
         interview = state.get('interview')
         if not isinstance(interview, Interview):
             raise ValueError(f'Expected state["interview"] to be an Interview instance, got {type(interview)}: {interview!r}')
+        
         if not interview._chatfield['fields']:
-            print(f'Expected state["interview"] to have fields, got empty: {interview!r}')
+            # No fields defined is okay only for a totally-null, uninitialized interview object.
+            # This happens normally in early state, before the initialize node.
+            # TODO: For now, instead of exhaustively checking for "not-initialized-ness", I will do some quick duck typing.
+            if interview._chatfield['type'] is None and interview._chatfield['desc'] is None:
+                # print(f'Interview is uninitialized, which is okay: {interview!r}')
+                pass
+            else:
+                raise Exception(f'Expected state["interview"] to have fields, got empty: {interview!r}')
         return interview
 
     # Node
@@ -293,13 +325,82 @@ class Interviewer:
         
         # Currently there is an empty/null Interview object in the state. Populate that with the real one.
         return {'interview': self.interview}
-        
+
     # Node
-    def think(self, state: State):
-        print(f'Think: {self._get_state_interview(state).__class__.__name__}')
+    def digest(self, state: State):
+        interview = self._get_state_interview(state)
+        print(f'Digest> {interview._name()}')
+
+        # Each field will take a dict argument pertaining to it.
+        tool_call_args_schema = {}
+        sys_prompt_guidance = ''
+
+        fields = interview._chatfield['fields']
+        for field_name, chatfield in fields.items():
+            specs = chatfield['specs']
+            if specs['conclude']:
+                # The LLM must provide all conclusion-type fields now.
+                field_definition = create_model(
+                    chatfield['name'],
+                    __doc__ = chatfield['desc'],
+                    value = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
+                    **casts_definitions,
+                )
+
+            elif specs['confidential']:
+                if chatfield['value'] is not None:
+                    # Confidential field already defined, so skip it.
+                    continue
+                if not specs['conclude']:
+                    # This is a "normal" field.
+                    if chatfield['value'] is None:
+                        return False # TODO HERE HERE: Figure out what really should happen. A node can't return False.
+
+        # So all undefined confidential fields and all conclude fields must go to the LLM now.
+            # (
+            # field_definition = create_model(
+            #     field_name,
+            #     # title = field_docstring,
+            #     __doc__= field_docstring,
+
+            #     # These are always defined and returned by the LLM.
+            #     # TODO: I think only value should be here. The others should move to the other casts.
+            #     value    = (str, Field(title=f'Natural Value', description=f'The most typical valid representation of a {interview._name()} {field_name}')),
+            #     # context  = (str, Field(title=f'Context about {interview._name()} {field_name}', description=conv_desc)),
+            #     # as_quote = (str, Field(title=f'Directly quote {theBob}', description=quote_desc)),
+
+            #     # These come in via decorators to cast the value in fun ways.
+            #     **casts_definitions,
+            # )
+
+            # tool_call_args_schema[field_name] = Optional[field_definition]
         
-        # Track net-new messages. Its reducer will merge them.
-        new_messages = []
+        # Here if no tool_call_args_schema then no-op
+
+        DigestArgs = create_model('DigestArgs',
+            state        = Annotated[dict, InjectedState     ],
+            tool_call_id = Annotated[str , InjectedToolCallId],
+            **tool_call_args_schema,
+        )
+
+        # Track any system messages that need to be added.
+        sys_msg_make_conclusions = SystemMessage(content=(
+            f'You have successfully gathered enough information to draw conclusions.'
+            f' Use your tools to record '
+        ))
+
+        #
+        # System Messages
+        #
+
+        prior_system_messages = [msg for msg in state['messages'] if isinstance(msg, SystemMessage)]
+        if len(prior_system_messages) == 0:
+            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
+            system_prompt = self.mk_system_prompt(state)
+
+        #
+        # LLM Tool Optimizations
+        #
 
         # `llm` controls which tools are available/bound to the LLM.
         # The LLMs are previously bound, so this references whichever is needed.
@@ -308,14 +409,8 @@ class Interviewer:
         # system message, or following a "Success" tool response. This
         # encourages the LLM to respond with an AIMessage.
         llm = None
+        latest_message = state['messages'][-1] if state['messages'] else None
 
-        if not state['messages']:
-            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
-            system_prompt = self.mk_system_prompt(state)
-            system_msg = SystemMessage(content=system_prompt)
-            new_messages.append(system_msg)
-
-        latest_message = new_messages[-1] if new_messages else None
         if isinstance(latest_message, SystemMessage):
             # print(f'No tools: Latest message is a system message.')
             llm = self.llm
@@ -326,13 +421,93 @@ class Interviewer:
         
         llm = llm or self.llm_with_tools
 
-        # Note, the reducer will merge these properly in the state. For now, append them for presentation to the LLM.
-        all_messages = state['messages'] + new_messages
+        #
+        # Call the LLM
+        #
 
+        if new_system_message:
+            if prior_system_messages:
+                raise NotImplementedError(f'Cannot handle multiple system messages yet: {prior_system_messages!r}')
+
+        # Although the reducer only wants net-new messages, the LLM wants the full conversation.
+        new_system_messages = [new_system_message] if new_system_message else []
+        all_messages = new_system_messages + state['messages']
         llm_response_message = llm.invoke(all_messages)
-        # print(f'New message: {llm_response_message!r}')
-        new_messages.append(llm_response_message)
+        # print(f'New LLM response message: {llm_response_message!r}')
 
+        #
+        # Return to LangGraph
+        #
+        
+        # LangGraph wants only net-new messages. Its reducer will merge them.
+        # TODO: I do not know if anything else needs to be done to place the system message before the others.
+        new_messages = new_system_messages + [llm_response_message]
+        new_messages.append(llm_response_message)
+        return {'messages':new_messages}
+    
+        
+    # Node
+    def think(self, state: State):
+        print(f'Think> {self._get_state_interview(state).__class__.__name__}')
+
+        # Track any system messages that need to be added.
+        new_system_message = None
+
+        #
+        # System Messages
+        #
+
+        prior_system_messages = [msg for msg in state['messages'] if isinstance(msg, SystemMessage)]
+        if len(prior_system_messages) == 0:
+            print(f'Start conversation in thread: {self.config["configurable"]["thread_id"]}')
+            system_prompt = self.mk_system_prompt(state)
+            new_system_message = SystemMessage(content=system_prompt)
+
+        #
+        # LLM Tool Optimizations
+        #
+
+        # `llm` controls which tools are available/bound to the LLM.
+        # The LLMs are previously bound, so this references whichever is needed.
+        #
+        # By default, the tools are available. But they are omitted following a
+        # system message, or following a "Success" tool response. This
+        # encourages the LLM to respond with an AIMessage.
+        llm = None
+        latest_message = state['messages'][-1] if state['messages'] else None
+
+        if isinstance(latest_message, SystemMessage):
+            # print(f'No tools: Latest message is a system message.')
+            llm = self.llm
+        elif isinstance(latest_message, ToolMessage):
+            if latest_message.content == 'Success':
+                # print(f'No tools: Latest message is a tool response')
+                llm = self.llm
+        
+        llm = llm or self.llm_with_tools
+
+        #
+        # Call the LLM
+        #
+
+        if new_system_message:
+            if prior_system_messages:
+                raise NotImplementedError(f'Cannot handle multiple system messages yet: {prior_system_messages!r}')
+
+        # Although the reducer only wants net-new messages, the LLM wants the full conversation.
+        new_system_messages = [new_system_message] if new_system_message else []
+        all_messages = new_system_messages + state['messages']
+        llm_response_message = llm.invoke(all_messages)
+        # print(f'New LLM response message: {llm_response_message!r}')
+
+        #
+        # Return to LangGraph
+        #
+        
+        # LangGraph wants only net-new messages. Its reducer will merge them.
+        # TODO: I do not know if anything else needs to be done to place the system message before the others.
+        new_messages = new_system_messages + [llm_response_message]
+        new_messages.append(llm_response_message)
         return {'messages':new_messages}
     
     # def process_tool_input(self, state: State, **kwargs):
@@ -371,25 +546,39 @@ class Interviewer:
         collection_name = interview._name()
 
         field_keys = interview._chatfield['fields'].keys()
-        field_keys = reversed(field_keys)  # Reverse the order to maintain source-code order.
+
+        # The goal is to maintain source-code order, since decorators apply bottom-up,
+        # But the builder-based one does not.
+        # field_keys = reversed(field_keys)
 
         fields = []
         for field_name in field_keys:
             chatfield = interview._chatfield['fields'][field_name]
+
+            if chatfield['specs']['conclude']:
+                print(f'Skip conclude-only field for system prompt: {field_name!r}')
+                continue
 
             desc = chatfield.get('desc')
             field_label = f'{field_name}'
             if desc:
                 field_label += f': {desc}'
 
-            specs = chatfield.get('specs', {})
+            # TODO: I think confidential and conclude should be their own thing, not specs.
+            specs = chatfield['specs']
             specs_prompts = []
+
+            if specs['confidential']:
+                specs_prompts.append(
+                    f'**Confidential**:'
+                    f' Do not inquire about this explicitly nor bring it up yourself. Continue your normal behavior.'
+                    f' However, if the {interview._bob_role_name()} ever volunteers or implies it, you must record this information.'
+                )
+
             for spec_name, predicates in specs.items():
-                if spec_name in ('confidential', 'conclude'):
-                    # TODO: I think these two flags/decorators/whatever are not really specs.
-                    continue
-                for predicate in predicates:
-                    specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
+                if spec_name not in ('confidential', 'conclude'):
+                    for predicate in predicates:
+                        specs_prompts.append(f'{spec_name.capitalize()}: {predicate}')
             
             casts = chatfield.get('casts', {})
             casts_prompts = []
@@ -452,7 +641,8 @@ class Interviewer:
 
         res = (
             f'You are the conversational {interview._alice_role_name()} focused on gathering key information in conversation with the {interview._bob_role_name()},'
-            f' into a collection called {collection_name}, detailed below.'
+            # f' into a collection called {collection_name},'
+            f' detailed below.'
             f'{with_traits}'
             # f' You begin the conversation in the most suitable way.'
             f'{use_tools}'
@@ -461,6 +651,11 @@ class Interviewer:
             f'{alice_and_bob}'
             f'\n\n----\n\n'
             f'# Collection: {collection_name}\n'
+            f'\n'
+            f'## Description\n'
+            f'{interview._chatfield["desc"]}'
+            f'\n\n'
+            f'## Fields to Collect\n'
             f'\n'
             f'{fields}\n'
         )
@@ -476,8 +671,15 @@ class Interviewer:
 
         interview = self._get_state_interview(state)
         if interview._done:
-            print(f'Route: to teardown')
+            # print(f'Route: to teardown')
             return 'teardown'
+        
+        # Either digest once, the first time _enough becomes true.
+        # Or, digest after every subsequent user message. For now, do the former
+        # because then _done would evaluate true, so the above return would trigger.
+        if interview._enough:
+            print(f'Route: to digest')
+            return 'digest'
 
         return 'listen'
     
@@ -486,9 +688,10 @@ class Interviewer:
         # Ending will cause a return back to .go() caller.
         # That caller will expect the original interview object to reflect the conversation.
         interview = self._get_state_interview(state)
-        print(f'Teardown: {interview._name()}')
+        print(f'Teardown> {interview._name()}')
         self.interview._copy_from(interview)
         
+    # Node
     def listen(self, state: State):
         interview = self._get_state_interview(state)
         print(f'Listen> {interview.__class__.__name__}')
