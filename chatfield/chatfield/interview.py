@@ -53,7 +53,7 @@ class Interview:
             raise er
 
     def __inner_init__(self, type=None, desc=None, roles=None, fields=None, **kwargs):
-        print(f'{self.__class__.__name__}: Init')
+        # print(f'{self.__class__.__name__}: Init')
         if kwargs:
             raise Exception(f'Unknown kwargs to {self.__class__.__name__}(): {kwargs}')
 
