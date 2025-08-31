@@ -17,9 +17,6 @@ from langchain.chat_models import init_chat_model
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.message import add_messages
 
-# from mcp import Tool
-
-
 from .interview import Interview
 
 def merge_interviews(a:Interview, b:Interview) -> Interview:
@@ -117,8 +114,9 @@ class Interviewer:
 
         # tool_id = 'openai:o3-mini'
         # temperature = None
-        # tool_id = 'openai:gpt-5'
+        tool_id = 'openai:gpt-5'
         tool_id = 'openai:gpt-4.1'
+        tool_id = 'openai:gpt-4o'
         temperature = 0.0
         self.llm = init_chat_model(tool_id, temperature=temperature)
 
@@ -373,14 +371,17 @@ class Interviewer:
                 field_definition = self.mk_field_definition(interview, field_name, chatfield)
             else:
                 # Force the LLM to pass null for values we don't need.
-                field_definition = (Literal[None], Field(title=f'Must be null', description=f'must be null'))
+                be_null = f'Must be null because the field is already recorded'
+                field_definition = (Literal[None], Field(title=be_null, description=be_null))
+                # field_definition = None # Disabled; will not become a parameter.
 
-            field_definitions[field_name] = field_definition
+            if field_definition:
+                field_definitions[field_name] = field_definition
 
         fields_prompt = '\n'.join(fields_prompt)
 
-        # Build a special llm object bound to a speicial tool which explicitly requires the proper arguments.
-        # Make it call the a compatible tool name.
+        # Build a special llm object bound to a tool which explicitly requires the proper arguments.
+        # The tool name must be one of those "registered" to the LangGraph ToolNode defined during initialization.
         tool_name = f'update_{interview._id()}'
         tool_desc = (
             f'Record those confidential fields about the {interview._name()}'
@@ -404,10 +405,14 @@ class Interviewer:
 
         sys_msg = SystemMessage(content=(
             # f'You have successfully gathered enough information to'
-            f'You must now'
-            f' update and populate the not-yet-defined confidential fields, listed below to remind you.'
-            f' Use the update tool call to indicate there is no relevant information'
-            f' for the fields.'
+            f'You have successfully recorded good {interview._name()} fields.'
+            f' Now, before messaging {interview._bob_role_name()} again,'
+            f' you must perform one more followup update to record'
+            f' that there is no relevant information for'
+            f' the not-yet-defined confidential fields, listed below to remind you.'
+            f' Use the update tool call to record that there is no forthcoming information'
+            f' for these fields.'
+            f' After a successful tool call, you may resume conversation with the {interview._bob_role_name()} again.'
             f'\n\n'
             f'## Confidential Fields needed for {interview._name()}\n'
             f'\n'
@@ -634,7 +639,8 @@ class Interviewer:
         # TODO: Is it helpful at all to mention the tools in the system prompt?
         # tool_name = 'update_interview'
         use_tools = (
-            f' Use tools to record information fields'
+            f' As soon as you encounter relevant information in conversation,'
+            f' immediately use tools to record information fields'
             f' and their related "casts",'
             f' which are cusom conversions you provide for each field.'
         #     f' When you identify valid information to collect,'
