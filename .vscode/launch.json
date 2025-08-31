@@ -1,6 +1,7 @@
 {
     "version": "0.2.0",
     "configurations": [
+        /*
         {
             "name": "Debug run_real_api.py",
             "type": "debugpy",
@@ -15,8 +16,11 @@
             "justMyCode": false,
             "stopOnEntry": false
         },
+        */
+        
+        /*
         {
-            "name": "Debug run_real_api.py (Direct)",
+            "name": "Debug run (Direct)",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/chatfield/run_real_api.py",
@@ -29,11 +33,14 @@
             "justMyCode": false,
             "stopOnEntry": false
         },
+        */
+
         {
-            "name": "Debug run_real_api.py (Standalone)",
+            "name": "Debug run (Standalone)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/chatfield/run_real_api.py", // Specify the script directly
+            "program": "${workspaceFolder}/chatfield/restaurant_order.py", // Specify the script directly
+            // "program": "${file}", // Specify the script directly
             "cwd": "${workspaceFolder}/chatfield",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/chatfield"
@@ -43,6 +50,7 @@
             "justMyCode": false,
             "stopOnEntry": false
         },
+
         {
             "name": "Python: Current File",
             "type": "debugpy",
