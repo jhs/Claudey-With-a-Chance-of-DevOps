@@ -285,7 +285,8 @@ class Interview:
         """
         fields = self._chatfield['fields']
         if not fields:
-            raise Exception(f'{self._name()} has no fields defined, cannot be done.')
+            # Empty interview is considered done
+            return True
 
         chatfields = fields.values()
         all_values = [ chatfield['value'] for chatfield in chatfields ]

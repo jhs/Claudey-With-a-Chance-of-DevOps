@@ -9,8 +9,7 @@ from dotenv import load_dotenv
 # Load environment variables from parent .env file
 load_dotenv('../.env')
 
-from chatfield import Interview, Interviewer, alice, bob, must, reject, hint
-from chatfield import as_int, as_bool, as_lang
+from chatfield import Interview, Interviewer, chatfield
 
 
 class TestInterviewerBasics:
@@ -22,11 +21,11 @@ class TestInterviewerBasics:
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-            def email(): "Your email"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .field("email").desc("Your email")
+            .build())
         interviewer = Interviewer(interview)
         
         assert interviewer.interview is interview
@@ -40,10 +39,10 @@ class TestInterviewerBasics:
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         interviewer = Interviewer(interview, thread_id="custom-123")
         
         assert interviewer.config['configurable']['thread_id'] == "custom-123"
@@ -54,10 +53,10 @@ class TestInterviewerBasics:
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         interviewer = Interviewer(interview)
         
         # Should initialize with GPT-5 by default
@@ -70,12 +69,12 @@ class TestSystemPromptGeneration:
     
     def test_basic_system_prompt(self):
         """Test basic system prompt generation."""
-        class SimpleInterview(Interview):
-            """Customer feedback form"""
-            def rating(): "Overall satisfaction rating"
-            def comments(): "Additional comments"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .desc("Customer feedback form")
+            .field("rating").desc("Overall satisfaction rating")
+            .field("comments").desc("Additional comments")
+            .build())
         interviewer = Interviewer(interview)
         
         prompt = interviewer.mk_system_prompt({'interview': interview})
@@ -88,15 +87,17 @@ class TestSystemPromptGeneration:
     
     def test_system_prompt_with_roles(self):
         """Test system prompt with custom roles."""
-        @alice("Customer Support Agent")
-        @alice.trait("Friendly and helpful")
-        @bob("Frustrated Customer")
-        @bob.trait("Had a bad experience")
-        class SupportInterview(Interview):
-            """Support ticket"""
-            def issue(): "What went wrong"
-        
-        interview = SupportInterview()
+        interview = (chatfield()
+            .type("SupportInterview")
+            .desc("Support ticket")
+            .alice()
+                .type("Customer Support Agent")
+                .trait("Friendly and helpful")
+            .bob()
+                .type("Frustrated Customer")
+                .trait("Had a bad experience")
+            .field("issue").desc("What went wrong")
+            .build())
         interviewer = Interviewer(interview)
         
         prompt = interviewer.mk_system_prompt({'interview': interview})
@@ -108,13 +109,14 @@ class TestSystemPromptGeneration:
     
     def test_system_prompt_with_validation(self):
         """Test system prompt includes validation rules."""
-        class ValidatedInterview(Interview):
-            @must("specific details")
-            @reject("profanity")
-            @hint("Be constructive")
-            def feedback(): "Your feedback"
-        
-        interview = ValidatedInterview()
+        interview = (chatfield()
+            .type("ValidatedInterview")
+            .field("feedback")
+                .desc("Your feedback")
+                .must("specific details")
+                .reject("profanity")
+                .hint("Be constructive")
+            .build())
         interviewer = Interviewer(interview)
         
         prompt = interviewer.mk_system_prompt({'interview': interview})
@@ -133,11 +135,11 @@ class TestToolGeneration:
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class SimpleInterview(Interview):
-            def field1(): "Field 1"
-            def field2(): "Field 2"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("field1").desc("Field 1")
+            .field("field2").desc("Field 2")
+            .build())
         interviewer = Interviewer(interview)
         
         # Tool should be bound to LLM
@@ -145,17 +147,18 @@ class TestToolGeneration:
     
     @patch('chatfield.interviewer.init_chat_model')
     def test_tool_with_transformations(self, mock_init_model):
-        """Test tool generation with transformation decorators."""
+        """Test tool generation with transformation features."""
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class TypedInterview(Interview):
-            @as_int
-            @as_bool
-            @as_lang.fr
-            def number(): "A number"
-        
-        interview = TypedInterview()
+        interview = (chatfield()
+            .type("TypedInterview")
+            .field("number")
+                .desc("A number")
+                .as_int()
+                .as_bool()
+                .as_lang.fr()
+            .build())
         interviewer = Interviewer(interview)
         
         # Tool args should include transformations
@@ -169,10 +172,10 @@ class TestConversationFlow:
     @pytest.mark.skipif(not os.getenv("OPENAI_API_KEY"), reason="Requires OpenAI API key")
     def test_go_method_basic(self):
         """Test the go() method with real API."""
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         interviewer = Interviewer(interview)
         
         # Start conversation
@@ -184,10 +187,10 @@ class TestConversationFlow:
     
     def test_interview_state_updates(self):
         """Test that interview state updates when fields are collected."""
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         interviewer = Interviewer(interview)
         
         # Manually update field as if tool was called
@@ -203,11 +206,11 @@ class TestConversationFlow:
     
     def test_done_detection(self):
         """Test that interviewer detects when all fields are collected."""
-        class SimpleInterview(Interview):
-            def field1(): "Field 1"
-            def field2(): "Field 2"
-        
-        interview = SimpleInterview()
+        interview = (chatfield()
+            .type("SimpleInterview")
+            .field("field1").desc("Field 1")
+            .field("field2").desc("Field 2")
+            .build())
         interviewer = Interviewer(interview)
         
         # Initially not done
@@ -223,28 +226,30 @@ class TestConversationFlow:
         assert interview._done
 
 
-class TestInterviewerWithDecorators:
-    """Test Interviewer with decorated Interview classes."""
+class TestInterviewerWithFeatures:
+    """Test Interviewer with various Interview features."""
     
-    def test_interviewer_with_all_decorators(self):
-        """Test Interviewer with fully decorated Interview."""
-        @alice("Interviewer")
-        @alice.trait("Professional")
-        @bob("Candidate")
-        class ComplexInterview(Interview):
-            """Complex interview"""
-            
-            @must("specific answer")
-            @reject("vague response")
-            @hint("Think carefully")
-            @as_int
-            @as_bool.positive("True if positive")
-            def years(): "Years of experience"
-        
-        interview = ComplexInterview()
+    def test_interviewer_with_all_features(self):
+        """Test Interviewer with fully featured Interview."""
+        interview = (chatfield()
+            .type("ComplexInterview")
+            .desc("Complex interview")
+            .alice()
+                .type("Interviewer")
+                .trait("Professional")
+            .bob()
+                .type("Candidate")
+            .field("years")
+                .desc("Years of experience")
+                .must("specific answer")
+                .reject("vague response")
+                .hint("Think carefully")
+                .as_int()
+                .as_bool.positive("True if positive")
+            .build())
         interviewer = Interviewer(interview)
         
-        # System prompt should include all decorations
+        # System prompt should include all features
         prompt = interviewer.mk_system_prompt({'interview': interview})
         
         assert "Interviewer" in prompt
@@ -254,12 +259,13 @@ class TestInterviewerWithDecorators:
     
     def test_process_tool_input_with_transformations(self):
         """Test processing tool input with transformations."""
-        class TypedInterview(Interview):
-            @as_int
-            @as_lang.fr
-            def number(): "A number"
-        
-        interview = TypedInterview()
+        interview = (chatfield()
+            .type("TypedInterview")
+            .field("number")
+                .desc("A number")
+                .as_int()
+                .as_lang.fr()
+            .build())
         interviewer = Interviewer(interview)
         
         # Process tool input with transformations
@@ -283,11 +289,10 @@ class TestInterviewerEdgeCases:
     
     def test_empty_interview(self):
         """Test Interviewer with empty Interview."""
-        class EmptyInterview(Interview):
-            """Empty interview"""
-            pass
-        
-        interview = EmptyInterview()
+        interview = (chatfield()
+            .type("EmptyInterview")
+            .desc("Empty interview")
+            .build())
         interviewer = Interviewer(interview)
         
         # Should handle empty interview gracefully
@@ -295,11 +300,14 @@ class TestInterviewerEdgeCases:
     
     def test_interview_copy_from(self):
         """Test that interview state is copied correctly."""
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview1 = SimpleInterview()
-        interview2 = SimpleInterview()
+        interview1 = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
+        interview2 = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         
         # Set field in interview2
         interview2._chatfield['fields']['name']['value'] = {
@@ -325,11 +333,14 @@ class TestInterviewerEdgeCases:
         mock_llm = Mock()
         mock_init_model.return_value = mock_llm
         
-        class SimpleInterview(Interview):
-            def name(): "Your name"
-        
-        interview1 = SimpleInterview()
-        interview2 = SimpleInterview()
+        interview1 = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
+        interview2 = (chatfield()
+            .type("SimpleInterview")
+            .field("name").desc("Your name")
+            .build())
         
         interviewer1 = Interviewer(interview1, thread_id="thread-1")
         interviewer2 = Interviewer(interview2, thread_id="thread-2")

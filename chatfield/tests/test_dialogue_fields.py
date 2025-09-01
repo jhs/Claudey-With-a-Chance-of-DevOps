@@ -1,27 +1,27 @@
 """Test field behaviors and decorators in Interview classes."""
 
 import pytest
-from chatfield import Interview, must, hint, as_int, as_float, as_bool, as_lang
+from chatfield import Interview, chatfield, must, hint, as_int, as_float, as_bool, as_lang
 
 
 class TestInterviewFields:
     """Test various field behaviors in Interview classes."""
     
     def test_field_with_type_transformations(self):
-        """Test fields with type transformation decorators."""
-        class TypedInterview(Interview):
-            """Interview with typed fields"""
-            
-            @as_int
-            def age(): "Your age"
-            
-            @as_float
-            def salary(): "Expected salary"
-            
-            @as_bool
-            def available(): "Are you available immediately?"
-        
-        instance = TypedInterview()
+        """Test fields with type transformation using builder."""
+        instance = (chatfield()
+            .type("TypedInterview")
+            .desc("Interview with typed fields")
+            .field("age")
+                .desc("Your age")
+                .as_int()
+            .field("salary")
+                .desc("Expected salary")
+                .as_float()
+            .field("available")
+                .desc("Are you available immediately?")
+                .as_bool()
+            .build())
         meta = instance._chatfield
         
         # Check fields exist
@@ -35,15 +35,15 @@ class TestInterviewFields:
         assert 'as_bool' in meta['fields']['available']['casts']
     
     def test_field_with_language_transformations(self):
-        """Test fields with language transformation decorators."""
-        class MultilingualInterview(Interview):
-            """Interview with language transformations"""
-            
-            @as_lang.fr
-            @as_lang.es
-            def greeting(): "Say hello"
-        
-        instance = MultilingualInterview()
+        """Test fields with language transformation using builder."""
+        instance = (chatfield()
+            .type("MultilingualInterview")
+            .desc("Interview with language transformations")
+            .field("greeting")
+                .desc("Say hello")
+                .as_lang.fr()
+                .as_lang.es()
+            .build())
         meta = instance._chatfield
         
         # Check field exists
@@ -55,16 +55,16 @@ class TestInterviewFields:
         assert 'as_lang_es' in field_casts
     
     def test_field_with_mixed_decorators(self):
-        """Test fields with mixed decorator types."""
-        class MixedInterview(Interview):
-            """Interview with mixed decorators"""
-            
-            @must("be positive")
-            @hint("Think of your best qualities")
-            @as_int
-            def years_experience(): "Years of experience"
-        
-        instance = MixedInterview()
+        """Test fields with mixed features using builder."""
+        instance = (chatfield()
+            .type("MixedInterview")
+            .desc("Interview with mixed decorators")
+            .field("years_experience")
+                .desc("Years of experience")
+                .must("be positive")
+                .hint("Think of your best qualities")
+                .as_int()
+            .build())
         meta = instance._chatfield
         
         field = meta['fields']['years_experience']
@@ -77,25 +77,25 @@ class TestInterviewFields:
         assert 'as_int' in field['casts']
     
     def test_multiple_fields_with_decorators(self):
-        """Test multiple fields each with decorators."""
-        class CompleteInterview(Interview):
-            """Complete interview process"""
-            
-            @must("be honest")
-            def name(): "Your full name"
-            
-            @must("valid email")
-            @hint("We'll send confirmation here")
-            def email(): "Your email address"
-            
-            @as_int
-            @must("be realistic")
-            def experience(): "Years of experience"
-            
-            @as_bool
-            def remote(): "Open to remote work?"
-        
-        instance = CompleteInterview()
+        """Test multiple fields each with features using builder."""
+        instance = (chatfield()
+            .type("CompleteInterview")
+            .desc("Complete interview process")
+            .field("name")
+                .desc("Your full name")
+                .must("be honest")
+            .field("email")
+                .desc("Your email address")
+                .must("valid email")
+                .hint("We'll send confirmation here")
+            .field("experience")
+                .desc("Years of experience")
+                .must("be realistic")
+                .as_int()
+            .field("remote")
+                .desc("Open to remote work?")
+                .as_bool()
+            .build())
         meta = instance._chatfield
         
         # Verify all fields exist
@@ -110,17 +110,14 @@ class TestInterviewFields:
         assert 'as_bool' in meta['fields']['remote']['casts']
     
     def test_field_description_extraction(self):
-        """Test that field descriptions are properly extracted."""
-        class DescriptiveInterview(Interview):
-            """Interview with detailed descriptions"""
-            
-            def short(): "Name"
-            
-            def medium(): "Please provide your full legal name"
-            
-            def long(): "This is a very long description that explains in great detail what we need from you and why it's important for the process"
-        
-        instance = DescriptiveInterview()
+        """Test that field descriptions are properly set using builder."""
+        instance = (chatfield()
+            .type("DescriptiveInterview")
+            .desc("Interview with detailed descriptions")
+            .field("short").desc("Name")
+            .field("medium").desc("Please provide your full legal name")
+            .field("long").desc("This is a very long description that explains in great detail what we need from you and why it's important for the process")
+            .build())
         meta = instance._chatfield
         
         assert meta['fields']['short']['desc'] == "Name"
@@ -128,16 +125,15 @@ class TestInterviewFields:
         assert meta['fields']['long']['desc'] == "This is a very long description that explains in great detail what we need from you and why it's important for the process"
     
     def test_field_order_preservation(self):
-        """Test that field order is preserved as defined."""
-        class OrderedInterview(Interview):
-            """Interview with specific field order"""
-            
-            def first(): "First question"
-            def second(): "Second question"
-            def third(): "Third question"
-            def fourth(): "Fourth question"
-        
-        instance = OrderedInterview()
+        """Test that field order is preserved as defined using builder."""
+        instance = (chatfield()
+            .type("OrderedInterview")
+            .desc("Interview with specific field order")
+            .field("first").desc("First question")
+            .field("second").desc("Second question")
+            .field("third").desc("Third question")
+            .field("fourth").desc("Fourth question")
+            .build())
         meta = instance._chatfield
         
         # Python 3.7+ guarantees dict order
@@ -145,18 +141,19 @@ class TestInterviewFields:
         assert field_names == ['first', 'second', 'third', 'fourth']
     
     def test_empty_specs_and_casts(self):
-        """Test fields without any decorators have empty specs and casts."""
-        class PlainInterview(Interview):
-            """Plain interview without decorators"""
-            
-            def undecorated(): "Simple field"
-        
-        instance = PlainInterview()
+        """Test fields without any features have empty specs and casts using builder."""
+        instance = (chatfield()
+            .type("PlainInterview")
+            .desc("Plain interview without decorators")
+            .field("undecorated").desc("Simple field")
+            .build())
         meta = instance._chatfield
         
         field = meta['fields']['undecorated']
         
         # Should have empty specs and casts
-        assert field['specs'] == {'must': [], 'reject': [], 'hint': []}
+        assert field['specs']['must'] == []
+        assert field['specs']['reject'] == []
+        assert field['specs']['hint'] == []
         assert field['casts'] == {}
         assert field['value'] is None  # Not collected yet

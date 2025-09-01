@@ -288,23 +288,23 @@ class ChatfieldBuilder:
         interview._chatfield = copy.deepcopy(self._chatfield)
         
         # Ensure roles are properly initialized
-        # if 'alice' not in interview._chatfield['roles']:
-        #     interview._chatfield['roles']['alice'] = {
-        #         'type': None,
-        #         'traits': [],
-        #         'possible_traits': {}
-        #     }
-        # if 'bob' not in interview._chatfield['roles']:
-        #     interview._chatfield['roles']['bob'] = {
-        #         'type': None, 
-        #         'traits': [],
-        #         'possible_traits': {}
-        #     }
+        if 'alice' not in interview._chatfield['roles']:
+            interview._chatfield['roles']['alice'] = {
+                'type': None,
+                'traits': [],
+                'possible_traits': {}
+            }
+        if 'bob' not in interview._chatfield['roles']:
+            interview._chatfield['roles']['bob'] = {
+                'type': None, 
+                'traits': [],
+                'possible_traits': {}
+            }
         
         # Ensure possible_traits dict exists for each role
-        # for role in interview._chatfield['roles'].values():
-        #     if 'possible_traits' not in role:
-        #         role['possible_traits'] = {}
+        for role in interview._chatfield['roles'].values():
+            if 'possible_traits' not in role:
+                role['possible_traits'] = {}
         
         return interview
 

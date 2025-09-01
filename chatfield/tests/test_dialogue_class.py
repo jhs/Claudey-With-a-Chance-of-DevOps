@@ -1,21 +1,21 @@
 """Test the Interview base class inheritance pattern."""
 
 import pytest
-from chatfield import Interview, must, reject, hint, alice, bob
+from chatfield import Interview, chatfield, must, reject, hint, alice, bob
 
 
 class TestInterviewInheritancePattern:
     """Test the Interview base class inheritance pattern."""
     
     def test_simple_interview(self):
-        """Test basic Interview inheritance."""
-        class SimpleInterview(Interview):
-            """Test interview"""
-            def name(): "Your name"
-            def email(): "Your email"
+        """Test basic Interview using builder pattern."""
+        instance = (chatfield()
+            .type("SimpleInterview")
+            .desc("Test interview")
+            .field("name").desc("Your name")
+            .field("email").desc("Your email")
+            .build())
         
-        # Create instance
-        instance = SimpleInterview()
         meta = instance._chatfield
         
         # Should have metadata
@@ -24,18 +24,19 @@ class TestInterviewInheritancePattern:
         assert 'email' in meta['fields']
     
     def test_interview_with_field_decorators(self):
-        """Test Interview with field decorators."""
-        class DecoratedInterview(Interview):
-            """Test with decorators"""
-            
-            @must("be specific")
-            @reject("vague")
-            def problem(): "Your problem"
-            
-            @hint("Think carefully")
-            def solution(): "Your solution"
+        """Test Interview with field validation using builder pattern."""
+        instance = (chatfield()
+            .type("DecoratedInterview")
+            .desc("Test with decorators")
+            .field("problem")
+                .desc("Your problem")
+                .must("be specific")
+                .reject("vague")
+            .field("solution")
+                .desc("Your solution")
+                .hint("Think carefully")
+            .build())
         
-        instance = DecoratedInterview()
         meta = instance._chatfield
         
         # Check problem field
@@ -48,14 +49,15 @@ class TestInterviewInheritancePattern:
         assert "Think carefully" in solution_field['specs']['hint']
     
     def test_interview_with_class_decorators(self):
-        """Test Interview with class decorators."""
-        @alice("Interviewer")
-        @bob("Candidate")
-        class DecoratedInterview(Interview):
-            """Role-based interview"""
-            def question(): "Your question"
+        """Test Interview with roles using builder pattern."""
+        instance = (chatfield()
+            .type("DecoratedInterview")
+            .desc("Role-based interview")
+            .alice().type("Interviewer")
+            .bob().type("Candidate")
+            .field("question").desc("Your question")
+            .build())
         
-        instance = DecoratedInterview()
         meta = instance._chatfield
         
         assert meta['roles']['alice']['type'] == "Interviewer"
@@ -63,23 +65,26 @@ class TestInterviewInheritancePattern:
         assert 'question' in meta['fields']
     
     def test_complex_interview(self):
-        """Test Interview with all decorator types."""
-        @alice("Technical Interviewer")
-        @alice.trait("thorough")
-        @bob("Senior Developer")
-        @bob.trait("experienced")
-        class ComplexInterview(Interview):
-            """Technical interview process"""
-            
-            @must("include specific examples")
-            @reject("generic answers")
-            @hint("Think about real-world scenarios")
-            def experience(): "Describe your experience"
-            
-            @must("be measurable")
-            def goals(): "Your career goals"
+        """Test Interview with all builder features."""
+        instance = (chatfield()
+            .type("ComplexInterview")
+            .desc("Technical interview process")
+            .alice()
+                .type("Technical Interviewer")
+                .trait("thorough")
+            .bob()
+                .type("Senior Developer")
+                .trait("experienced")
+            .field("experience")
+                .desc("Describe your experience")
+                .must("include specific examples")
+                .reject("generic answers")
+                .hint("Think about real-world scenarios")
+            .field("goals")
+                .desc("Your career goals")
+                .must("be measurable")
+            .build())
         
-        instance = ComplexInterview()
         meta = instance._chatfield
         
         # Class metadata
@@ -104,36 +109,3 @@ class TestInterviewInheritancePattern:
         goals_field = meta['fields']['goals']
         assert "be measurable" in goals_field['specs']['must']
     
-    def test_interview_inheritance_chain(self):
-        """Test that Interview can be properly inherited."""
-        class BaseInterview(Interview):
-            """Base interview"""
-            def base_field(): "Base question"
-        
-        class DerivedInterview(BaseInterview):
-            """Derived interview"""
-            def derived_field(): "Derived question"
-        
-        instance = DerivedInterview()
-        meta = instance._chatfield
-        
-        # Should have both fields from inheritance
-        assert 'base_field' in meta['fields']
-        assert 'derived_field' in meta['fields']
-        
-        # Docstring from derived class
-        assert meta['desc'] == "Derived interview"
-    
-    def test_interview_method_override(self):
-        """Test that Interview methods can be overridden."""
-        class CustomInterview(Interview):
-            """Custom interview with override"""
-            def field(): "Test field"
-            
-            def __init__(self, **kwargs):
-                super().__init__(**kwargs)
-                self.custom_attribute = "custom"
-        
-        instance = CustomInterview()
-        assert instance.custom_attribute == "custom"
-        assert 'field' in instance._chatfield['fields']
