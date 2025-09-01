@@ -258,14 +258,14 @@ class Interviewer:
         )
 
         @tool(tool_name, description=tool_desc, args_schema=ConcludeToolArgs)
-        def conclude_wrappr(state, tool_call_id, **kwargs):
+        def conclude_wrapper(state, tool_call_id, **kwargs):
             return self.run_tool(state, tool_call_id, **kwargs)
 
         self.llm_with_update = self.llm.bind_tools([update_wrapper])
-        self.llm_with_conclude = self.llm.bind_tools([conclude_wrappr])
-        self.llm_with_both = self.llm.bind_tools([update_wrapper, conclude_wrappr])
+        self.llm_with_conclude = self.llm.bind_tools([conclude_wrapper])
+        self.llm_with_both = self.llm.bind_tools([update_wrapper, conclude_wrapper])
 
-        tool_node = ToolNode(tools=[update_wrapper, conclude_wrappr])
+        tool_node = ToolNode(tools=[update_wrapper, conclude_wrapper])
 
         builder = StateGraph(State)
 
