@@ -104,7 +104,7 @@ class Interviewer:
     Interviewer that manages conversation flow.
     """
     
-    def __init__(self, interview: Interview, thread_id: Optional[str] = None):
+    def __init__(self, interview: Interview, thread_id: Optional[str]=None, llm_id=None, temperature=None):
         self.checkpointer = InMemorySaver()
 
         self.config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())}}
@@ -112,13 +112,13 @@ class Interviewer:
         theAlice = self.interview._alice_role_name()
         theBob   = self.interview._bob_role_name()
 
-        # tool_id = 'openai:o3-mini'
+        # llm_id = 'openai:o3-mini'
         # temperature = None
-        tool_id = 'openai:gpt-5'
-        tool_id = 'openai:gpt-4.1'
-        tool_id = 'openai:gpt-4o'
-        temperature = 0.0
-        self.llm = init_chat_model(tool_id, temperature=temperature)
+        # llm_id = 'openai:gpt-5'
+        # llm_id = 'openai:gpt-4.1'
+        llm_id = llm_id or 'openai:gpt-4o'
+        temperature = temperature or 0.0
+        self.llm = init_chat_model(llm_id, temperature=temperature)
 
         # Define the tools used in the graph.
         # The schema maps field names to its input type, in this case a dict with all the casts, etc.
