@@ -2,12 +2,15 @@
 
 import os
 import pytest
+from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from dotenv import load_dotenv
 
-# Load environment variables from parent .env file
-load_dotenv('../.env')
+# Load environment variables from project root .env file
+project_root = Path(__file__).parent.parent.parent
+env_file = project_root / '.env'
+load_dotenv(env_file)
 
 from chatfield import Interview, Interviewer, chatfield
 
@@ -143,7 +146,7 @@ class TestToolGeneration:
         interviewer = Interviewer(interview)
         
         # Tool should be bound to LLM
-        assert hasattr(interviewer.llm_with_tools, 'bind_tools')
+        assert hasattr(interviewer.llm_with_both, 'bind_tools')
     
     @patch('chatfield.interviewer.init_chat_model')
     def test_tool_with_transformations(self, mock_init_model):
@@ -163,7 +166,7 @@ class TestToolGeneration:
         
         # Tool args should include transformations
         # This is complex to test without running the actual tool
-        assert interviewer.llm_with_tools is not None
+        assert interviewer.llm_with_both is not None
 
 
 class TestConversationFlow:

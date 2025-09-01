@@ -62,7 +62,7 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
             # print(f'  Field changing to non-None {key_path}: {extract(result._chatfield, key_path)}')
             pass
         else:
-            raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes: {diff}')
+            raise NotImplementedError(f'Cannot reduce {a_type!r} with type changes at {key_path}: old={delta["old_value"]!r} new={delta["new_value"]!r}')
 
     values_changed = diff.pop('values_changed') if 'values_changed' in diff else {}
     for key_path, delta in values_changed.items():
@@ -79,7 +79,7 @@ def merge_interviews(a:Interview, b:Interview) -> Interview:
             # print(f'  Field changing from default value {key_path}: {extract(result._chatfield, key_path)}')
             pass
         else:
-            raise NotImplementedError(f'Cannot reduce {a_type!r} with value changes: {diff}')
+            raise NotImplementedError(f'Cannot reduce {a_type!r} with value changes at {key_path}: old={delta["old_value"]!r} new={delta["new_value"]!r}')
 
     dict_added = diff.pop('dictionary_item_added') if 'dictionary_item_added' in diff else set()
     if dict_added:
@@ -587,7 +587,11 @@ class Interviewer:
             if llm_field_value is None:
                 continue
 
-            llm_values = llm_field_value.model_dump()
+            # Handle both Pydantic models and plain dicts (for testing)
+            if hasattr(llm_field_value, 'model_dump'):
+                llm_values = llm_field_value.model_dump()
+            else:
+                llm_values = llm_field_value
             print(f'LLM found a valid field: {field_name!r} = {llm_values!r}')
             chatfield = interview._get_chat_field(field_name)
             if chatfield.get('value'):
