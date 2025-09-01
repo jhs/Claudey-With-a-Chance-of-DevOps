@@ -98,6 +98,23 @@
             "envFile": "${workspaceFolder}/chatfield/.env",
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "Pytest: Specific Test (test_llm_initialization)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-v",
+                "${workspaceFolder}/chatfield/tests/test_interviewer.py::TestInterviewerBasics::test_llm_initialization"
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }
