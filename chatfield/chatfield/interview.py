@@ -385,3 +385,5 @@ class FieldProxy(str):
             # If the attribute is a match rule, return its evaluation
             cast_value = llm_value[attr_name]
             return cast_value
+
+        raise AttributeError(f"Field {attr_name} has no value set")
