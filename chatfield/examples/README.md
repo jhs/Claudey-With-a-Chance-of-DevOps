@@ -20,7 +20,7 @@ Before running any example, ensure you have:
 
 2. Installed the required dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 ### Running an Example
