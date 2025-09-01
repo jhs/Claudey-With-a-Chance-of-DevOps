@@ -49,6 +49,27 @@ Set your OpenAI API key:
 export OPENAI_API_KEY=your-api-key
 ```
 
+## Examples
+
+The `examples/` directory contains complete working examples demonstrating various Chatfield features:
+
+- **`restaurant_order.py`** - Dynamic trait activation, selection fields, confidential tracking
+- **`job_interview.py`** - Professional interview flow with confidential assessments
+- **`favorite_number.py`** - Extensive transformation system demonstration
+- **`tech_request.py`** - Real-world business requirement gathering
+
+Run any example interactively:
+```bash
+python examples/restaurant_order.py
+```
+
+Or with automated demo inputs:
+```bash
+python examples/restaurant_order.py --auto
+```
+
+See `examples/README.md` for detailed documentation of each example.
+
 ## Adding Validation
 
 ```python
