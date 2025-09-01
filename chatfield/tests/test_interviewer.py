@@ -60,7 +60,7 @@ class TestInterviewerBasics:
         interviewer = Interviewer(interview)
         
         # Should initialize with GPT-5 by default
-        mock_init_model.assert_called_once_with('openai:gpt-5', temperature=0.0)
+        mock_init_model.assert_called_once_with('openai:gpt-4o', temperature=0.0)
         assert interviewer.llm is mock_llm
 
 
