@@ -5,6 +5,7 @@
 import { GathererMeta, FieldMeta } from '../core/metadata'
 import { Gatherer } from '../core/gatherer'
 import { GathererOptions } from '../core/types'
+import { EnhancedFieldBuilder, RoleBuilder } from './field-builder'
 
 /**
  * Field builder for configuring individual fields
@@ -91,17 +92,40 @@ export class FieldBuilder {
  */
 export class GathererBuilder {
   private meta: GathererMeta
+  private currentRole: string | null = null
 
   constructor() {
     this.meta = new GathererMeta()
   }
 
   /**
-   * Add a field
+   * Set the interview type
    */
-  field(name: string, description: string): FieldBuilder {
+  type(typeName: string): GathererBuilder {
+    this.meta.setType(typeName)
+    return this
+  }
+
+  /**
+   * Add a field (with optional description)
+   */
+  field(name: string, description: string = ''): EnhancedFieldBuilder {
     const fieldMeta = this.meta.addField(name, description)
-    return new FieldBuilder(fieldMeta, this)
+    return new EnhancedFieldBuilder(fieldMeta, this)
+  }
+
+  /**
+   * Configure alice role
+   */
+  alice(): RoleBuilder {
+    return new RoleBuilder(this, 'alice')
+  }
+
+  /**
+   * Configure bob role
+   */
+  bob(): RoleBuilder {
+    return new RoleBuilder(this, 'bob')
   }
 
   /**
@@ -118,6 +142,13 @@ export class GathererBuilder {
   agent(behavior: string): GathererBuilder {
     this.meta.addAgentContext(behavior)
     return this
+  }
+
+  /**
+   * Set description (alias for docstring)
+   */
+  desc(description: string): GathererBuilder {
+    return this.docstring(description)
   }
 
   /**
@@ -140,6 +171,23 @@ export class GathererBuilder {
    */
   getMeta(): GathererMeta {
     return this.meta.clone()
+  }
+
+  // Internal methods for role configuration
+  setCurrentRole(role: string): void {
+    this.currentRole = role
+  }
+
+  setRoleType(role: string, roleType: string): void {
+    this.meta.setRoleType(role, roleType)
+  }
+
+  addRoleTrait(role: string, trait: string): void {
+    this.meta.addRoleTrait(role, trait)
+  }
+
+  addRolePossibleTrait(role: string, name: string, trigger: string): void {
+    this.meta.addRolePossibleTrait(role, name, trigger)
   }
 }
 

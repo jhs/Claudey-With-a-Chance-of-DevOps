@@ -2,6 +2,12 @@
  * Core metadata classes for Chatfield gatherers
  */
 
+export interface RoleInfo {
+  type: string | null
+  traits: string[]
+  possibleTraits: Map<string, { active: boolean; desc: string }>
+}
+
 export class FieldMeta {
   public name: string
   public description: string
@@ -9,12 +15,18 @@ export class FieldMeta {
   public rejectRules: string[]
   public hint?: string
   public whenCondition?: (data: Record<string, string>) => boolean
+  public casts: Map<string, any>
+  public confidential: boolean
+  public conclude: boolean
 
   constructor(name: string, description: string) {
     this.name = name
     this.description = description
     this.mustRules = []
     this.rejectRules = []
+    this.casts = new Map()
+    this.confidential = false
+    this.conclude = false
   }
 
   /**
@@ -46,6 +58,34 @@ export class FieldMeta {
   }
 
   /**
+   * Set field description
+   */
+  setDescription(description: string): void {
+    this.description = description
+  }
+
+  /**
+   * Add a type cast/transformation
+   */
+  addCast(name: string, castInfo: any): void {
+    this.casts.set(name, castInfo)
+  }
+
+  /**
+   * Mark field as confidential
+   */
+  setConfidential(confidential: boolean): void {
+    this.confidential = confidential
+  }
+
+  /**
+   * Mark field as conclusion
+   */
+  setConclude(conclude: boolean): void {
+    this.conclude = conclude
+  }
+
+  /**
    * Check if this field has any validation rules
    */
   hasValidationRules(): boolean {
@@ -71,6 +111,9 @@ export class FieldMeta {
     clone.rejectRules = [...this.rejectRules]
     clone.hint = this.hint
     clone.whenCondition = this.whenCondition
+    clone.casts = new Map(this.casts)
+    clone.confidential = this.confidential
+    clone.conclude = this.conclude
     return clone
   }
 }
@@ -81,6 +124,8 @@ export class GathererMeta {
   public docstring: string
   public fields: Map<string, FieldMeta>
   private fieldOrder: string[]
+  public roles: Map<string, RoleInfo>
+  public type: string
 
   constructor() {
     this.userContext = []
@@ -88,6 +133,20 @@ export class GathererMeta {
     this.docstring = ''
     this.fields = new Map()
     this.fieldOrder = []
+    this.roles = new Map()
+    this.type = 'Interview'
+    
+    // Initialize default roles
+    this.roles.set('alice', {
+      type: 'Agent',
+      traits: [],
+      possibleTraits: new Map()
+    })
+    this.roles.set('bob', {
+      type: 'User', 
+      traits: [],
+      possibleTraits: new Map()
+    })
   }
 
   /**
@@ -164,6 +223,46 @@ export class GathererMeta {
   }
 
   /**
+   * Set the interview type
+   */
+  setType(type: string): void {
+    this.type = type
+  }
+
+  /**
+   * Set role type (e.g., alice -> "Senior Developer")
+   */
+  setRoleType(roleName: string, roleType: string): void {
+    const role = this.roles.get(roleName)
+    if (role) {
+      role.type = roleType
+    }
+  }
+
+  /**
+   * Add a trait to a role
+   */
+  addRoleTrait(roleName: string, trait: string): void {
+    const role = this.roles.get(roleName)
+    if (role && !role.traits.includes(trait)) {
+      role.traits.push(trait)
+    }
+  }
+
+  /**
+   * Add a possible trait to a role
+   */
+  addRolePossibleTrait(roleName: string, traitName: string, trigger: string): void {
+    const role = this.roles.get(roleName)
+    if (role) {
+      role.possibleTraits.set(traitName, {
+        active: false,
+        desc: trigger
+      })
+    }
+  }
+
+  /**
    * Create a copy of this gatherer metadata
    */
   clone(): GathererMeta {
@@ -172,10 +271,20 @@ export class GathererMeta {
     clone.agentContext = [...this.agentContext]
     clone.docstring = this.docstring
     clone.fieldOrder = [...this.fieldOrder]
+    clone.type = this.type
     
     // Clone all fields
     for (const [name, field] of this.fields.entries()) {
       clone.fields.set(name, field.clone())
+    }
+    
+    // Clone roles
+    for (const [name, role] of this.roles.entries()) {
+      clone.roles.set(name, {
+        type: role.type,
+        traits: [...role.traits],
+        possibleTraits: new Map(role.possibleTraits)
+      })
     }
     
     return clone
