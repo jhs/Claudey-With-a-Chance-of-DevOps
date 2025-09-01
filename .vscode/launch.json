@@ -106,7 +106,7 @@
             "module": "pytest",
             "args": [
                 "-v",
-                "${workspaceFolder}/chatfield/tests/test_interviewer.py::TestInterviewerBasics::test_llm_initialization"
+                "${workspaceFolder}/chatfield/tests"
             ],
             "cwd": "${workspaceFolder}",
             "env": {
